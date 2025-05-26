@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Category } from '@/generated/prisma';
-import { Loader2, Pencil, StarIcon, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import {
   useCategories,
@@ -179,24 +179,24 @@ export function CategoryModal({ children }: CategoryModalProps) {
                     <TableCell className="text-right">
                       {editingCategory?.id !== category.id && (
                         <div className="flex justify-end gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => startEditing(category)}
-                                disabled={isLoading}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Edit</TooltipContent>
-                          </Tooltip>
-
                           {category.id !== defaultCategory?.id && (
                             <>
                               <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => startEditing(category)}
+                                    disabled={isLoading}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Edit</TooltipContent>
+                              </Tooltip>
+
+                              {/* <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="outline"
@@ -209,7 +209,7 @@ export function CategoryModal({ children }: CategoryModalProps) {
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Set as default</TooltipContent>
-                              </Tooltip>
+                              </Tooltip> */}
 
                               <Tooltip>
                                 <TooltipTrigger asChild>

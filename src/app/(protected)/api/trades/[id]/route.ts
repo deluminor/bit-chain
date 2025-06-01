@@ -79,10 +79,10 @@ export async function PUT(request: NextRequest, context: unknown) {
       }
     }
 
-    const { categoryId: _, categoryName, ...tradeData } = data;
+    const { categoryId: _, categoryName, screenshots, ...tradeData } = data;
 
     const parsedTradeData = createTradeData(tradeData);
-    const { category, ...cleanTradeData } = parsedTradeData;
+    const { category, screenshots: parsedScreenshots, ...cleanTradeData } = parsedTradeData;
 
     const existingTrade = await prisma.trade.findUnique({
       where: { id: (context as Context).params.id },
@@ -94,6 +94,30 @@ export async function PUT(request: NextRequest, context: unknown) {
 
     if (existingTrade.userId !== user.id) {
       return NextResponse.json({ error: 'Unauthorized to update this trade' }, { status: 401 });
+    }
+
+    // Process screenshots
+    if (screenshots) {
+      // Delete all existing screenshots
+      await prisma.screenshot.deleteMany({
+        where: { tradeId: existingTrade.id },
+      });
+
+      // Create new screenshots if provided
+      if (Array.isArray(screenshots) && screenshots.length > 0) {
+        await Promise.all(
+          screenshots.map((screenshot, index) => {
+            return prisma.screenshot.create({
+              data: {
+                tradeId: existingTrade.id,
+                imageData: screenshot.imageData,
+                order: screenshot.order || index,
+                createdAt: screenshot.createdAt ? new Date(screenshot.createdAt) : new Date(),
+              },
+            });
+          }),
+        );
+      }
     }
 
     const updateData = {
@@ -109,6 +133,17 @@ export async function PUT(request: NextRequest, context: unknown) {
           select: {
             id: true,
             name: true,
+          },
+        },
+        screenshots: {
+          select: {
+            id: true,
+            imageData: true,
+            order: true,
+            createdAt: true,
+          },
+          orderBy: {
+            order: 'asc',
           },
         },
       },

@@ -19,6 +19,13 @@ export const TRADE_RESULTS_LIST: TRADE_RESULTS[] = [
   TRADE_RESULTS.PENDING,
 ];
 
+export interface Screenshot {
+  id: string;
+  imageData: string; // base64 encoded image
+  order: number;
+  createdAt: Date;
+}
+
 export interface Trade {
   id: string;
   date: Date;
@@ -37,6 +44,7 @@ export interface Trade {
   category: Category;
   deposit: number;
   comment?: string;
+  screenshots?: Screenshot[];
 }
 
 export type Category = {
@@ -64,6 +72,7 @@ export type PositionFormValues = {
   deposit: number;
   leverage?: number;
   comment?: string;
+  screenshots?: Screenshot[];
 };
 
 export const positionSchema = z.object({
@@ -103,4 +112,14 @@ export const positionSchema = z.object({
     val => (val === null ? '' : val),
     z.string().max(255, 'Comment must be less than 255 characters').optional().nullable(),
   ),
+  screenshots: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        imageData: z.string(),
+        order: z.number().optional(),
+        createdAt: z.date().optional(),
+      }),
+    )
+    .optional(),
 }) as z.ZodType<PositionFormValues>;

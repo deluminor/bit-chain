@@ -36,12 +36,12 @@ model Category {
 }
 
 model Trade {
-  id           String   @id @default(cuid())
+  id           String        @id @default(cuid())
   userId       String
-  user         User     @relation(fields: [userId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
   categoryId   String
-  category     Category @relation(fields: [categoryId], references: [id])
-  date         DateTime @default(now())
+  category     Category      @relation(fields: [categoryId], references: [id])
+  date         DateTime      @default(now())
   symbol       String
   side         TradeSide
   entryPrice   Float
@@ -54,10 +54,20 @@ model Trade {
   result       TradeResult
   leverage     Float?
   investment   Float?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime      @default(now())
   deposit      Float
-  isDemo       Boolean  @default(false)
+  isDemo       Boolean       @default(false)
   comment      String?
+  screenshots  Screenshot[]
+}
+
+model Screenshot {
+  id        String   @id @default(cuid())
+  tradeId   String
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  imageData String   @db.Text  // base64 encoded image data
+  createdAt DateTime @default(now())
+  order     Int      @default(0) // For ordering screenshots
 }
 
 enum TradeSide {

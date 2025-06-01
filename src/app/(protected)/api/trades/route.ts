@@ -36,6 +36,17 @@ export async function GET() {
             name: true,
           },
         },
+        screenshots: {
+          select: {
+            id: true,
+            imageData: true,
+            order: true,
+            createdAt: true,
+          },
+          orderBy: {
+            order: 'asc',
+          },
+        },
       },
     });
 
@@ -152,10 +163,10 @@ export async function POST(request: Request) {
         }
       }
 
-      const { categoryId: cId, categoryName, ...tradeData } = data;
+      const { categoryId: cId, categoryName, screenshots, ...tradeData } = data;
 
       const parsedTradeData = createTradeData(tradeData);
-      const { category, ...cleanTradeData } = parsedTradeData;
+      const { category, screenshots: parsedScreenshots, ...cleanTradeData } = parsedTradeData;
 
       const trade = await prisma.trade.create({
         data: {
@@ -173,7 +184,49 @@ export async function POST(request: Request) {
         },
       });
 
-      const { categoryId: createdCategoryId, ...tradeWithoutCategoryId } = trade;
+      if (screenshots && Array.isArray(screenshots) && screenshots.length > 0) {
+        await Promise.all(
+          screenshots.map((screenshot, index) => {
+            return prisma.screenshot.create({
+              data: {
+                tradeId: trade.id,
+                imageData: screenshot.imageData,
+                order: screenshot.order || index,
+                createdAt: screenshot.createdAt ? new Date(screenshot.createdAt) : new Date(),
+              },
+            });
+          }),
+        );
+      }
+
+      const updatedTrade = await prisma.trade.findUnique({
+        where: { id: trade.id },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          screenshots: {
+            select: {
+              id: true,
+              imageData: true,
+              order: true,
+              createdAt: true,
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      });
+
+      if (!updatedTrade) {
+        return NextResponse.json({ error: 'Failed to retrieve updated trade' }, { status: 500 });
+      }
+
+      const { categoryId: createdCategoryId, ...tradeWithoutCategoryId } = updatedTrade;
 
       return NextResponse.json({ trade: tradeWithoutCategoryId });
     } catch (error) {

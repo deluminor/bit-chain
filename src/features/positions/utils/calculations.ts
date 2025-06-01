@@ -38,7 +38,8 @@ export function calculateRiskPercent({
   positionSize: number;
   deposit: number;
 }): number {
-  if (!entryPrice || !stopLoss || !positionSize || !deposit) return 0;
+  if (!stopLoss) return 100;
+  if (!entryPrice || !positionSize || !deposit) return 0;
 
   const potentialLoss =
     side === TRADE_SIDES.LONG

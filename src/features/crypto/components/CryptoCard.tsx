@@ -209,7 +209,7 @@ export function CryptoCard({
         <CardFooter className="flex-col items-start gap-1 pt-2">
           <div className="w-full border-t pt-2">
             <Link
-              href={latestNews.url}
+              href={latestNews.url || '#'}
               target="_blank"
               rel="noopener noreferrer"
               className="group block"

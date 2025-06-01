@@ -50,6 +50,7 @@ export function PositionModal({ position, onSave, onDelete, children }: Position
           deposit: position.deposit,
           leverage: position.leverage || 1,
           comment: position.comment || '',
+          screenshots: position.screenshots || [],
         }
       : {
           date: new Date(),
@@ -58,6 +59,7 @@ export function PositionModal({ position, onSave, onDelete, children }: Position
           category: defaultCategory || { id: '', name: 'solo' },
           leverage: 1,
           comment: '',
+          screenshots: [],
         },
   });
 
@@ -87,6 +89,7 @@ export function PositionModal({ position, onSave, onDelete, children }: Position
         investment: 0,
         id: position?.id || '',
         comment: values.comment || '',
+        screenshots: values.screenshots || [],
       });
       setIsOpen(false);
     } catch {
@@ -125,6 +128,7 @@ export function PositionModal({ position, onSave, onDelete, children }: Position
         deposit: position.deposit,
         leverage: position.leverage || 1,
         comment: position.comment,
+        screenshots: position.screenshots || [],
       });
     } else if (isOpen) {
       form.reset({
@@ -134,6 +138,7 @@ export function PositionModal({ position, onSave, onDelete, children }: Position
         category: defaultCategory || { id: '', name: 'solo' },
         leverage: 1,
         comment: '',
+        screenshots: [],
       });
     }
   }, [isOpen, position, form, defaultCategory]);

@@ -47,7 +47,7 @@ export function PositionTable({
       <div className="w-full relative pt-4">
         <TableLoadingBar isLoading={isFetching} className="absolute top-0 left-0 right-0 z-10" />
         <div className="w-full px-4">
-          <div className="max-h-[350px] overflow-auto data-table">
+          <div className="max-h-[550px] overflow-auto data-table">
             <Table>
               <TableHeader className="sticky top-0 z-10">
                 <TableRow className="hover:bg-transparent">

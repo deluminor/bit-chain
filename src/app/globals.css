@@ -125,6 +125,10 @@ button {
   cursor: pointer !important;
 }
 
+[data-slot="dialog-content"] {
+  max-height: 100vh;
+}
+
 .custom-filter-container {
   grid-template-columns: repeat(4, minmax(160px, 1fr));
 }

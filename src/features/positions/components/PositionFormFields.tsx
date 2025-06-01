@@ -1,3 +1,4 @@
+import { getRiskColorClass } from '@/app/(protected)/journal/utils/formatters';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,11 +11,12 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { UseFormReturn } from 'react-hook-form';
+import { UseFormReturn, useWatch } from 'react-hook-form';
 import { useCategories } from '../queries/categories';
-import { PositionFormValues, TRADE_SIDES_LIST } from '../types/position';
-import { parseFormattedNumber } from '../utils/calculations';
+import { PositionFormValues, TRADE_SIDES, TRADE_SIDES_LIST } from '../types/position';
+import { calculateRiskPercent, parseFormattedNumber } from '../utils/calculations';
 import { HelpTooltip } from './HelpTooltip';
+import { ScreenshotsUploader } from './ScreenshotsUploader';
 
 interface PositionFormFieldsProps {
   form: UseFormReturn<PositionFormValues>;
@@ -60,9 +62,28 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
   // Track the raw text input values before parsing to numbers
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   const [_, setIsFocused] = useState<Record<string, boolean>>({});
+  const [riskPercent, setRiskPercent] = useState<number>(0);
 
-  // Отримуємо категорії з API
+  const watchedValues = useWatch({
+    control: form.control,
+    name: ['side', 'entryPrice', 'stopLoss', 'positionSize', 'deposit'],
+  });
+
   const { data: categories, isLoading: isCategoriesLoading } = useCategories();
+
+  useEffect(() => {
+    const [side, entryPrice, stopLoss, positionSize, deposit] = watchedValues;
+
+    const risk = calculateRiskPercent({
+      side: side || TRADE_SIDES.LONG,
+      entryPrice: entryPrice || 0,
+      stopLoss: stopLoss || 0,
+      positionSize: positionSize || 0,
+      deposit: deposit || 0,
+    });
+
+    setRiskPercent(risk);
+  }, [watchedValues]);
 
   // Set initial raw values when form values change
   useEffect(() => {
@@ -466,6 +487,21 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
         }}
       />
 
+      <div className="flex flex-col space-y-2 justify-end col-span-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Risk Percentage:</span>
+          <span className={`font-medium ${getRiskColorClass(riskPercent)}`}>{riskPercent}%</span>
+        </div>
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+          <div
+            className={`h-2.5 rounded-full ${
+              riskPercent <= 10 ? 'bg-green-500' : riskPercent <= 20 ? 'bg-amber-500' : 'bg-red-500'
+            }`}
+            style={{ width: `${Math.min(riskPercent, 100)}%` }}
+          ></div>
+        </div>
+      </div>
+
       <FormField
         control={form.control}
         name="comment"
@@ -484,6 +520,8 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
           </FormItem>
         )}
       />
+
+      <ScreenshotsUploader form={form} />
     </div>
   );
 }

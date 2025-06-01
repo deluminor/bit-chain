@@ -1,4 +1,5 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ScreenshotThumbnail } from '@/features/positions/components/ScreenshotGallery';
 import { useDefaultCategory } from '@/features/positions/queries/categories';
 import { ColumnDef, Trade } from '@/features/positions/types/position';
 import { useMemo } from 'react';
@@ -7,6 +8,7 @@ import {
   formatDate,
   getCategoryColorClass,
   getResultColorClass,
+  getRiskColorClass,
   getSideColorClass,
 } from '../utils/formatters';
 
@@ -57,10 +59,30 @@ export function useColumns() {
         ),
       },
       {
+        key: 'screenshots',
+        header: 'Images',
+        className: 'text-center w-[40px]',
+        cell: (trade: Trade) => {
+          if (!trade.screenshots || trade.screenshots.length === 0) {
+            return <span className="text-center block text-muted-foreground text-xs">-</span>;
+          }
+
+          return (
+            <div className="flex justify-center">
+              <ScreenshotThumbnail screenshots={trade.screenshots} className="hover:bg-muted/40" />
+            </div>
+          );
+        },
+      },
+      {
         key: 'riskPercent',
         header: 'Risk %',
         className: 'text-center',
-        cell: (trade: Trade) => <span className="block text-center">{trade.riskPercent}%</span>,
+        cell: (trade: Trade) => (
+          <span className={`block text-center ${getRiskColorClass(trade.riskPercent)}`}>
+            {trade.riskPercent}%
+          </span>
+        ),
       },
       {
         key: 'entryPrice',

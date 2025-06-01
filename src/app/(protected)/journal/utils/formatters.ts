@@ -63,3 +63,13 @@ export const getResultColorClass = (result: string): string => {
       return 'bg-gray-100 dark:bg-transparent text-gray-800 dark:text-gray-400 border border-gray-300 dark:border-gray-500/30';
   }
 };
+
+export const getRiskColorClass = (riskPercent: number): string => {
+  if (riskPercent <= 10) {
+    return 'text-green-600 dark:text-green-400';
+  } else if (riskPercent <= 20) {
+    return 'text-amber-600 dark:text-amber-400';
+  } else {
+    return 'text-red-600 dark:text-red-400';
+  }
+};

@@ -46,6 +46,14 @@ export function createTradeData(data: CreateTradeData): Omit<Trade, 'id'> {
     commission,
   });
 
+  const riskPercent = calculateRiskPercent({
+    side: validSide,
+    entryPrice,
+    stopLoss,
+    positionSize,
+    deposit,
+  });
+
   return {
     date: new Date(date),
     symbol,
@@ -65,13 +73,7 @@ export function createTradeData(data: CreateTradeData): Omit<Trade, 'id'> {
       leverage,
     }),
     pnl: calculatedPnl,
-    riskPercent: calculateRiskPercent({
-      side: validSide,
-      entryPrice,
-      stopLoss,
-      positionSize,
-      deposit,
-    }),
+    riskPercent,
     result: exitPrice
       ? calculatedPnl > 0
         ? TRADE_RESULTS.WIN

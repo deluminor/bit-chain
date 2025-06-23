@@ -116,10 +116,11 @@ export const positionSchema = z.object({
     .array(
       z.object({
         id: z.string().optional(),
-        imageData: z.string(),
+        imageData: z.string().min(1, 'Image data is required'),
         order: z.number().optional(),
         createdAt: z.date().optional(),
       }),
     )
-    .optional(),
+    .optional()
+    .default([]),
 }) as z.ZodType<PositionFormValues>;

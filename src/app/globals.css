@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -125,7 +125,7 @@ button {
   cursor: pointer !important;
 }
 
-[data-slot="dialog-content"] {
+[data-slot='dialog-content'] {
   max-height: 100vh;
 }
 
@@ -155,7 +155,7 @@ button {
   50% {
     transform: translateX(0%);
     background-image: linear-gradient(
-      90deg, 
+      90deg,
       transparent,
       oklch(0.55 0.25 270),
       oklch(0.65 0.15 280),
@@ -165,7 +165,7 @@ button {
   100% {
     transform: translateX(100%);
     background-image: linear-gradient(
-      90deg, 
+      90deg,
       transparent,
       oklch(0.65 0.15 280),
       oklch(0.55 0.25 270),
@@ -207,4 +207,8 @@ button {
 
 .min-h-32px {
   min-height: 32px !important;
+}
+
+[data-slot='dialog-content'] {
+  overflow: auto;
 }

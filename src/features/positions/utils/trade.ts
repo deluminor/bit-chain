@@ -1,4 +1,4 @@
-import { Category, Trade, TRADE_RESULTS, TRADE_SIDES } from '../types/position';
+import { Category, Screenshot, Trade, TRADE_RESULTS, TRADE_SIDES } from '../types/position';
 import { calculateInvestment, calculatePnl, calculateRiskPercent } from './calculations';
 
 interface CreateTradeData {
@@ -14,9 +14,10 @@ interface CreateTradeData {
   leverage?: number;
   category?: Category;
   comment?: string;
+  screenshots?: Screenshot[];
 }
 
-export function createTradeData(data: CreateTradeData): Omit<Trade, 'id'> {
+export function createTradeData(data: CreateTradeData): Omit<Trade, 'id' | 'screenshots'> {
   const {
     date,
     symbol,
@@ -30,6 +31,8 @@ export function createTradeData(data: CreateTradeData): Omit<Trade, 'id'> {
     leverage = 0,
     category = { id: '', name: 'solo' },
     comment = '',
+    screenshots,
+    ...rest
   } = data;
 
   // Validate and convert side

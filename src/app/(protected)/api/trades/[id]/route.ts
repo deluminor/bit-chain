@@ -79,10 +79,10 @@ export async function PUT(request: NextRequest, context: unknown) {
       }
     }
 
-    const { categoryId: _, categoryName, screenshots, ...tradeData } = data;
+    const { categoryId: categoryIdFromData, categoryName, screenshots, ...tradeData } = data;
 
     const parsedTradeData = createTradeData(tradeData);
-    const { category, screenshots: parsedScreenshots, ...cleanTradeData } = parsedTradeData;
+    const { category, ...cleanTradeData } = parsedTradeData;
 
     const existingTrade = await prisma.trade.findUnique({
       where: { id: (context as Context).params.id },
@@ -97,7 +97,7 @@ export async function PUT(request: NextRequest, context: unknown) {
     }
 
     // Process screenshots
-    if (screenshots) {
+    if (screenshots !== undefined) {
       // Delete all existing screenshots
       await prisma.screenshot.deleteMany({
         where: { tradeId: existingTrade.id },
@@ -122,7 +122,7 @@ export async function PUT(request: NextRequest, context: unknown) {
 
     const updateData = {
       ...cleanTradeData,
-      ...(categoryId ? { categoryId } : {}),
+      ...(categoryId && { categoryId }),
     };
 
     const trade = await prisma.trade.update({

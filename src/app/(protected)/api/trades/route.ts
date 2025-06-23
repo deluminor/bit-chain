@@ -166,7 +166,7 @@ export async function POST(request: Request) {
       const { categoryId: cId, categoryName, screenshots, ...tradeData } = data;
 
       const parsedTradeData = createTradeData(tradeData);
-      const { category, screenshots: parsedScreenshots, ...cleanTradeData } = parsedTradeData;
+      const { category, ...cleanTradeData } = parsedTradeData;
 
       const trade = await prisma.trade.create({
         data: {

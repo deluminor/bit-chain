@@ -58,56 +58,76 @@ export function RadarChartComponent({
   } satisfies ChartConfig;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+        <CardDescription className="text-sm text-muted-foreground">{description}</CardDescription>
       </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+      <CardContent className="pt-0">
         <ChartContainer config={chartConfig} className="aspect-square h-[300px] w-full">
-          <RadarChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+          <RadarChart data={data} margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
             <defs>
               <radialGradient id="radarFill" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor={colors.primary} stopOpacity={0.3} />
-                <stop offset="50%" stopColor={colors.primary} stopOpacity={0.15} />
-                <stop offset="100%" stopColor={colors.primary} stopOpacity={0.05} />
+                <stop offset="0%" stopColor={colors.primary} stopOpacity={0.15} />
+                <stop offset="70%" stopColor={colors.primary} stopOpacity={0.08} />
+                <stop offset="100%" stopColor={colors.primary} stopOpacity={0.02} />
               </radialGradient>
             </defs>
-            <PolarGrid stroke={colors.grid} strokeWidth={0.5} radialLines={true} />
+            <PolarGrid
+              stroke={isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)'}
+              strokeWidth={0.3}
+              radialLines={true}
+              gridType="polygon"
+            />
             <PolarAngleAxis
               dataKey="name"
               tick={{
-                fontSize: 12,
-                fill: colors.text,
-                fontWeight: 500,
+                fontSize: 11,
+                fill: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                fontWeight: 400,
               }}
+              tickSize={8}
             />
             <Radar
               name="Value"
               dataKey="value"
               stroke={colors.primary}
-              strokeWidth={1}
+              strokeWidth={0.8}
               fill="url(#radarFill)"
               fillOpacity={1}
               dot={{
-                r: 3,
+                r: 2.5,
                 fill: colors.primary,
                 stroke: isDark ? '#000000' : '#ffffff',
-                strokeWidth: 1.5,
-                opacity: 1,
+                strokeWidth: 1,
+                opacity: 0.9,
               }}
               isAnimationActive={true}
-              animationDuration={800}
-              animationBegin={150}
+              animationDuration={1000}
+              animationBegin={200}
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent labelFormatter={value => value} indicator="dot" />}
+              content={
+                <ChartTooltipContent
+                  labelFormatter={value => value}
+                  formatter={(value, name) => [
+                    `${typeof value === 'number' ? value.toFixed(1) : value}%`,
+                    name,
+                  ]}
+                  indicator="dot"
+                  className="rounded-lg border-0 bg-background/95 backdrop-blur-sm shadow-lg"
+                />
+              }
             />
           </RadarChart>
         </ChartContainer>
       </CardContent>
-      {footer && <CardFooter>{footer}</CardFooter>}
+      {footer && (
+        <CardFooter className="pt-4 border-t border-border/50">
+          <div className="text-sm text-muted-foreground">{footer}</div>
+        </CardFooter>
+      )}
     </Card>
   );
 }

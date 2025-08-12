@@ -14,7 +14,6 @@ import { useIsMobile } from '@/hooks/useMobile';
 import { useTradingStats } from '@/hooks/useTradingStats';
 import { THEME, useStore } from '@/store';
 import { endOfDay, startOfDay, subDays } from 'date-fns';
-import { formatSummaryAmount } from '@/lib/currency';
 import { useEffect, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
 import { ChartSkeleton } from './ChartSkeleton';
@@ -27,7 +26,7 @@ export function ChartAreaInteractive() {
   const chartConfig = {
     pnl: {
       label: 'PnL',
-      color: theme === THEME.DARK ? '#ffffff' : '#000000',
+      color: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.85)' : 'hsl(var(--chart-1))',
     },
   } satisfies ChartConfig;
 
@@ -38,26 +37,10 @@ export function ChartAreaInteractive() {
         to: new Date(),
       });
     }
-  }, [isMobile, setDateRange]);
+  }, [isMobile]);
 
   const filteredData = useMemo(() => {
-    if (!stats?.pnlData || stats.pnlData.length === 0) {
-      // Return placeholder data starting from 0 when no data exists
-      const today = new Date();
-      const weekAgo = new Date(today);
-      weekAgo.setDate(today.getDate() - 7);
-
-      return [
-        {
-          date: weekAgo.toISOString(),
-          pnl: 0,
-        },
-        {
-          date: today.toISOString(),
-          pnl: 0,
-        },
-      ];
-    }
+    if (!stats?.pnlData || stats.pnlData.length === 0) return [];
 
     let dataToUse = [...stats.pnlData];
 
@@ -72,7 +55,7 @@ export function ChartAreaInteractive() {
       });
     }
 
-    // Always ensure the chart starts from 0
+    // If we have data, ensure the first entry starts with PnL at 0
     if (dataToUse.length > 0) {
       // Sort data by date (just to be safe)
       dataToUse.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -91,21 +74,7 @@ export function ChartAreaInteractive() {
       ];
     }
 
-    // Fallback to placeholder data
-    const today = new Date();
-    const weekAgo = new Date(today);
-    weekAgo.setDate(today.getDate() - 7);
-
-    return [
-      {
-        date: weekAgo.toISOString(),
-        pnl: 0,
-      },
-      {
-        date: today.toISOString(),
-        pnl: 0,
-      },
-    ];
+    return dataToUse;
   }, [stats?.pnlData, dateRange]);
 
   // Calculate min and max PnL values for domain calculation
@@ -223,57 +192,24 @@ export function ChartAreaInteractive() {
           <AreaChart data={filteredData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
             <defs>
               <linearGradient id="fillPnl" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.55}
-                />
-                <stop
-                  offset="15%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.48}
-                />
-                <stop
-                  offset="30%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.38}
-                />
-                <stop
-                  offset="50%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.25}
-                />
-                <stop
-                  offset="70%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.15}
-                />
-                <stop
-                  offset="85%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.08}
-                />
-                <stop
-                  offset="100%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.02}
-                />
+                <stop offset="5%" stopColor="var(--color-pnl)" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="var(--color-pnl)" stopOpacity={0.1} />
               </linearGradient>
             </defs>
             <CartesianGrid
               vertical={false}
               horizontal={true}
-              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}
-              strokeDasharray="1 2"
-              strokeWidth={0.5}
+              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'}
+              strokeDasharray="3 4"
+              strokeWidth={0.8}
             />
             {/* Add a special zero line if data crosses zero */}
             {yAxisDomain[0] < 0 && yAxisDomain[1] > 0 && (
               <ReferenceLine
                 y={0}
-                stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)'}
-                strokeWidth={1}
-                strokeDasharray="2 2"
+                stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'}
+                strokeWidth={0.8}
+                strokeDasharray="3 4"
                 ifOverflow="extendDomain"
               />
             )}
@@ -301,7 +237,25 @@ export function ChartAreaInteractive() {
               ticks={yAxisTicks}
               tickCount={yAxisTicks.length}
               interval="preserveEnd"
-              tickFormatter={value => formatSummaryAmount(value)}
+              tickFormatter={value => {
+                // Use abbreviated currency format for tick values
+                if (Math.abs(value) < 0.01) return '$0';
+
+                // Format with abbreviations
+                const absValue = Math.abs(value);
+                let formattedValue;
+
+                if (absValue >= 1000000) {
+                  formattedValue = `$${(value / 1000000).toFixed(1)}M`;
+                } else if (absValue >= 1000) {
+                  formattedValue = `$${(value / 1000).toFixed(1)}k`;
+                } else {
+                  // Don't add decimals for values under 1000
+                  formattedValue = `$${value.toFixed(2)}`;
+                }
+
+                return formattedValue;
+              }}
               tickLine={false}
               axisLine={false}
               tick={{
@@ -331,20 +285,14 @@ export function ChartAreaInteractive() {
               dataKey="pnl"
               type="monotone"
               fill="url(#fillPnl)"
-              stroke={theme === THEME.DARK ? '#ffffff' : '#4b5563'}
-              strokeWidth={0.7}
+              stroke="var(--color-pnl)"
+              strokeWidth={theme === THEME.DARK ? 2 : 1.5}
               connectNulls
               dot={false}
-              activeDot={{
-                r: 4,
-                strokeWidth: 2,
-                stroke: theme === THEME.DARK ? '#ffffff' : '#4b5563',
-                fill: theme === THEME.DARK ? '#000000' : '#ffffff',
-                opacity: 1,
-              }}
+              activeDot={{ r: 6, strokeWidth: 0 }}
               isAnimationActive={true}
-              animationDuration={800}
-              animationBegin={150}
+              animationDuration={1200}
+              animationBegin={0}
               animationEasing="ease-out"
             />
           </AreaChart>

@@ -31,8 +31,8 @@ export function createTradeData(data: CreateTradeData): Omit<Trade, 'id' | 'scre
     leverage = 0,
     category = { id: '', name: 'solo' },
     comment = '',
-    screenshots,
-    ...rest
+    screenshots: _screenshots,
+    ..._rest
   } = data;
 
   // Validate and convert side

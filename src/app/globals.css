@@ -63,7 +63,7 @@
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-1: oklch(0.68 0.25 28);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
@@ -97,7 +97,7 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.552 0.016 285.938);
-  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-1: oklch(0.68 0.25 28);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
@@ -117,7 +117,68 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Premium Fintech Card Enhancements */
+@layer components {
+  .premium-card {
+    @apply bg-card/60 backdrop-blur-xl border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300;
+    background-image: linear-gradient(135deg, 
+      oklch(1 0 0 / 0.08) 0%, 
+      oklch(0.68 0.25 28 / 0.04) 50%, 
+      oklch(1 0 0 / 0.08) 100%);
+  }
+  
+  .premium-card:hover {
+    background-image: linear-gradient(135deg, 
+      oklch(1 0 0 / 0.12) 0%, 
+      oklch(0.68 0.25 28 / 0.08) 50%, 
+      oklch(1 0 0 / 0.12) 100%);
+    @apply border-border/80 shadow-2xl;
+  }
+  
+  .premium-gradient-text {
+    background: linear-gradient(135deg, oklch(0.68 0.25 28) 0%, oklch(0.72 0.22 32) 50%, oklch(0.65 0.28 26) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .group:hover .group-hover\:premium-gradient-text {
+    background: linear-gradient(135deg, oklch(0.68 0.25 28) 0%, oklch(0.72 0.22 32) 50%, oklch(0.65 0.28 26) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .premium-border-glow {
+    @apply relative;
+  }
+  
+  .premium-border-glow::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    padding: 1px;
+    background: linear-gradient(135deg, 
+      oklch(0.74 0.196 38.43 / 0.3), 
+      transparent, 
+      oklch(0.74 0.196 38.43 / 0.3));
+    border-radius: inherit;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    z-index: -1;
+  }
+  
+  
+  .premium-sidebar {
+    @apply bg-sidebar/80 backdrop-blur-xl border-r border-sidebar-border/50;
+    background-image: linear-gradient(180deg, 
+      oklch(0.21 0.006 285.885 / 0.95) 0%, 
+      oklch(0.21 0.006 285.885 / 0.98) 50%, 
+      oklch(0.21 0.006 285.885 / 0.95) 100%);
   }
 }
 

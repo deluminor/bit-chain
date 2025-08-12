@@ -61,7 +61,6 @@ const formatWithSpaces = (value: string): string => {
 export function PositionFormFields({ form }: PositionFormFieldsProps) {
   // Track the raw text input values before parsing to numbers
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
-  const [_, setIsFocused] = useState<Record<string, boolean>>({});
   const [riskPercent, setRiskPercent] = useState<number>(0);
 
   const watchedValues = useWatch({
@@ -115,14 +114,7 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
     }
   };
 
-  // Handle focus/blur for formatting
-  const handleFocus = (name: string) => {
-    setIsFocused(prev => ({ ...prev, [name]: true }));
-  };
-
   const handleBlur = (name: keyof PositionFormValues) => {
-    setIsFocused(prev => ({ ...prev, [name]: false }));
-
     // Format the value with spaces when blurring
     const rawValue = rawInputs[name] || '';
     if (rawValue) {
@@ -212,7 +204,6 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
                   type="text"
                   value={rawValue}
                   onChange={e => handleNumericFieldChange(fieldName, e.target.value)}
-                  onFocus={() => handleFocus(fieldName)}
                   onBlur={() => handleBlur(fieldName)}
                 />
               </FormControl>
@@ -249,7 +240,6 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
                     const processedValue = handleDecimalInput(e.target.value);
                     handleNumericFieldChange(fieldName, processedValue);
                   }}
-                  onFocus={() => handleFocus(fieldName)}
                   onBlur={() => handleBlur(fieldName)}
                 />
               </FormControl>
@@ -283,7 +273,6 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
                     const processedValue = handleDecimalInput(e.target.value);
                     handleNumericFieldChange(fieldName, processedValue);
                   }}
-                  onFocus={() => handleFocus(fieldName)}
                   onBlur={() => handleBlur(fieldName)}
                 />
               </FormControl>
@@ -317,7 +306,6 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
                     const processedValue = handleDecimalInput(e.target.value);
                     handleNumericFieldChange(fieldName, processedValue);
                   }}
-                  onFocus={() => handleFocus(fieldName)}
                   onBlur={() => handleBlur(fieldName)}
                 />
               </FormControl>
@@ -351,7 +339,6 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
                     const processedValue = handleDecimalInput(e.target.value);
                     handleNumericFieldChange(fieldName, processedValue);
                   }}
-                  onFocus={() => handleFocus(fieldName)}
                   onBlur={() => handleBlur(fieldName)}
                 />
               </FormControl>
@@ -385,7 +372,6 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
                     const processedValue = handleDecimalInput(e.target.value);
                     handleNumericFieldChange(fieldName, processedValue);
                   }}
-                  onFocus={() => handleFocus(fieldName)}
                   onBlur={() => handleBlur(fieldName)}
                 />
               </FormControl>
@@ -477,7 +463,6 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
                     const processedValue = handleDecimalInput(e.target.value);
                     handleNumericFieldChange(fieldName, processedValue);
                   }}
-                  onFocus={() => handleFocus(fieldName)}
                   onBlur={() => handleBlur(fieldName)}
                 />
               </FormControl>

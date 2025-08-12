@@ -52,7 +52,7 @@ export type Category = {
   name: string;
 };
 
-export interface ColumnDef<T> {
+export interface ColumnDef<_T> {
   key: string;
   header: string;
   cell: (item: Trade) => ReactNode;

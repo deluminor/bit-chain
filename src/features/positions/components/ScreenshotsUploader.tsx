@@ -3,7 +3,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Camera, Info, XCircle } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { PositionFormValues, Screenshot } from '../types/position';
 
@@ -16,7 +16,7 @@ export function ScreenshotsUploader({ form }: ScreenshotsUploaderProps) {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const MAX_SCREENSHOTS = 3;
 
-  const screenshots = form.watch('screenshots') || [];
+  const screenshots = useMemo(() => form.watch('screenshots') || [], [form]);
   const canAddMore = screenshots.length < MAX_SCREENSHOTS;
 
   // Convert file to base64
@@ -93,7 +93,7 @@ export function ScreenshotsUploader({ form }: ScreenshotsUploaderProps) {
     } else {
       setPreviewImages([]);
     }
-  }, [screenshots]);
+  }, [screenshots, setPreviewImages]);
 
   return (
     <FormField

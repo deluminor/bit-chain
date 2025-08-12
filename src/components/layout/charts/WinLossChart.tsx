@@ -4,9 +4,11 @@ import { useTradingStats } from '@/hooks/useTradingStats';
 import { TrendingUp } from 'lucide-react';
 import { RadialChartComponent } from './RadialChartComponent';
 
+import { CHART_COLORS } from '@/constants/colors';
+
 const COLORS = {
-  WINNING: 'hsl(var(--chart-1))',
-  LOSING: 'hsl(var(--chart-2))',
+  WINNING: CHART_COLORS.SUCCESS.DEFAULT,
+  LOSING: CHART_COLORS.WARNING.DEFAULT,
 };
 
 export function WinLossChart() {

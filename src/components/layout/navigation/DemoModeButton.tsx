@@ -38,7 +38,7 @@ export function DemoModeButton() {
       ) : isDemoMode ? (
         'Remove Demo Data'
       ) : (
-        'Try Demo Data'
+        'Add Demo Data'
       )}
     </Button>
   );

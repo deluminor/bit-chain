@@ -2,9 +2,7 @@
 
 import { useTradingStats } from '@/hooks/useTradingStats';
 import { useMemo } from 'react';
-import { RadarChartComponent } from './RadarChartComponent';
-
-const COLOR = 'hsl(var(--chart-1))';
+import { PieChartComponent } from './PieChartComponent';
 
 export function CurrencyDistributionChart() {
   const { stats, isLoading } = useTradingStats();
@@ -25,11 +23,10 @@ export function CurrencyDistributionChart() {
   }, [data]);
 
   return (
-    <RadarChartComponent
+    <PieChartComponent
       title="Currency Distribution"
       description="Distribution of trades by currency"
       data={data}
-      color={COLOR}
       isLoading={isLoading}
       footer={
         <div className="text-sm text-muted-foreground">

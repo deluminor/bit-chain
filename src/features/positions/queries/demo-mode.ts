@@ -16,15 +16,20 @@ export const useDemoMode = () => {
   return useMutation({
     mutationFn: toggle,
     onSuccess: (_, action) => {
-      // Invalidate positions query to refresh the data
+      // Invalidate queries to refresh all data
       queryClient.invalidateQueries({ queryKey: ['positions'] });
+      queryClient.invalidateQueries({ queryKey: ['finance'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['budget'] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
 
       toast({
         title: 'Demo Mode',
         description:
           action === 'add'
-            ? 'Demo data has been added successfully.'
-            : 'Demo data has been removed successfully.',
+            ? 'Demo data for trading and finance has been added successfully!'
+            : 'All demo data has been removed successfully.',
       });
     },
     onError: () => {

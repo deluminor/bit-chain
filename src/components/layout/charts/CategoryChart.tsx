@@ -4,7 +4,9 @@ import { useTradingStats } from '@/hooks/useTradingStats';
 import { useMemo } from 'react';
 import { RadarChartComponent } from './RadarChartComponent';
 
-const COLOR = 'hsl(var(--chart-1))';
+import { CHART_COLORS } from '@/constants/colors';
+
+const COLOR = CHART_COLORS.PRIMARY.DEFAULT;
 
 export function CategoryChart() {
   const { stats, isLoading } = useTradingStats();

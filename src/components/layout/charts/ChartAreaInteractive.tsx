@@ -14,9 +14,17 @@ import { useIsMobile } from '@/hooks/useMobile';
 import { useTradingStats } from '@/hooks/useTradingStats';
 import { THEME, useStore } from '@/store';
 import { endOfDay, startOfDay, subDays } from 'date-fns';
+import { formatSummaryAmount } from '@/lib/currency';
 import { useEffect, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
 import { ChartSkeleton } from './ChartSkeleton';
+import {
+  AREA_GRADIENTS,
+  CHART_COLORS,
+  EFFECTS,
+  ACTIVE_DOT_COLORS,
+  CHART_CONFIG,
+} from '@/constants/colors';
 
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile();
@@ -192,24 +200,50 @@ export function ChartAreaInteractive() {
           <AreaChart data={filteredData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
             <defs>
               <linearGradient id="fillPnl" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-pnl)" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="var(--color-pnl)" stopOpacity={0.1} />
+                {AREA_GRADIENTS.FILL.PRIMARY.map((stop, index) => (
+                  <stop
+                    key={index}
+                    offset={stop.offset}
+                    stopColor={stop.color}
+                    stopOpacity={stop.opacity}
+                  />
+                ))}
               </linearGradient>
+              <linearGradient id="strokePnl" x1="0" y1="0" x2="1" y2="0">
+                {CHART_COLORS.PRIMARY.GRADIENT_STOPS.map((stop, index) => (
+                  <stop
+                    key={index}
+                    offset={stop.offset}
+                    stopColor={stop.color}
+                    stopOpacity={stop.opacity}
+                  />
+                ))}
+              </linearGradient>
+              <filter id="softGlow">
+                <feGaussianBlur
+                  stdDeviation={EFFECTS.SOFT_GLOW.stdDeviation}
+                  result="coloredBlur"
+                />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
             </defs>
             <CartesianGrid
               vertical={false}
               horizontal={true}
-              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'}
-              strokeDasharray="3 4"
-              strokeWidth={0.8}
+              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
+              strokeDasharray="2 3"
+              strokeWidth={0.5}
             />
             {/* Add a special zero line if data crosses zero */}
             {yAxisDomain[0] < 0 && yAxisDomain[1] > 0 && (
               <ReferenceLine
                 y={0}
-                stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'}
-                strokeWidth={0.8}
-                strokeDasharray="3 4"
+                stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'}
+                strokeWidth={0.5}
+                strokeDasharray="2 3"
                 ifOverflow="extendDomain"
               />
             )}
@@ -237,25 +271,7 @@ export function ChartAreaInteractive() {
               ticks={yAxisTicks}
               tickCount={yAxisTicks.length}
               interval="preserveEnd"
-              tickFormatter={value => {
-                // Use abbreviated currency format for tick values
-                if (Math.abs(value) < 0.01) return '$0';
-
-                // Format with abbreviations
-                const absValue = Math.abs(value);
-                let formattedValue;
-
-                if (absValue >= 1000000) {
-                  formattedValue = `$${(value / 1000000).toFixed(1)}M`;
-                } else if (absValue >= 1000) {
-                  formattedValue = `$${(value / 1000).toFixed(1)}k`;
-                } else {
-                  // Don't add decimals for values under 1000
-                  formattedValue = `$${value.toFixed(2)}`;
-                }
-
-                return formattedValue;
-              }}
+              tickFormatter={value => formatSummaryAmount(value)}
               tickLine={false}
               axisLine={false}
               tick={{
@@ -285,15 +301,21 @@ export function ChartAreaInteractive() {
               dataKey="pnl"
               type="monotone"
               fill="url(#fillPnl)"
-              stroke="var(--color-pnl)"
-              strokeWidth={theme === THEME.DARK ? 2 : 1.5}
+              stroke="url(#strokePnl)"
+              strokeWidth={CHART_CONFIG.STROKE_WIDTH.THIN}
               connectNulls
               dot={false}
-              activeDot={{ r: 6, strokeWidth: 0 }}
+              activeDot={{
+                r: CHART_CONFIG.DOT_RADIUS.SMALL,
+                strokeWidth: CHART_CONFIG.STROKE_WIDTH.THIN,
+                stroke: ACTIVE_DOT_COLORS.PRIMARY,
+                fill: '#FFF',
+                opacity: 0.9,
+              }}
               isAnimationActive={true}
-              animationDuration={1200}
-              animationBegin={0}
-              animationEasing="ease-out"
+              animationDuration={CHART_CONFIG.ANIMATION.DURATION.FAST}
+              animationBegin={CHART_CONFIG.ANIMATION.DELAY.SHORT}
+              animationEasing={CHART_CONFIG.ANIMATION.EASING}
             />
           </AreaChart>
         </ChartContainer>

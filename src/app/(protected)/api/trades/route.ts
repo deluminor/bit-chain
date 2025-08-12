@@ -4,6 +4,32 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 
+async function findOrCreateUser(email: string) {
+  let user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  // Create user if not exists (for NextAuth users)
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email,
+        password: 'nextauth_user', // Placeholder for NextAuth users
+      },
+    });
+
+    // Create default category for new user
+    await prisma.category.create({
+      data: {
+        name: 'solo',
+        userId: user.id,
+      },
+    });
+  }
+
+  return user;
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -18,13 +44,7 @@ export async function GET() {
       return NextResponse.json({ error: 'User email not found' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const user = await findOrCreateUser(userEmail);
 
     const trades = await prisma.trade.findMany({
       where: { userId: user.id },
@@ -50,7 +70,7 @@ export async function GET() {
       },
     });
 
-    const formattedTrades = trades.map(({ categoryId, ...rest }) => rest);
+    const formattedTrades = trades.map(({ categoryId: _categoryId, ...rest }) => rest);
 
     return NextResponse.json({ trades: formattedTrades });
   } catch (error) {
@@ -73,13 +93,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User email not found' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const user = await findOrCreateUser(userEmail);
 
     const data = await request.json();
 
@@ -163,10 +177,10 @@ export async function POST(request: Request) {
         }
       }
 
-      const { categoryId: cId, categoryName, screenshots, ...tradeData } = data;
+      const { categoryId: _cId, categoryName: _categoryName, screenshots, ...tradeData } = data;
 
       const parsedTradeData = createTradeData(tradeData);
-      const { category, ...cleanTradeData } = parsedTradeData;
+      const { category: _category, ...cleanTradeData } = parsedTradeData;
 
       const trade = await prisma.trade.create({
         data: {
@@ -226,7 +240,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Failed to retrieve updated trade' }, { status: 500 });
       }
 
-      const { categoryId: createdCategoryId, ...tradeWithoutCategoryId } = updatedTrade;
+      const { categoryId: _createdCategoryId, ...tradeWithoutCategoryId } = updatedTrade;
 
       return NextResponse.json({ trade: tradeWithoutCategoryId });
     } catch (error) {

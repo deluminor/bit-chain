@@ -4,9 +4,11 @@ import { useTradingStats } from '@/hooks/useTradingStats';
 import { TrendingUp } from 'lucide-react';
 import { RadialChartComponent } from './RadialChartComponent';
 
+import { CHART_COLORS } from '@/constants/colors';
+
 const COLORS = {
-  LONG: 'hsl(var(--chart-1))',
-  SHORT: 'hsl(var(--chart-2))',
+  LONG: CHART_COLORS.SUCCESS.DEFAULT,
+  SHORT: CHART_COLORS.WARNING.DEFAULT,
 };
 
 export function ShortLongChart() {

@@ -15,13 +15,22 @@ datasource db {
 }
 
 model User {
-  id              String     @id @default(cuid())
-  email           String     @unique
+  id              String   @id @default(cuid())
+  email           String   @unique
   password        String
-  createdAt       DateTime   @default(now())
-  defaultCategory String     @default("solo") // Reference to the default category name
-  trades          Trade[]
-  categories      Category[] // User's categories
+  createdAt       DateTime @default(now())
+  defaultCategory String   @default("solo") // Reference to the default category name
+
+  // Existing crypto trading relations
+  trades     Trade[]
+  categories Category[] // Trading categories
+
+  // New finance relations
+  financeAccounts       FinanceAccount[]
+  transactions          Transaction[]
+  transactionCategories TransactionCategory[]
+  budgets               Budget[]
+  financialGoals        FinancialGoal[]
 }
 
 model Category {
@@ -88,4 +97,170 @@ enum TradeCategory {
   cryptonite_radar
   cryptonite_everest
   humster
+}
+
+// === FINANCE SYSTEM MODELS ===
+
+model FinanceAccount {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String // "PrivatBank Main", "Cash Wallet"
+  type        AccountType
+  currency    String      @default("UAH")
+  balance     Float       @default(0)
+  isActive    Boolean     @default(true)
+  isDemo      Boolean     @default(false)
+  color       String? // Hex color for UI
+  icon        String? // Icon identifier
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  transactions Transaction[]
+  transfersTo  Transaction[] @relation("TransferTo")
+
+  @@unique([userId, name])
+}
+
+model Transaction {
+  id          String              @id @default(cuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     FinanceAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    TransactionCategory @relation(fields: [categoryId], references: [id])
+  type        TransactionType
+  amount      Float
+  currency    String              @default("UAH")
+  description String?
+  date        DateTime            @default(now())
+  tags        String[] // Array of tags for flexible organization
+  isDemo      Boolean             @default(false)
+
+  // Transfer specific fields
+  transferToId String? // For transfer transactions
+  transferTo   FinanceAccount? @relation("TransferTo", fields: [transferToId], references: [id])
+
+  // Recurring transaction info
+  isRecurring         Boolean           @default(false)
+  recurringPattern    RecurringPattern?
+  parentTransactionId String? // Reference to parent if this is a recurring transaction
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([accountId, date])
+  @@index([categoryId])
+}
+
+model TransactionCategory {
+  id        String                @id @default(cuid())
+  userId    String
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String // "Groceries", "Salary", "Entertainment"
+  type      TransactionType // INCOME or EXPENSE
+  parentId  String? // For hierarchical categories
+  parent    TransactionCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  TransactionCategory[] @relation("CategoryHierarchy")
+  color     String // Hex color
+  icon      String // Icon identifier
+  isDefault Boolean               @default(false)
+  isActive  Boolean               @default(true)
+  isDemo    Boolean               @default(false)
+  createdAt DateTime              @default(now())
+
+  // Relations
+  transactions     Transaction[]
+  budgetCategories BudgetCategory[]
+
+  @@unique([userId, name, type])
+  @@index([userId, type])
+}
+
+model Budget {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String // "February 2025", "Annual Plan"
+  period       BudgetPeriod
+  startDate    DateTime
+  endDate      DateTime
+  currency     String       @default("UAH")
+  totalPlanned Float
+  totalActual  Float        @default(0)
+  isActive     Boolean      @default(true)
+  isDemo       Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relations
+  categories BudgetCategory[]
+
+  @@unique([userId, name])
+}
+
+model BudgetCategory {
+  id         String              @id @default(cuid())
+  budgetId   String
+  budget     Budget              @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   TransactionCategory @relation(fields: [categoryId], references: [id])
+  planned    Float
+  actual     Float               @default(0)
+
+  @@unique([budgetId, categoryId])
+}
+
+model FinancialGoal {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String // "Vacation in Mountains", "New MacBook"
+  description   String?
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  currency      String    @default("UAH")
+  deadline      DateTime?
+  color         String
+  icon          String
+  isActive      Boolean   @default(true)
+  isCompleted   Boolean   @default(false)
+  isDemo        Boolean   @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, name])
+}
+
+// === ENUMS FOR FINANCE SYSTEM ===
+
+enum AccountType {
+  CASH
+  BANK_CARD
+  SAVINGS
+  INVESTMENT
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum BudgetPeriod {
+  MONTHLY
+  YEARLY
+}
+
+enum RecurringPattern {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
 }

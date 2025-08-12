@@ -141,7 +141,7 @@ export function PositionModal({ position, onSave, onDelete, children }: Position
         screenshots: [],
       });
     }
-  }, [isOpen, position, form, defaultCategory]);
+  }, [isOpen, position, defaultCategory, form, form.reset]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

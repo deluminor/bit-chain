@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Category } from '@/generated/prisma';
-import { Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import {
   useCategories,
@@ -196,7 +196,7 @@ export function CategoryModal({ children }: CategoryModalProps) {
                                 <TooltipContent>Edit</TooltipContent>
                               </Tooltip>
 
-                              {/* <Tooltip>
+                              <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="outline"
@@ -205,11 +205,11 @@ export function CategoryModal({ children }: CategoryModalProps) {
                                     onClick={() => handleSetDefaultCategory(category.id)}
                                     disabled={isLoading || defaultCategory?.id === category.id}
                                   >
-                                    <StarIcon className="h-4 w-4" />
+                                    <Star className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Set as default</TooltipContent>
-                              </Tooltip> */}
+                              </Tooltip>
 
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -242,8 +242,10 @@ export function CategoryModal({ children }: CategoryModalProps) {
         )}
 
         <div className="mt-4 text-sm text-muted-foreground">
-          <p>Note: The '{defaultCategory?.name}' category cannot be deleted.</p>
-          <p>You cannot delete a category set as default.</p>
+          <p>
+            Note: The default category cannot be deleted.
+            {defaultCategory && ` Currently: '${defaultCategory.name}'.`}
+          </p>
         </div>
       </DialogContent>
     </Dialog>

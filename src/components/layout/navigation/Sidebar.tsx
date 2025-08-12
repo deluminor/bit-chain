@@ -1,7 +1,15 @@
 'use client';
 
-import { ArrowUpCircleIcon, LayoutDashboardIcon, TableIcon } from 'lucide-react';
-import Link from 'next/link';
+import {
+  LayoutDashboardIcon,
+  TableIcon,
+  DatabaseIcon,
+  WalletIcon,
+  ArrowRightLeftIcon,
+  PieChartIcon,
+  Target,
+  TrendingUpIcon,
+} from 'lucide-react';
 import * as React from 'react';
 
 import {
@@ -10,62 +18,106 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { ROUTES } from '@/features/auth/constants';
 import { useSession } from 'next-auth/react';
 import { NavMain } from './NavMain';
 import { NavUser } from './NavUser';
+import { useDashboardMode } from '@/store/dashboard-mode';
+import { ModeToggle } from '@/components/dashboard/ModeToggle';
 
-const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
+// Navigation items based on dashboard mode
+const getCryptoNavigation = () => [
+  {
+    title: 'Dashboard',
+    url: ROUTES.DASHBOARD.path,
+    icon: LayoutDashboardIcon,
   },
-  navMain: [
-    {
-      title: 'Dashboard',
-      url: ROUTES.DASHBOARD.path,
-      icon: LayoutDashboardIcon,
-    },
-    {
-      title: 'Journal',
-      url: ROUTES.TRADING_JOURNAL.path,
-      icon: TableIcon,
-    },
-  ],
-};
+  {
+    title: 'Trading Journal',
+    url: ROUTES.TRADING_JOURNAL.path,
+    icon: TableIcon,
+  },
+  {
+    title: 'Analytics',
+    url: '/analytics',
+    icon: TrendingUpIcon,
+  },
+  {
+    title: 'Backup',
+    url: '/backup',
+    icon: DatabaseIcon,
+  },
+];
+
+const getFinanceNavigation = () => [
+  {
+    title: 'Dashboard',
+    url: ROUTES.DASHBOARD.path,
+    icon: LayoutDashboardIcon,
+  },
+  {
+    title: 'Accounts',
+    url: '/accounts',
+    icon: WalletIcon,
+  },
+  {
+    title: 'Transactions',
+    url: '/transactions',
+    icon: ArrowRightLeftIcon,
+  },
+  {
+    title: 'Budget',
+    url: '/budget',
+    icon: PieChartIcon,
+  },
+  {
+    title: 'Goals',
+    url: '/goals',
+    icon: Target,
+  },
+  {
+    title: 'Reports',
+    url: '/reports',
+    icon: TrendingUpIcon,
+  },
+  {
+    title: 'Backup',
+    url: '/backup',
+    icon: DatabaseIcon,
+  },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
+  const { mode } = useDashboardMode();
 
   const email = session?.user?.email;
+  const userName = email?.split('@')[0] || 'User';
 
-  if (email) {
-    data.user.email = email;
-    data.user.name = email.split('@')[0] || '';
-  }
+  // Get navigation items based on current mode
+  const navigationItems = mode === 'crypto' ? getCryptoNavigation() : getFinanceNavigation();
+
+  const userData = {
+    name: userName,
+    email: email || 'user@example.com',
+  };
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <Link href={ROUTES.DASHBOARD.path}>
-                <ArrowUpCircleIcon className="h-5 w-5" />
-                <span className="text-base font-semibold">BitChain</span>
-              </Link>
-            </SidebarMenuButton>
+            <ModeToggle />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navigationItems} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
     </Sidebar>
   );

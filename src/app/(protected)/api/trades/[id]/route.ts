@@ -79,13 +79,21 @@ export async function PUT(request: NextRequest, context: unknown) {
       }
     }
 
-    const { categoryId: categoryIdFromData, categoryName, screenshots, ...tradeData } = data;
+    const {
+      categoryId: _categoryIdFromData,
+      categoryName: _categoryName,
+      screenshots,
+      ...tradeData
+    } = data;
 
     const parsedTradeData = createTradeData(tradeData);
-    const { category, ...cleanTradeData } = parsedTradeData;
+    const { category: _category, ...cleanTradeData } = parsedTradeData;
 
-    const existingTrade = await prisma.trade.findUnique({
-      where: { id: (context as Context).params.id },
+    const existingTrade = await prisma.trade.findFirst({
+      where: {
+        id: (context as Context).params.id,
+        userId: user.id,
+      },
     });
 
     if (!existingTrade) {
@@ -149,7 +157,7 @@ export async function PUT(request: NextRequest, context: unknown) {
       },
     });
 
-    const { categoryId: updatedCategoryId, ...tradeWithoutCategoryId } = trade;
+    const { categoryId: _updatedCategoryId, ...tradeWithoutCategoryId } = trade;
 
     return NextResponse.json({ trade: tradeWithoutCategoryId });
   } catch (error) {
@@ -172,7 +180,12 @@ export async function DELETE(_: NextRequest, context: unknown) {
     const user = await prisma.user.findUnique({ where: { email: userEmail } });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    const trade = await prisma.trade.findUnique({ where: { id } });
+    const trade = await prisma.trade.findFirst({
+      where: {
+        id,
+        userId: user.id,
+      },
+    });
     if (!trade) return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
 
     if (trade.userId !== user.id) {

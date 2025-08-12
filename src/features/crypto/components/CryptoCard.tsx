@@ -35,7 +35,7 @@ interface CryptoCardProps {
   volume?: number;
   high24h?: number;
   low24h?: number;
-  lastUpdated?: string;
+  _lastUpdated?: string;
 }
 
 interface CryptoDataProps {
@@ -98,7 +98,7 @@ export function CryptoCoinCard({ id, data, news }: CryptoDataProps) {
       volume={data.total_volume}
       high24h={data.high_24h}
       low24h={data.low_24h}
-      lastUpdated={data.last_updated}
+      _lastUpdated={data.last_updated}
     />
   );
 }
@@ -114,7 +114,7 @@ export function CryptoCard({
   volume,
   high24h,
   low24h,
-  lastUpdated,
+  _lastUpdated,
 }: CryptoCardProps) {
   const isPositive = priceChange >= 0;
   const TrendIcon = isPositive ? TrendingUpIcon : TrendingDownIcon;

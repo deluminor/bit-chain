@@ -1,11 +1,12 @@
 'use client';
 
 import TablePositions from '@/features/positions/components/PositionsContainer';
+import { AnimatedDiv } from '@/components/ui/animations';
 
 export default function JournalPage() {
   return (
-    <div className="container mx-auto py-6">
+    <AnimatedDiv variant="slideUp" className="container mx-auto py-6">
       <TablePositions />
-    </div>
+    </AnimatedDiv>
   );
 }

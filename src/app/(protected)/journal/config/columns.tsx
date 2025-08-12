@@ -1,7 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScreenshotThumbnail } from '@/features/positions/components/ScreenshotGallery';
 import { useDefaultCategory } from '@/features/positions/queries/categories';
-import { ColumnDef, Trade } from '@/features/positions/types/position';
+import { Trade } from '@/features/positions/types/position';
 import { useMemo } from 'react';
 import {
   formatCurrency,
@@ -38,7 +38,9 @@ export function useColumns() {
         className: 'text-center',
         cell: (trade: Trade) => (
           <span
-            className={`px-2 block text-center py-1 rounded-full text-xs font-medium ${getSideColorClass(trade.side)}`}
+            className={`px-2 block text-center py-1 rounded-full text-xs font-medium ${getSideColorClass(
+              trade.side,
+            )}`}
           >
             {trade.side.toLowerCase()}
           </span>
@@ -49,11 +51,7 @@ export function useColumns() {
         header: 'P/L',
         className: 'text-right',
         cell: (trade: Trade) => (
-          <span
-            className={
-              trade.pnl >= 0 ? 'text-green-600 block text-right' : 'text-red-600 block text-right'
-            }
-          >
+          <span className={`block text-right ${getResultColorClass(trade.result)}`}>
             {formatCurrency(trade.pnl)}
           </span>
         ),
@@ -198,6 +196,3 @@ export function useColumns() {
     ];
   }, [defaultCategoryId]);
 }
-
-// Export dummy columns for type compatibility with existing code
-export const columns: ColumnDef<Trade>[] = [];

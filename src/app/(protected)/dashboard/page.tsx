@@ -1,56 +1,83 @@
+'use client';
+
 import { CryptoNewsSection } from '@/features/crypto/components/CryptoNewsSection';
 import { CategoryChart } from '@/components/layout/charts/CategoryChart';
 import { ChartAreaInteractive } from '@/components/layout/charts/ChartAreaInteractive';
 import { ChartLoader } from '@/components/layout/charts/ChartLoader';
 import { CurrencyDistributionChart } from '@/components/layout/charts/CurrencyDistributionChart';
 import { SectionCards } from '@/components/layout/statistics/SectionCards';
-import { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Dashboard | BitChain',
-  description: 'Your trading dashboard overview',
-};
+import { FinanceDashboard } from '@/features/finance/components/FinanceDashboard';
+import { useDashboardMode } from '@/store/dashboard-mode';
+import { useEffect, useState } from 'react';
+import { AnimatedDiv } from '@/components/ui/animations';
 
 export default function Dashboard() {
-  return (
-    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <SectionCards />
+  const { mode } = useDashboardMode();
+  const [isClient, setIsClient] = useState(false);
 
-      {/* Crypto & News Section */}
-      <CryptoNewsSection />
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
-      {/* PnL Growth Chart */}
-      <div className="px-4 lg:px-6">
-        <ChartLoader>
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold">PnL Growth</h2>
-            <p className="text-muted-foreground">Your cumulative profit/loss over time</p>
+  // Show loading state until hydrated
+  if (!isClient) {
+    return (
+      <div className="flex flex-col gap-6 py-6 min-h-screen">
+        <div className="px-4 lg:px-6 space-y-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 bg-muted/40 rounded-lg"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-24 bg-muted/40 rounded-lg"></div>
+              ))}
+            </div>
+            <div className="h-64 bg-muted/40 rounded-lg"></div>
           </div>
-          <ChartAreaInteractive />
-        </ChartLoader>
+        </div>
       </div>
+    );
+  }
 
-      {/* Trading Categories and Win/Loss Stats */}
-      <div className="px-4 lg:px-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ChartLoader>
-          <CategoryChart />
-        </ChartLoader>
+  return (
+    <div className="flex flex-col gap-6 py-6 min-h-screen">
+      {mode === 'crypto' ? (
+        <AnimatedDiv variant="slideUp" className="space-y-6">
+          {/* Crypto Trading Dashboard */}
+          <SectionCards />
 
-        <ChartLoader>
-          <CurrencyDistributionChart />
-        </ChartLoader>
-      </div>
+          {/* Crypto & News Section */}
+          <CryptoNewsSection />
 
-      {/* Short/Long and Currency Distribution */}
-      {/* <div className="px-4 lg:px-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ChartLoader>
-          <ShortLongChart />
-        </ChartLoader>
+          {/* PnL Growth Chart */}
+          <div className="px-4 lg:px-6">
+            <ChartLoader>
+              <div className="mb-6">
+                <h2 className="text-3xl font-bold text-foreground">PnL Growth</h2>
+                <p className="text-muted-foreground mt-2">Your cumulative profit/loss over time</p>
+              </div>
+              <ChartAreaInteractive />
+            </ChartLoader>
+          </div>
 
-        <ChartLoader>
-          <WinLossChart />
-        </ChartLoader>
-      </div> */}
+          {/* Trading Categories and Win/Loss Stats */}
+          <div className="px-4 lg:px-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ChartLoader>
+              <CategoryChart />
+            </ChartLoader>
+
+            <ChartLoader>
+              <CurrencyDistributionChart />
+            </ChartLoader>
+          </div>
+        </AnimatedDiv>
+      ) : (
+        <>
+          {/* Personal Finance Dashboard */}
+          <div className="px-4 lg:px-6">
+            <FinanceDashboard />
+          </div>
+        </>
+      )}
     </div>
   );
 }

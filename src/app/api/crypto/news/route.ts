@@ -85,7 +85,7 @@ export async function GET(request: Request) {
       throw new Error('CryptoPanic API key is not set in environment variables');
     }
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams: _searchParams } = new URL(request.url);
     // Explicitly request both BTC and ETH news
     const currencies = 'BTC,ETH';
 

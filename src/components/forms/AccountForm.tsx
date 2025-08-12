@@ -33,14 +33,12 @@ const accountFormSchema = z.object({
   name: z.string().min(1, 'Account name is required').max(50, 'Account name too long'),
   type: z.enum(['CASH', 'BANK_CARD', 'SAVINGS', 'INVESTMENT']),
   currency: z.string().min(3, 'Currency code required').max(3, 'Invalid currency code'),
-  balance: z.number().default(0),
+  balance: z.number(),
   color: z.string().optional(),
   icon: z.string().optional(),
   description: z.string().max(200, 'Description too long').optional(),
   isActive: z.boolean().default(true),
 });
-
-type _AccountFormData = z.infer<typeof accountFormSchema>;
 
 interface AccountFormProps {
   account?: FinanceAccount;
@@ -97,7 +95,7 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
       name: account?.name || '',
       type: account?.type || 'BANK_CARD',
       currency: account?.currency || BASE_CURRENCY,
-      balance: account?.balance || 0,
+      balance: account?.balance ?? 0,
       color: account?.color || '#3B82F6',
       icon: account?.icon || 'card',
       description: account?.description || '',
@@ -111,7 +109,7 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
 
   const selectedAccountType = accountTypes.find(type => type.value === watchedType);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: z.infer<typeof accountFormSchema>) => {
     try {
       const formData = {
         ...data,
@@ -137,10 +135,10 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
       }
 
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Something went wrong',
+        description: (error as any)?.response?.data?.error || 'Something went wrong',
         variant: 'destructive',
       });
     }
@@ -160,10 +158,7 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
       {/* Account Type */}
       <div className="space-y-3">
         <Label>Account Type</Label>
-        <Select
-          value={form.watch('type')}
-          onValueChange={value => form.setValue('type', value as any)}
-        >
+        <Select value={form.watch('type')} onValueChange={value => form.setValue('type', value)}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -221,9 +216,11 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
         <Label htmlFor="balance">Initial Balance</Label>
         <CurrencyInput
           placeholder="0.00"
-          value={watchedBalance || 0}
+          value={watchedBalance}
           currency={watchedCurrency}
           showCurrencySelect={false}
+          allowNegative={true}
+          allowZero={true}
           onAmountChange={(value: number) => {
             form.setValue('balance', value);
           }}
@@ -298,7 +295,7 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
               <div className="text-right">
                 <div className="font-semibold">
                   {SUPPORTED_CURRENCIES[watchedCurrency]?.symbol || '€'}
-                  {(watchedBalance || 0).toFixed(2)}
+                  {(watchedBalance ?? 0).toFixed(2)}
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {selectedAccountType?.label}

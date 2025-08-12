@@ -283,20 +283,36 @@ export function formatSummaryAmount(amount: number): string {
 }
 
 export function parseNumberInput(input: string): number {
+  if (!input || input.trim() === '') return 0;
+
   // Handle various number formats (commas, spaces, etc.)
-  const cleaned = input
-    .replace(/[^\d.,\-+]/g, '') // Remove all non-numeric chars except decimals and signs
+  let cleaned = input.trim();
+
+  // Handle negative sign at the beginning
+  const isNegative = cleaned.startsWith('-');
+  if (isNegative) {
+    cleaned = cleaned.substring(1);
+  }
+
+  // Remove all non-numeric chars except decimals
+  cleaned = cleaned
+    .replace(/[^\d.,]/g, '') // Remove all non-numeric chars except decimals
     .replace(/,/g, '.') // Convert commas to dots for decimal
     .replace(/\.(?=.*\.)/g, ''); // Remove all dots except the last one
 
   const parsed = parseFloat(cleaned);
-  return isNaN(parsed) ? 0 : parsed;
+  const result = isNaN(parsed) ? 0 : parsed;
+
+  return isNegative ? -result : result;
 }
 
 export function validateCurrencyInput(
   input: string,
   currency: string,
+  options: { allowNegative?: boolean; allowZero?: boolean } = {},
 ): { isValid: boolean; value: number; error?: string } {
+  const { allowNegative = false, allowZero = false } = options;
+
   if (!input.trim()) {
     return { isValid: false, value: 0, error: 'Amount is required' };
   }
@@ -304,11 +320,15 @@ export function validateCurrencyInput(
   const value = parseNumberInput(input);
   const currencyInfo = currencyService.getCurrencyInfo(currency);
 
-  if (isNaN(value) || value < 0) {
-    return { isValid: false, value: 0, error: 'Please enter a valid positive number' };
+  if (isNaN(value)) {
+    return { isValid: false, value: 0, error: 'Please enter a valid number' };
   }
 
-  if (value === 0) {
+  if (!allowNegative && value < 0) {
+    return { isValid: false, value: 0, error: 'Please enter a positive number' };
+  }
+
+  if (!allowZero && value === 0) {
     return { isValid: false, value: 0, error: 'Amount must be greater than 0' };
   }
 

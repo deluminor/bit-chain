@@ -19,7 +19,7 @@ import {
 import { useTheme } from '@/providers/ThemeProvider';
 import { THEME } from '@/store';
 import { ChartSkeleton } from './ChartSkeleton';
-import { RADAR_COLORS, EFFECTS, CHART_CONFIG } from '@/constants/colors';
+import { getMinimalistColors } from '@/constants/minimalist-chart-styles';
 
 interface RadarChartData {
   name: string;
@@ -39,11 +39,12 @@ export function RadarChartComponent({
   title,
   description,
   data,
-  color,
   isLoading,
   footer,
 }: RadarChartComponentProps) {
   const { theme } = useTheme();
+  const isDark = theme === THEME.DARK;
+  const colors = getMinimalistColors(isDark);
 
   if (isLoading) {
     return <ChartSkeleton />;
@@ -52,7 +53,7 @@ export function RadarChartComponent({
   const chartConfig = {
     radar: {
       label: title,
-      color: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.85)' : color,
+      color: colors.primary,
     },
   } satisfies ChartConfig;
 
@@ -67,58 +68,37 @@ export function RadarChartComponent({
           <RadarChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
             <defs>
               <radialGradient id="radarFill" cx="50%" cy="50%" r="50%">
-                {RADAR_COLORS.FILL.map((stop, index) => (
-                  <stop
-                    key={index}
-                    offset={stop.offset}
-                    stopColor={stop.color}
-                    stopOpacity={stop.opacity}
-                  />
-                ))}
+                <stop offset="0%" stopColor={colors.primary} stopOpacity={0.3} />
+                <stop offset="50%" stopColor={colors.primary} stopOpacity={0.15} />
+                <stop offset="100%" stopColor={colors.primary} stopOpacity={0.05} />
               </radialGradient>
-              <filter id="softRadarGlow">
-                <feGaussianBlur
-                  stdDeviation={EFFECTS.RADAR_GLOW.stdDeviation}
-                  result="coloredBlur"
-                />
-                <feMerge>
-                  <feMergeNode in="coloredBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
             </defs>
-            <PolarGrid
-              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'}
-              strokeWidth={1}
-              radialLines={true}
-            />
+            <PolarGrid stroke={colors.grid} strokeWidth={0.5} radialLines={true} />
             <PolarAngleAxis
               dataKey="name"
               tick={{
                 fontSize: 12,
-                fill: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                fill: colors.text,
                 fontWeight: 500,
               }}
             />
             <Radar
               name="Value"
               dataKey="value"
-              stroke={RADAR_COLORS.STROKE}
-              strokeWidth={CHART_CONFIG.STROKE_WIDTH.THIN}
+              stroke={colors.primary}
+              strokeWidth={1}
               fill="url(#radarFill)"
-              fillOpacity={0.8}
+              fillOpacity={1}
               dot={{
-                r: CHART_CONFIG.DOT_RADIUS.MEDIUM,
-                fill: RADAR_COLORS.DOT,
-                stroke: '#FFF',
-                strokeWidth: CHART_CONFIG.STROKE_WIDTH.MEDIUM,
-                opacity: 1.0,
-                filter: 'url(#softRadarGlow)',
+                r: 3,
+                fill: colors.primary,
+                stroke: isDark ? '#000000' : '#ffffff',
+                strokeWidth: 1.5,
+                opacity: 1,
               }}
               isAnimationActive={true}
-              animationDuration={CHART_CONFIG.ANIMATION.DURATION.SLOW}
-              animationBegin={CHART_CONFIG.ANIMATION.DELAY.MEDIUM}
-              filter="url(#softRadarGlow)"
+              animationDuration={800}
+              animationBegin={150}
             />
             <ChartTooltip
               cursor={false}

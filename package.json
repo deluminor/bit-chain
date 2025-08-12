@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "prisma generate && prisma migrate deploy && next build",
-    "start": "next start",
+    "start": "prisma generate && prisma migrate deploy && next build && next start",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx,.mjs,.cjs --report-unused-disable-directives --cache",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx,.mjs,.cjs --report-unused-disable-directives --cache --fix",
     "prepare": "husky install",

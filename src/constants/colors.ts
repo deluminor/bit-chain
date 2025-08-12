@@ -1,19 +1,19 @@
-// Chart Colors - Premium Financial App Palette (Inspired by Modern Fintech)
+// Chart Colors - Minimalist Black & White Theme
 
-// Primary Chart Colors
+// Primary Chart Colors - Monochrome
 export const CHART_COLORS = {
-  // More vibrant orange gradients (premium fintech theme)
+  // Minimalist grayscale gradients
   PRIMARY: {
-    DEFAULT: '#FF5722',
-    LIGHT: '#FF6B35',
-    LIGHTER: '#FF7A3D',
-    DARK: '#E64A19',
+    DEFAULT: '#000000',
+    LIGHT: '#333333',
+    LIGHTER: '#666666',
+    DARK: '#000000',
     GRADIENT_STOPS: [
-      { offset: '0%', color: '#FF5722', opacity: 1.0 },
-      { offset: '25%', color: '#FF6B35', opacity: 0.95 },
-      { offset: '50%', color: '#FF7A3D', opacity: 0.9 },
-      { offset: '75%', color: '#FF8C42', opacity: 0.85 },
-      { offset: '100%', color: '#FF9A50', opacity: 0.8 },
+      { offset: '0%', color: '#000000', opacity: 1.0 },
+      { offset: '25%', color: '#1a1a1a', opacity: 0.95 },
+      { offset: '50%', color: '#333333', opacity: 0.9 },
+      { offset: '75%', color: '#4d4d4d', opacity: 0.85 },
+      { offset: '100%', color: '#666666', opacity: 0.8 },
     ],
   },
 
@@ -83,16 +83,16 @@ export const CHART_COLORS = {
   },
 };
 
-// Area/Line Chart Gradients - Premium Finance Style
+// Area/Line Chart Gradients - Minimalist Monochrome Style
 export const AREA_GRADIENTS = {
-  // Vibrant fill gradients for area charts
+  // Subtle grayscale fill gradients for area charts
   FILL: {
     PRIMARY: [
-      { offset: '0%', color: '#FF5722', opacity: 0.6 },
-      { offset: '25%', color: '#FF6B35', opacity: 0.5 },
-      { offset: '50%', color: '#FF7A3D', opacity: 0.4 },
-      { offset: '75%', color: '#FF8C42', opacity: 0.3 },
-      { offset: '100%', color: '#FF9A50', opacity: 0.1 },
+      { offset: '0%', color: '#000000', opacity: 0.15 },
+      { offset: '25%', color: '#1a1a1a', opacity: 0.12 },
+      { offset: '50%', color: '#333333', opacity: 0.08 },
+      { offset: '75%', color: '#4d4d4d', opacity: 0.05 },
+      { offset: '100%', color: '#666666', opacity: 0.02 },
     ],
     INCOME: [
       { offset: '0%', color: '#00BCD4', opacity: 0.5 },
@@ -177,14 +177,14 @@ export const BAR_COLORS = {
   },
 };
 
-// Active Dot Colors - More Vibrant Highlights
+// Active Dot Colors - Minimalist Monochrome
 export const ACTIVE_DOT_COLORS = {
-  PRIMARY: '#FF5722',
-  SUCCESS: '#00BCD4',
-  WARNING: '#FF9800',
-  INFO: '#2196F3',
-  PURPLE: '#9C27B0',
-  NEUTRAL: '#607D8B',
+  PRIMARY: '#000000',
+  SUCCESS: '#333333',
+  WARNING: '#666666',
+  INFO: '#4d4d4d',
+  PURPLE: '#1a1a1a',
+  NEUTRAL: '#808080',
 };
 
 // Grid and Axis Colors (theme-aware)

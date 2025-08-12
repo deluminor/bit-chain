@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/chart';
 import { useTheme } from '@/providers/ThemeProvider';
 import { THEME } from '@/store';
-import { CHART_COLORS, AREA_GRADIENTS, CHART_CONFIG, ACTIVE_DOT_COLORS } from '@/constants/colors';
+// Removed unused imports - using minimalist styles instead
 import { useFinanceStats } from '@/features/finance/hooks/useFinanceStats';
 import { useIsClient } from '@/hooks/useIsClient';
 import { formatSummaryAmount } from '@/lib/currency';
@@ -17,7 +17,7 @@ import { formatSummaryAmount } from '@/lib/currency';
 const chartConfig = {
   netWorth: {
     label: 'Net Worth',
-    color: '#8B5CF6',
+    color: '#000000',
   },
 } satisfies ChartConfig;
 
@@ -42,11 +42,26 @@ export function NetWorthChart() {
     );
   }
 
-  const chartData =
-    financeStats?.monthlyStats.map(stat => ({
-      date: stat.month,
-      netWorth: stat.netWorth,
-    })) || [];
+  const chartData = financeStats?.monthlyStats.length
+    ? financeStats.monthlyStats.map(stat => ({
+        date: stat.month,
+        netWorth: stat.netWorth,
+      }))
+    : [
+        // Placeholder data starting from 0
+        { date: 'Sep', netWorth: 0 },
+        { date: 'Oct', netWorth: 0 },
+        { date: 'Nov', netWorth: 0 },
+        { date: 'Dec', netWorth: 0 },
+        { date: 'Jan', netWorth: 0 },
+        { date: 'Feb', netWorth: 0 },
+        { date: 'Mar', netWorth: 0 },
+        { date: 'Apr', netWorth: 0 },
+        { date: 'May', netWorth: 0 },
+        { date: 'Jun', netWorth: 0 },
+        { date: 'Jul', netWorth: 0 },
+        { date: 'Aug', netWorth: 0 },
+      ];
 
   // Calculate growth metrics
   const startValue = chartData[0]?.netWorth || 0;
@@ -88,30 +103,48 @@ export function NetWorthChart() {
             <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 20, bottom: 10 }}>
               <defs>
                 <linearGradient id="netWorthGradient" x1="0" y1="0" x2="0" y2="1">
-                  {AREA_GRADIENTS.FILL.PRIMARY.map((stop, index) => (
-                    <stop
-                      key={index}
-                      offset={stop.offset}
-                      stopColor={stop.color}
-                      stopOpacity={stop.opacity}
-                    />
-                  ))}
-                </linearGradient>
-                <linearGradient id="netWorthStroke" x1="0" y1="0" x2="1" y2="0">
-                  {CHART_COLORS.PRIMARY.GRADIENT_STOPS.map((stop, index) => (
-                    <stop
-                      key={index}
-                      offset={stop.offset}
-                      stopColor={stop.color}
-                      stopOpacity={stop.opacity}
-                    />
-                  ))}
+                  <stop
+                    offset="0%"
+                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                    stopOpacity={0.55}
+                  />
+                  <stop
+                    offset="15%"
+                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                    stopOpacity={0.48}
+                  />
+                  <stop
+                    offset="30%"
+                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                    stopOpacity={0.38}
+                  />
+                  <stop
+                    offset="50%"
+                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                    stopOpacity={0.25}
+                  />
+                  <stop
+                    offset="70%"
+                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                    stopOpacity={0.15}
+                  />
+                  <stop
+                    offset="85%"
+                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                    stopOpacity={0.08}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                    stopOpacity={0.02}
+                  />
                 </linearGradient>
               </defs>
               <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
+                strokeDasharray="1 2"
+                stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}
                 vertical={false}
+                strokeWidth={0.5}
               />
               <XAxis
                 dataKey="date"
@@ -143,19 +176,20 @@ export function NetWorthChart() {
               <Area
                 type="monotone"
                 dataKey="netWorth"
-                stroke="url(#netWorthStroke)"
-                strokeWidth={CHART_CONFIG.STROKE_WIDTH.THIN}
+                stroke={theme === THEME.DARK ? '#ffffff' : '#4b5563'}
+                strokeWidth={0.7}
                 fill="url(#netWorthGradient)"
                 fillOpacity={1}
+                dot={false}
                 activeDot={{
-                  r: CHART_CONFIG.DOT_RADIUS.MEDIUM,
-                  strokeWidth: CHART_CONFIG.STROKE_WIDTH.THICK,
-                  stroke: ACTIVE_DOT_COLORS.PRIMARY,
-                  fill: '#FFF',
-                  opacity: 1.0,
+                  r: 4,
+                  strokeWidth: 2,
+                  stroke: theme === THEME.DARK ? '#ffffff' : '#4b5563',
+                  fill: theme === THEME.DARK ? '#000000' : '#ffffff',
+                  opacity: 1,
                 }}
-                animationDuration={CHART_CONFIG.ANIMATION.DURATION.NORMAL}
-                animationBegin={CHART_CONFIG.ANIMATION.DELAY.SHORT}
+                animationDuration={800}
+                animationBegin={150}
               />
             </AreaChart>
           </ResponsiveContainer>

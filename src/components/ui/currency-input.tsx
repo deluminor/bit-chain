@@ -36,6 +36,8 @@ interface CurrencyInputProps {
   min?: number;
   max?: number;
   required?: boolean;
+  allowNegative?: boolean;
+  allowZero?: boolean;
 }
 
 export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
@@ -55,9 +57,11 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
       defaultCurrency = 'EUR',
       allowedCurrencies,
       showFormattedValue = false,
-      min = 0,
+      min,
       max,
       required = false,
+      allowNegative = false,
+      allowZero = true,
       ...props
     },
     ref,
@@ -69,7 +73,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
     // Update input when value prop changes
     useEffect(() => {
       if (value !== parseNumberInput(inputValue)) {
-        setInputValue(value > 0 ? value.toString() : '');
+        setInputValue(value !== 0 ? value.toString() : '');
       }
     }, [value]);
 
@@ -85,7 +89,10 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
       setInputValue(rawValue);
 
       // Validate the input
-      const validation = validateCurrencyInput(rawValue, selectedCurrency);
+      const validation = validateCurrencyInput(rawValue, selectedCurrency, {
+        allowNegative,
+        allowZero,
+      });
 
       if (validation.isValid) {
         setValidationError('');
@@ -119,7 +126,10 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
       onCurrencyChange?.(newCurrency);
 
       // Re-validate with new currency
-      const validation = validateCurrencyInput(inputValue, newCurrency);
+      const validation = validateCurrencyInput(inputValue, newCurrency, {
+        allowNegative,
+        allowZero,
+      });
       if (validation.isValid) {
         onChange?.(validation.value, newCurrency);
       }
@@ -132,7 +142,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
     return (
       <div className={cn('space-y-2', className)}>
         {label && (
-          <Label htmlFor={props.id} className="text-sm font-medium">
+          <Label htmlFor={(props as any).id} className="text-sm font-medium">
             {label}
             {required && <span className="text-red-500 ml-1">*</span>}
           </Label>

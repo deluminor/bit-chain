@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/chart';
 import { useTheme } from '@/providers/ThemeProvider';
 import { THEME } from '@/store';
-import { AREA_GRADIENTS, CHART_COLORS, ACTIVE_DOT_COLORS, CHART_CONFIG } from '@/constants/colors';
+// Removed unused imports - using minimalist styles instead
 import { useFinanceStats } from '@/features/finance/hooks/useFinanceStats';
 import { useIsClient } from '@/hooks/useIsClient';
 import { formatSummaryAmount } from '@/lib/currency';
@@ -17,11 +17,11 @@ import { formatSummaryAmount } from '@/lib/currency';
 const chartConfig = {
   income: {
     label: 'Income',
-    color: '#10B981',
+    color: '#000000',
   },
   expenses: {
     label: 'Expenses',
-    color: '#EF4444',
+    color: '#666666',
   },
 } satisfies ChartConfig;
 
@@ -46,7 +46,23 @@ export function IncomeExpenseChart() {
     );
   }
 
-  const chartData = financeStats?.monthlyStats || [];
+  const chartData = financeStats?.monthlyStats.length
+    ? financeStats.monthlyStats
+    : [
+        // Placeholder data starting from 0
+        { month: 'Sep', income: 0, expenses: 0 },
+        { month: 'Oct', income: 0, expenses: 0 },
+        { month: 'Nov', income: 0, expenses: 0 },
+        { month: 'Dec', income: 0, expenses: 0 },
+        { month: 'Jan', income: 0, expenses: 0 },
+        { month: 'Feb', income: 0, expenses: 0 },
+        { month: 'Mar', income: 0, expenses: 0 },
+        { month: 'Apr', income: 0, expenses: 0 },
+        { month: 'May', income: 0, expenses: 0 },
+        { month: 'Jun', income: 0, expenses: 0 },
+        { month: 'Jul', income: 0, expenses: 0 },
+        { month: 'Aug', income: 0, expenses: 0 },
+      ];
 
   return (
     <div className="h-[350px] w-full">
@@ -55,50 +71,85 @@ export function IncomeExpenseChart() {
           <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
             <defs>
               <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                {AREA_GRADIENTS.FILL.INCOME.map((stop, index) => (
-                  <stop
-                    key={index}
-                    offset={stop.offset}
-                    stopColor={stop.color}
-                    stopOpacity={stop.opacity}
-                  />
-                ))}
+                <stop
+                  offset="0%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.55}
+                />
+                <stop
+                  offset="15%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.48}
+                />
+                <stop
+                  offset="30%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.38}
+                />
+                <stop
+                  offset="50%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.25}
+                />
+                <stop
+                  offset="70%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.15}
+                />
+                <stop
+                  offset="85%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.08}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.02}
+                />
               </linearGradient>
               <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                {AREA_GRADIENTS.FILL.EXPENSE.map((stop, index) => (
-                  <stop
-                    key={index}
-                    offset={stop.offset}
-                    stopColor={stop.color}
-                    stopOpacity={stop.opacity}
-                  />
-                ))}
-              </linearGradient>
-              <linearGradient id="incomeStroke" x1="0" y1="0" x2="1" y2="0">
-                {CHART_COLORS.SUCCESS.GRADIENT_STOPS.map((stop, index) => (
-                  <stop
-                    key={index}
-                    offset={stop.offset}
-                    stopColor={stop.color}
-                    stopOpacity={stop.opacity}
-                  />
-                ))}
-              </linearGradient>
-              <linearGradient id="expenseStroke" x1="0" y1="0" x2="1" y2="0">
-                {CHART_COLORS.WARNING.GRADIENT_STOPS.map((stop, index) => (
-                  <stop
-                    key={index}
-                    offset={stop.offset}
-                    stopColor={stop.color}
-                    stopOpacity={stop.opacity}
-                  />
-                ))}
+                <stop
+                  offset="0%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.45}
+                />
+                <stop
+                  offset="15%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.38}
+                />
+                <stop
+                  offset="30%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.28}
+                />
+                <stop
+                  offset="50%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.18}
+                />
+                <stop
+                  offset="70%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.1}
+                />
+                <stop
+                  offset="85%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.05}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.01}
+                />
               </linearGradient>
             </defs>
             <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
+              strokeDasharray="1 2"
+              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}
               vertical={false}
+              strokeWidth={0.5}
             />
             <XAxis
               dataKey="month"
@@ -132,36 +183,38 @@ export function IncomeExpenseChart() {
             <Area
               type="monotone"
               dataKey="income"
-              stroke="url(#incomeStroke)"
-              strokeWidth={CHART_CONFIG.STROKE_WIDTH.THIN}
+              stroke={theme === THEME.DARK ? '#ffffff' : '#4b5563'}
+              strokeWidth={0.7}
               fill="url(#incomeGradient)"
               fillOpacity={1}
+              dot={false}
               activeDot={{
-                r: CHART_CONFIG.DOT_RADIUS.SMALL,
-                strokeWidth: CHART_CONFIG.STROKE_WIDTH.THICK,
-                stroke: ACTIVE_DOT_COLORS.SUCCESS,
-                fill: '#FFF',
-                opacity: 1.0,
+                r: 4,
+                strokeWidth: 2,
+                stroke: theme === THEME.DARK ? '#ffffff' : '#4b5563',
+                fill: theme === THEME.DARK ? '#000000' : '#ffffff',
+                opacity: 1,
               }}
-              animationDuration={CHART_CONFIG.ANIMATION.DURATION.FAST}
-              animationBegin={CHART_CONFIG.ANIMATION.DELAY.SHORT}
+              animationDuration={800}
+              animationBegin={150}
             />
             <Area
               type="monotone"
               dataKey="expenses"
-              stroke="url(#expenseStroke)"
-              strokeWidth={CHART_CONFIG.STROKE_WIDTH.THIN}
+              stroke={theme === THEME.DARK ? '#d1d5db' : '#6b7280'}
+              strokeWidth={0.7}
               fill="url(#expenseGradient)"
               fillOpacity={1}
+              dot={false}
               activeDot={{
-                r: CHART_CONFIG.DOT_RADIUS.SMALL,
-                strokeWidth: CHART_CONFIG.STROKE_WIDTH.THICK,
-                stroke: ACTIVE_DOT_COLORS.WARNING,
-                fill: '#FFF',
-                opacity: 1.0,
+                r: 4,
+                strokeWidth: 2,
+                stroke: theme === THEME.DARK ? '#d1d5db' : '#6b7280',
+                fill: theme === THEME.DARK ? '#000000' : '#ffffff',
+                opacity: 1,
               }}
-              animationDuration={CHART_CONFIG.ANIMATION.DURATION.FAST}
-              animationBegin={CHART_CONFIG.ANIMATION.DELAY.MEDIUM}
+              animationDuration={800}
+              animationBegin={250}
             />
           </AreaChart>
         </ResponsiveContainer>

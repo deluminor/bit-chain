@@ -19,7 +19,10 @@ import {
 import { useTheme } from '@/providers/ThemeProvider';
 import { THEME } from '@/store';
 import { ChartSkeleton } from './ChartSkeleton';
-import { PIE_COLORS, EFFECTS, CHART_CONFIG } from '@/constants/colors';
+import {
+  MINIMALIST_PIE_COLORS,
+  MINIMALIST_PIE_COLORS_DARK,
+} from '@/constants/minimalist-chart-styles';
 
 interface PieChartData {
   name: string;
@@ -34,8 +37,9 @@ interface PieChartComponentProps {
   footer?: React.ReactNode;
 }
 
-// Use colors from constants
-const COLORS = PIE_COLORS;
+// Use minimalist colors based on theme
+const getColors = (isDark: boolean) =>
+  isDark ? MINIMALIST_PIE_COLORS_DARK : MINIMALIST_PIE_COLORS;
 
 export function PieChartComponent({
   title,
@@ -45,10 +49,15 @@ export function PieChartComponent({
   footer,
 }: PieChartComponentProps) {
   const { theme } = useTheme();
+  const isDark = theme === THEME.DARK;
+  const colors = getColors(isDark);
 
   if (isLoading) {
     return <ChartSkeleton />;
   }
+
+  // Show placeholder data if no data
+  const chartData = data.length > 0 ? data : [{ name: 'No data', value: 100 }];
 
   const chartConfig = {
     pie: {
@@ -57,48 +66,43 @@ export function PieChartComponent({
   } satisfies ChartConfig;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+        <CardDescription className="text-sm text-muted-foreground">{description}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         <ChartContainer config={chartConfig} className="aspect-square h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <defs>
-                {COLORS.map((color, index) => (
-                  <linearGradient key={index} id={`gradient${index}`} x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={0.7} />
-                    <stop offset="50%" stopColor={color} stopOpacity={0.5} />
-                    <stop offset="100%" stopColor={color} stopOpacity={0.3} />
-                  </linearGradient>
-                ))}
-                <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feDropShadow
-                    dx={EFFECTS.SOFT_SHADOW.dx}
-                    dy={EFFECTS.SOFT_SHADOW.dy}
-                    stdDeviation={EFFECTS.SOFT_SHADOW.stdDeviation}
-                    floodColor={EFFECTS.SOFT_SHADOW.floodColor}
-                  />
-                </filter>
-              </defs>
               <Pie
-                data={data}
+                data={chartData}
                 cx="50%"
                 cy="50%"
-                outerRadius={105}
-                innerRadius={50}
-                paddingAngle={1}
+                outerRadius={110}
+                innerRadius={55}
+                paddingAngle={data.length > 1 ? 0.5 : 0}
                 dataKey="value"
-                stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'}
-                strokeWidth={0.5}
-                animationBegin={CHART_CONFIG.ANIMATION.DELAY.MEDIUM}
-                animationDuration={CHART_CONFIG.ANIMATION.DURATION.MEDIUM}
-                filter="url(#softShadow)"
+                stroke={isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'}
+                strokeWidth={0.3}
+                animationBegin={150}
+                animationDuration={1000}
               >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={`url(#gradient${index % COLORS.length})`} />
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={
+                      data.length > 0
+                        ? colors[index % colors.length]
+                        : isDark
+                          ? '#333333'
+                          : '#cccccc'
+                    }
+                    style={{
+                      filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))',
+                      transition: 'all 0.2s ease-in-out',
+                    }}
+                  />
                 ))}
               </Pie>
               <ChartTooltip
@@ -106,8 +110,12 @@ export function PieChartComponent({
                 content={
                   <ChartTooltipContent
                     labelFormatter={value => value}
-                    formatter={(value, name) => [`${value}%`, name]}
+                    formatter={(value, name) => [
+                      `${typeof value === 'number' ? value.toFixed(1) : value}%`,
+                      name,
+                    ]}
                     indicator="dot"
+                    className="rounded-lg border-0 bg-background/95 backdrop-blur-sm shadow-lg"
                   />
                 }
               />
@@ -115,7 +123,11 @@ export function PieChartComponent({
           </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
-      {footer && <CardFooter>{footer}</CardFooter>}
+      {footer && (
+        <CardFooter className="pt-4 border-t border-border/50">
+          <div className="text-sm text-muted-foreground">{footer}</div>
+        </CardFooter>
+      )}
     </Card>
   );
 }

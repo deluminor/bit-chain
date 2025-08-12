@@ -175,20 +175,86 @@ export function IncomeExpenseChart() {
           <AreaChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
             <defs>
               <linearGradient id="fillIncome" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-income)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="var(--color-income)" stopOpacity={0.1} />
+                <stop
+                  offset="0%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.55}
+                />
+                <stop
+                  offset="15%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.48}
+                />
+                <stop
+                  offset="30%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.38}
+                />
+                <stop
+                  offset="50%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.25}
+                />
+                <stop
+                  offset="70%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.15}
+                />
+                <stop
+                  offset="85%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.08}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.02}
+                />
               </linearGradient>
               <linearGradient id="fillExpenses" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-expenses)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="var(--color-expenses)" stopOpacity={0.1} />
+                <stop
+                  offset="0%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.45}
+                />
+                <stop
+                  offset="15%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.38}
+                />
+                <stop
+                  offset="30%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.28}
+                />
+                <stop
+                  offset="50%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.18}
+                />
+                <stop
+                  offset="70%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.1}
+                />
+                <stop
+                  offset="85%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.05}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.01}
+                />
               </linearGradient>
             </defs>
             <CartesianGrid
               vertical={false}
               horizontal={true}
-              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
-              strokeDasharray="3 4"
-              strokeWidth={0.8}
+              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}
+              strokeDasharray="1 2"
+              strokeWidth={0.5}
             />
             <XAxis
               dataKey="date"
@@ -249,26 +315,38 @@ export function IncomeExpenseChart() {
               dataKey="expenses"
               type="monotone"
               fill="url(#fillExpenses)"
-              stroke="var(--color-expenses)"
-              strokeWidth={2}
+              stroke={theme === THEME.DARK ? '#d1d5db' : '#6b7280'}
+              strokeWidth={0.7}
               connectNulls
               dot={false}
-              activeDot={{ r: 4, strokeWidth: 0 }}
+              activeDot={{
+                r: 4,
+                strokeWidth: 2,
+                stroke: theme === THEME.DARK ? '#d1d5db' : '#6b7280',
+                fill: theme === THEME.DARK ? '#000000' : '#ffffff',
+                opacity: 1,
+              }}
               isAnimationActive={true}
-              animationDuration={1200}
+              animationDuration={800}
               stackId="1"
             />
             <Area
               dataKey="income"
               type="monotone"
               fill="url(#fillIncome)"
-              stroke="var(--color-income)"
-              strokeWidth={2}
+              stroke={theme === THEME.DARK ? '#ffffff' : '#4b5563'}
+              strokeWidth={0.7}
               connectNulls
               dot={false}
-              activeDot={{ r: 4, strokeWidth: 0 }}
+              activeDot={{
+                r: 4,
+                strokeWidth: 2,
+                stroke: theme === THEME.DARK ? '#ffffff' : '#4b5563',
+                fill: theme === THEME.DARK ? '#000000' : '#ffffff',
+                opacity: 1,
+              }}
               isAnimationActive={true}
-              animationDuration={1200}
+              animationDuration={800}
               stackId="2"
             />
           </AreaChart>

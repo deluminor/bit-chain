@@ -279,7 +279,12 @@ export function formatDisplayAmount(
 }
 
 export function formatSummaryAmount(amount: number): string {
-  return currencyService.formatEuroAmount(amount);
+  const currencyInfo = currencyService.getCurrencyInfo(BASE_CURRENCY);
+  const formattedAmount = amount.toLocaleString('en-US', {
+    minimumFractionDigits: currencyInfo.decimals,
+    maximumFractionDigits: currencyInfo.decimals,
+  });
+  return `${currencyInfo.symbol} ${formattedAmount}`;
 }
 
 export function parseNumberInput(input: string): number {

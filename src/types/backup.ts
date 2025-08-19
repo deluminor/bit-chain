@@ -1,10 +1,28 @@
-import { User, Category, Trade, Screenshot } from '@/generated/prisma/index';
+import { 
+  User, 
+  Category, 
+  Trade, 
+  Screenshot,
+  FinanceAccount,
+  Transaction,
+  TransactionCategory,
+  Budget,
+  BudgetCategory,
+  FinancialGoal
+} from '@/generated/prisma/index';
 
 export interface BackupData {
   users: User[];
   categories: Category[];
   trades: Trade[];
   screenshots: Screenshot[];
+  // Financial data
+  financeAccounts: FinanceAccount[];
+  transactions: Transaction[];
+  transactionCategories: TransactionCategory[];
+  budgets: Budget[];
+  budgetCategories: BudgetCategory[];
+  financialGoals: FinancialGoal[];
   metadata: {
     version: string;
     timestamp: string;

@@ -3,6 +3,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { currencyService } from '@/lib/currency';
 
+interface Category {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface CategorySpendingData {
   name: string;
   value: number;
@@ -39,7 +45,7 @@ async function fetchCategorySpending(): Promise<CategorySpendingData[]> {
   const categorySpending = new Map<string, { amount: number; color: string }>();
 
   for (const transaction of transactions) {
-    const category = categories.find((cat: any) => cat.id === transaction.categoryId);
+    const category = categories.find((cat: Category) => cat.id === transaction.categoryId);
     if (category) {
       // Convert transaction amount to EUR
       const amountInEur = await currencyService.convertToBaseCurrency(

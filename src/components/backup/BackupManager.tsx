@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -36,15 +37,31 @@ interface BackupFile {
     categories: number;
     trades: number;
     screenshots: number;
+    financeAccounts: number;
+    transactions: number;
+    transactionCategories: number;
+    budgets: number;
+    budgetCategories: number;
+    financialGoals: number;
   };
 }
 
 export function BackupManager() {
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [backupFiles, setBackupFiles] = useState<BackupFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const { toast } = useToast();
+
+  // Don't render if no user session
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Please log in to access backup management</p>
+      </div>
+    );
+  }
 
   useEffect(() => {
     loadBackupFiles();
@@ -52,7 +69,7 @@ export function BackupManager() {
 
   const loadBackupFiles = async () => {
     try {
-      const response = await axios.get('/api/backup?action=list');
+      const response = await axios.get(`/api/backup?action=list&userId=${session.user.id}`);
 
       // Get info for each backup file
       const filesWithInfo = await Promise.all(
@@ -82,12 +99,13 @@ export function BackupManager() {
     try {
       const response = await axios.post('/api/backup', {
         action: 'create',
+        userId: session.user.id,
       });
 
       if (response.data.success) {
         toast({
           title: 'Success',
-          description: 'Backup created successfully',
+          description: 'Personal backup created successfully',
         });
         await loadBackupFiles();
       }
@@ -106,7 +124,7 @@ export function BackupManager() {
   const exportData = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get('/api/backup?action=export', {
+      const response = await axios.get(`/api/backup?action=export&userId=${session.user.id}`, {
         responseType: 'blob',
       });
 
@@ -114,7 +132,7 @@ export function BackupManager() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `backup_${new Date().toISOString().split('T')[0]}.json`);
+      link.setAttribute('download', `my_backup_${new Date().toISOString().split('T')[0]}.json`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -122,7 +140,7 @@ export function BackupManager() {
 
       toast({
         title: 'Success',
-        description: 'Data exported successfully',
+        description: 'Your personal data exported successfully',
       });
     } catch {
       console.error('Error exporting data:');
@@ -161,13 +179,14 @@ export function BackupManager() {
       const response = await axios.post('/api/backup', {
         action: 'import',
         data: backupData,
+        userId: session.user.id,
         overwrite,
       });
 
       if (response.data.success) {
         toast({
           title: 'Success',
-          description: 'Data imported successfully',
+          description: 'Personal data imported successfully',
         });
         setShowImportDialog(false);
         setSelectedFile(null);
@@ -191,13 +210,14 @@ export function BackupManager() {
       const response = await axios.post('/api/backup', {
         action: 'restore',
         filename,
+        userId: session.user.id,
         overwrite,
       });
 
       if (response.data.success) {
         toast({
           title: 'Success',
-          description: 'Backup restored successfully',
+          description: 'Personal backup restored successfully',
         });
         // removed unused setShowRestoreDialog(false)
       }
@@ -223,10 +243,10 @@ export function BackupManager() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DatabaseIcon className="h-5 w-5" />
-            Database Backup Manager
+            Personal Backup Manager
           </CardTitle>
           <CardDescription>
-            Create, export, and restore backups of your trading data
+            Create, export, and restore backups of your personal trading data
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -234,15 +254,15 @@ export function BackupManager() {
             <AlertTriangleIcon className="h-4 w-4" />
             <AlertTitle>Important</AlertTitle>
             <AlertDescription>
-              Always create a backup before making significant changes to your data. Backups include
-              all users, trades, categories, and screenshots.
+              Always create a backup before making significant changes to your data. Personal backups include
+              your trades, categories, and screenshots.
             </AlertDescription>
           </Alert>
 
           <div className="flex flex-wrap gap-3">
             <Button onClick={createBackup} disabled={isLoading} className="flex items-center gap-2">
               <DatabaseIcon className="h-4 w-4" />
-              Create Full Backup
+              Create Personal Backup
             </Button>
 
             <Button
@@ -252,7 +272,7 @@ export function BackupManager() {
               className="flex items-center gap-2"
             >
               <DownloadIcon className="h-4 w-4" />
-              Export Data
+              Export My Data
             </Button>
 
             <Button
@@ -279,8 +299,8 @@ export function BackupManager() {
       {backupFiles.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Backup History</CardTitle>
-            <CardDescription>Previously created backups</CardDescription>
+            <CardTitle>My Backup History</CardTitle>
+            <CardDescription>Your previously created personal backups</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -303,12 +323,22 @@ export function BackupManager() {
                         </div>
                       )}
                       {backup.recordCounts && (
-                        <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-1">
                           <span>{backup.recordCounts.users} users</span>
                           <span>•</span>
                           <span>{backup.recordCounts.trades} trades</span>
                           <span>•</span>
-                          <span>{backup.recordCounts.categories} categories</span>
+                          <span>{backup.recordCounts.categories} trade cats</span>
+                          <span>•</span>
+                          <span>{backup.recordCounts.financeAccounts} accounts</span>
+                          <span>•</span>
+                          <span>{backup.recordCounts.transactions} transactions</span>
+                          <span>•</span>
+                          <span>{backup.recordCounts.transactionCategories} fin cats</span>
+                          <span>•</span>
+                          <span>{backup.recordCounts.budgets} budgets</span>
+                          <span>•</span>
+                          <span>{backup.recordCounts.financialGoals} goals</span>
                         </div>
                       )}
                     </div>

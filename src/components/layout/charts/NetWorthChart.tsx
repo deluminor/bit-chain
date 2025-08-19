@@ -9,8 +9,7 @@ import {
 } from '@/components/ui/chart';
 import { useTheme } from '@/providers/ThemeProvider';
 import { THEME } from '@/store';
-// Removed unused imports - using minimalist styles instead
-import { useFinanceStats } from '@/features/finance/hooks/useFinanceStats';
+import { useAccountBalanceTrends } from '@/features/finance/hooks/useAccountBalanceTrends';
 import { useIsClient } from '@/hooks/useIsClient';
 import { formatSummaryAmount } from '@/lib/currency';
 
@@ -24,7 +23,9 @@ const chartConfig = {
 export function NetWorthChart() {
   const { theme } = useTheme();
   const isClient = useIsClient();
-  const { data: financeStats, isLoading, error } = useFinanceStats();
+  const { data: balanceTrends, isLoading, error } = useAccountBalanceTrends();
+  const isDark = theme === THEME.DARK;
+  const primaryColor = isDark ? '#ffffff' : '#6b7280';
 
   if (!isClient || isLoading) {
     return (
@@ -34,7 +35,7 @@ export function NetWorthChart() {
     );
   }
 
-  if (error) {
+  if (error || !balanceTrends?.length) {
     return (
       <div className="h-[400px] w-full flex items-center justify-center">
         <div className="text-muted-foreground">Failed to load chart data</div>
@@ -42,32 +43,24 @@ export function NetWorthChart() {
     );
   }
 
-  const chartData = financeStats?.monthlyStats.length
-    ? financeStats.monthlyStats.map(stat => ({
-        date: stat.month,
-        netWorth: stat.netWorth,
-      }))
-    : [
-        // Placeholder data starting from 0
-        { date: 'Sep', netWorth: 0 },
-        { date: 'Oct', netWorth: 0 },
-        { date: 'Nov', netWorth: 0 },
-        { date: 'Dec', netWorth: 0 },
-        { date: 'Jan', netWorth: 0 },
-        { date: 'Feb', netWorth: 0 },
-        { date: 'Mar', netWorth: 0 },
-        { date: 'Apr', netWorth: 0 },
-        { date: 'May', netWorth: 0 },
-        { date: 'Jun', netWorth: 0 },
-        { date: 'Jul', netWorth: 0 },
-        { date: 'Aug', netWorth: 0 },
-      ];
+  // Calculate net worth for each month by summing all account balances
+  const chartData = balanceTrends.map(dataPoint => {
+    const accountNames = Object.keys(dataPoint).filter(key => key !== 'date');
+    const totalNetWorth = accountNames.reduce((sum, accountName) => {
+      return sum + (Number(dataPoint[accountName]) || 0);
+    }, 0);
+
+    return {
+      date: dataPoint.date,
+      netWorth: totalNetWorth,
+    };
+  });
 
   // Calculate growth metrics
   const startValue = chartData[0]?.netWorth || 0;
   const endValue = chartData[chartData.length - 1]?.netWorth || 0;
   const totalGrowth = endValue - startValue;
-  const growthPercentage = startValue > 0 ? ((totalGrowth / startValue) * 100).toFixed(1) : '0';
+  const growthPercentage = startValue > 0.01 ? ((totalGrowth / startValue) * 100).toFixed(1) : '0';
 
   return (
     <div className="space-y-4">
@@ -103,41 +96,13 @@ export function NetWorthChart() {
             <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 20, bottom: 10 }}>
               <defs>
                 <linearGradient id="netWorthGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.55}
-                  />
-                  <stop
-                    offset="15%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.48}
-                  />
-                  <stop
-                    offset="30%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.38}
-                  />
-                  <stop
-                    offset="50%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.25}
-                  />
-                  <stop
-                    offset="70%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.15}
-                  />
-                  <stop
-                    offset="85%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.08}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.02}
-                  />
+                  <stop offset="0%" stopColor={primaryColor} stopOpacity={0.55} />
+                  <stop offset="15%" stopColor={primaryColor} stopOpacity={0.48} />
+                  <stop offset="30%" stopColor={primaryColor} stopOpacity={0.38} />
+                  <stop offset="50%" stopColor={primaryColor} stopOpacity={0.25} />
+                  <stop offset="70%" stopColor={primaryColor} stopOpacity={0.15} />
+                  <stop offset="85%" stopColor={primaryColor} stopOpacity={0.08} />
+                  <stop offset="100%" stopColor={primaryColor} stopOpacity={0.02} />
                 </linearGradient>
               </defs>
               <CartesianGrid
@@ -162,13 +127,13 @@ export function NetWorthChart() {
                   fontSize: 12,
                   fill: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
                 }}
-                tickFormatter={value => `€${(value / 1000).toFixed(0)}k`}
+                tickFormatter={value => `€ ${(value / 1000).toFixed(0)}k`}
                 domain={[0, 'dataMax']}
               />
               <ChartTooltip
                 content={
                   <ChartTooltipContent
-                    formatter={value => [formatSummaryAmount(Number(value)), 'Net Worth']}
+                    formatter={value => [formatSummaryAmount(Number(value)), ' Net Worth']}
                     labelFormatter={label => `Month: ${label}`}
                   />
                 }
@@ -176,7 +141,7 @@ export function NetWorthChart() {
               <Area
                 type="monotone"
                 dataKey="netWorth"
-                stroke={theme === THEME.DARK ? '#ffffff' : '#4b5563'}
+                stroke={primaryColor}
                 strokeWidth={0.7}
                 fill="url(#netWorthGradient)"
                 fillOpacity={1}
@@ -184,8 +149,8 @@ export function NetWorthChart() {
                 activeDot={{
                   r: 4,
                   strokeWidth: 2,
-                  stroke: theme === THEME.DARK ? '#ffffff' : '#4b5563',
-                  fill: theme === THEME.DARK ? '#000000' : '#ffffff',
+                  stroke: primaryColor,
+                  fill: isDark ? '#000000' : '#ffffff',
                   opacity: 1,
                 }}
                 animationDuration={800}

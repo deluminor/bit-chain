@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +54,7 @@ import {
 import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
 import { formatCurrency, formatSummaryAmount } from '@/lib/currency';
 import { AnimatedDiv } from '@/components/ui/animations';
+import { currencyService } from '@/lib/currency';
 
 const accountTypeIcons = {
   CASH: Wallet,
@@ -94,14 +95,50 @@ export function AccountList() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<FinanceAccount | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [totalBalanceEUR, setTotalBalanceEUR] = useState<number>(0);
+  const [isConverting, setIsConverting] = useState<boolean>(false);
 
   const accounts = accountsData?.accounts || [];
-  const stats = accountsData?.stats || {
-    totalAccounts: 0,
-    activeAccounts: 0,
+  const summary = accountsData?.summary || {
+    total: 0,
+    active: 0,
+    inactive: 0,
     totalBalance: 0,
-    totalBalanceEur: 0,
   };
+
+  // Convert account balances to EUR
+  useEffect(() => {
+    const convertBalances = async () => {
+      if (!accounts || accounts.length === 0) {
+        setTotalBalanceEUR(0);
+        return;
+      }
+
+      setIsConverting(true);
+      try {
+        let totalEUR = 0;
+        const activeAccounts = accounts.filter((account: FinanceAccount) => account.isActive);
+
+        for (const account of activeAccounts) {
+          const convertedBalance = await currencyService.convertToBaseCurrency(
+            account.balance,
+            account.currency,
+          );
+          totalEUR += convertedBalance;
+        }
+
+        setTotalBalanceEUR(totalEUR);
+      } catch (error) {
+        console.error('Error converting balances:', error);
+        // Fallback to summary.totalBalance if conversion fails
+        setTotalBalanceEUR(summary?.totalBalance || 0);
+      } finally {
+        setIsConverting(false);
+      }
+    };
+
+    convertBalances();
+  }, [accounts, summary]);
 
   const handleToggleActive = async (account: FinanceAccount) => {
     try {
@@ -195,28 +232,6 @@ export function AccountList() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <Wallet className="h-5 w-5 text-blue-500" />
-            </div>
-            <h3 className="font-semibold">Total Accounts</h3>
-          </div>
-          <div className="text-2xl font-bold mb-1">{stats.totalAccounts}</div>
-          <p className="text-sm text-muted-foreground">All accounts</p>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-green-500/10 rounded-lg">
-              <Activity className="h-5 w-5 text-green-500" />
-            </div>
-            <h3 className="font-semibold">Active</h3>
-          </div>
-          <div className="text-2xl font-bold mb-1">{stats.activeAccounts}</div>
-          <p className="text-sm text-muted-foreground">Currently active</p>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-purple-500/10 rounded-lg">
               <DollarSign className="h-5 w-5 text-purple-500" />
             </div>
@@ -236,9 +251,35 @@ export function AccountList() {
             <h3 className="font-semibold">Avg Balance</h3>
           </div>
           <div className="text-2xl font-bold mb-1">
-            {formatSummaryAmount(stats.totalBalanceEur / Math.max(stats.activeAccounts, 1))}
+            {isConverting ? (
+              <span className="text-muted-foreground">Converting...</span>
+            ) : (
+              formatSummaryAmount(totalBalanceEUR / Math.max(summary.active, 1))
+            )}
           </div>
           <p className="text-sm text-muted-foreground">Per active account</p>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <Wallet className="h-5 w-5 text-blue-500" />
+            </div>
+            <h3 className="font-semibold">Total Accounts</h3>
+          </div>
+          <div className="text-2xl font-bold mb-1">{summary.total}</div>
+          <p className="text-sm text-muted-foreground">All accounts</p>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-green-500/10 rounded-lg">
+              <Activity className="h-5 w-5 text-green-500" />
+            </div>
+            <h3 className="font-semibold">Active</h3>
+          </div>
+          <div className="text-2xl font-bold mb-1">{summary.active}</div>
+          <p className="text-sm text-muted-foreground">Currently active</p>
         </Card>
       </div>
 

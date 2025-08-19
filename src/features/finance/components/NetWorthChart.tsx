@@ -243,7 +243,15 @@ export function NetWorthChart() {
     const current = chartData[chartData.length - 1]?.netWorth || 0;
     const start = chartData[0]?.netWorth || 0;
     const totalChange = current - start;
-    const percentageChange = start !== 0 ? (totalChange / Math.abs(start)) * 100 : 0;
+    // Avoid extreme percentages when starting value is very small (close to zero)
+    const percentageChange =
+      Math.abs(start) > 1
+        ? (totalChange / start) * 100
+        : totalChange > 0
+          ? 100
+          : totalChange < 0
+            ? -100
+            : 0;
 
     const values = chartData.map(d => d.netWorth);
     const highest = Math.max(...values);

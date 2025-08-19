@@ -52,14 +52,22 @@ async function fetchReportStats(): Promise<ReportStats> {
     const { budgets } = budgetsData;
 
     // Calculate budget adherence for current month
-    const currentBudgets = budgets.filter((budget: any) => {
+    interface Budget {
+      startDate: string;
+      endDate: string;
+      totalPlanned: number;
+    }
+    const currentBudgets = budgets.filter((budget: Budget) => {
       const budgetStart = new Date(budget.startDate);
       const budgetEnd = new Date(budget.endDate);
       return budgetStart <= now && budgetEnd >= now;
     });
 
     if (currentBudgets.length > 0) {
-      const totalPlanned = currentBudgets.reduce((sum: number, b: any) => sum + b.totalPlanned, 0);
+      const totalPlanned = currentBudgets.reduce(
+        (sum: number, b: Budget) => sum + b.totalPlanned,
+        0,
+      );
       const actualSpent = currentSummary.expenses || 0;
       budgetAdherence =
         totalPlanned > 0 ? Math.min(100, ((totalPlanned - actualSpent) / totalPlanned) * 100) : 0;

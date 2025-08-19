@@ -86,6 +86,8 @@ export interface TransactionFilters {
   search?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  minAmount?: number;
+  maxAmount?: number;
 }
 
 export interface TransactionResponse {
@@ -115,8 +117,7 @@ export const transactionKeys = {
     [...transactionKeys.lists(), filters] as const,
   infinite: (filters: TransactionFilters) => [...transactionKeys.all, 'infinite', filters] as const,
   categories: ['finance', 'categories'] as const,
-  categoriesList: (filters: Record<string, any>) =>
-    [...transactionKeys.categories, filters] as const,
+  categoriesList: (filters: CategoryFilters) => [...transactionKeys.categories, filters] as const,
 };
 
 // Transactions hooks
@@ -286,4 +287,10 @@ export function useDeleteTransactionCategory() {
       queryClient.invalidateQueries({ queryKey: transactionKeys.categories });
     },
   });
+}
+
+export interface CategoryFilters {
+  type?: 'INCOME' | 'EXPENSE';
+  includeInactive?: boolean;
+  hierarchical?: boolean;
 }

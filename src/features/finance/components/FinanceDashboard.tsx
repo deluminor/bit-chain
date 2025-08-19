@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 import {
@@ -14,10 +14,9 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useAccounts, FinanceAccount } from '@/features/finance/queries/accounts';
+import { useAccounts } from '@/features/finance/queries/accounts';
 import { useTransactions } from '@/features/finance/queries/transactions';
 import { useGoals, calculateGoalProgress } from '@/features/finance/queries/goals';
-import { TransactionSummary } from './TransactionSummary';
 import { IncomeExpenseChart } from '@/components/layout/charts/IncomeExpenseChart';
 import { CategorySpendingChart } from '@/components/layout/charts/CategorySpendingChart';
 import { AccountBalanceTrendsChart } from '@/components/layout/charts/AccountBalanceTrendsChart';
@@ -26,12 +25,7 @@ import { BudgetPerformanceChart } from '@/components/layout/charts/BudgetPerform
 import { AnimatedDiv } from '@/components/ui/animations';
 import { ResponsiveGrid, ResponsiveChart } from '@/components/ui/responsive-helpers';
 
-import {
-  currencyService,
-  formatSummaryAmount,
-  formatCurrency,
-  BASE_CURRENCY,
-} from '@/lib/currency';
+import { currencyService, formatSummaryAmount, BASE_CURRENCY } from '@/lib/currency';
 import { useState, useEffect } from 'react';
 
 interface QuickStatsProps {
@@ -83,12 +77,14 @@ function QuickStatCard({ title, value, change, changeType, icon, href }: QuickSt
 }
 
 export function FinanceDashboard() {
-  const { data: accountsData, isLoading: accountsLoading } = useAccounts();
+  const { data: accountsData, isLoading: _accountsLoading } = useAccounts();
   const { data: transactionsData } = useTransactions({
     dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
       .toISOString()
       .split('T')[0],
-    limit: 1,
+    dateTo: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+      .toISOString()
+      .split('T')[0],
   });
   const { data: goalsData, isLoading: goalsLoading } = useGoals();
 
@@ -99,7 +95,7 @@ export function FinanceDashboard() {
 
   const accounts = accountsData?.accounts || [];
   const summary = accountsData?.summary;
-  const transactionSummary = transactionsData?.summary;
+  const transactions = transactionsData?.transactions || [];
   const goals = goalsData?.goals || [];
 
   // Convert all account balances and transactions to EUR
@@ -144,37 +140,42 @@ export function FinanceDashboard() {
 
         setTotalBalanceEUR(totalInEUR);
 
-        // Convert transaction summary to EUR
-        if (transactionSummary) {
-          let incomeInEUR = transactionSummary.income;
-          let expensesInEUR = transactionSummary.expenses;
+        // Convert individual transactions to EUR for accurate calculation
+        let totalIncomeEUR = 0;
+        let totalExpensesEUR = 0;
 
-          // Assuming transactions are in UAH (most common case)
-          if (transactionSummary.income > 0) {
+        for (const transaction of transactions) {
+          let convertedAmount = transaction.amount;
+
+          // Convert to EUR if not already in EUR
+          if (transaction.currency !== BASE_CURRENCY) {
             try {
-              incomeInEUR = await currencyService.convertToBaseCurrency(
-                transactionSummary.income,
-                'UAH',
+              convertedAmount = await currencyService.convertCurrency(
+                transaction.amount,
+                transaction.currency,
+                BASE_CURRENCY,
               );
             } catch {
-              incomeInEUR = transactionSummary.income * (fallbackRates['UAH'] || 0.025);
+              // Use fallback rate if conversion fails
+              convertedAmount = transaction.amount * (fallbackRates[transaction.currency] || 1);
             }
           }
 
-          if (transactionSummary.expenses > 0) {
-            try {
-              expensesInEUR = await currencyService.convertToBaseCurrency(
-                transactionSummary.expenses,
-                'UAH',
-              );
-            } catch {
-              expensesInEUR = transactionSummary.expenses * (fallbackRates['UAH'] || 0.025);
-            }
+          // Categorize as income or expense based on transaction type
+          if (transaction.type === 'INCOME') {
+            totalIncomeEUR += convertedAmount;
+          } else if (transaction.type === 'EXPENSE') {
+            totalExpensesEUR += convertedAmount;
           }
-
-          setMonthlyIncomeEUR(incomeInEUR);
-          setMonthlyExpensesEUR(expensesInEUR);
+          // Note: TRANSFER transactions are not included in income/expense calculations
         }
+
+        setMonthlyIncomeEUR(totalIncomeEUR);
+        setMonthlyExpensesEUR(totalExpensesEUR);
+
+        console.info(
+          `Converted ${transactions.length} transactions to EUR: Income=${totalIncomeEUR.toFixed(2)}, Expenses=${totalExpensesEUR.toFixed(2)}`,
+        );
       } catch (error) {
         console.error('Failed to convert balances:', error);
       } finally {
@@ -183,7 +184,7 @@ export function FinanceDashboard() {
     };
 
     convertBalances();
-  }, [accounts, transactionSummary]);
+  }, [accounts, transactions]);
 
   return (
     <AnimatedDiv variant="slideUp" className="space-y-6">
@@ -203,18 +204,10 @@ export function FinanceDashboard() {
         />
 
         <QuickStatCard
-          title="Active Accounts"
-          value={summary?.active?.toString() || '0'}
-          change={`of ${summary?.total || 0} total`}
-          icon={<BarChart3 className="h-6 w-6" />}
-          href="/accounts"
-        />
-
-        <QuickStatCard
           title="This Month Income"
           value={isConverting ? 'Converting...' : formatSummaryAmount(monthlyIncomeEUR)}
           changeType="positive"
-          change={`${transactionSummary?.incomeCount || 0} transactions`}
+          change={`${transactions.filter(t => t.amount > 0).length} transactions`}
           icon={<TrendingUp className="h-6 w-6" />}
           href="/transactions"
         />
@@ -223,133 +216,29 @@ export function FinanceDashboard() {
           title="This Month Expenses"
           value={isConverting ? 'Converting...' : formatSummaryAmount(monthlyExpensesEUR)}
           changeType="negative"
-          change={`${transactionSummary?.expenseCount || 0} transactions`}
+          change={`${transactions.filter(t => t.amount < 0).length} transactions`}
           icon={<TrendingDown className="h-6 w-6" />}
           href="/transactions"
         />
+
+        <QuickStatCard
+          title="Active Accounts"
+          value={summary?.active?.toString() || '0'}
+          change={`of ${summary?.total || 0} total`}
+          icon={<BarChart3 className="h-6 w-6" />}
+          href="/accounts"
+        />
       </ResponsiveGrid>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Transaction Summary */}
-        <TransactionSummary period="month" showAddButton={true} showViewAllButton={true} />
-
-        {/* Account Overview */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">Account Overview</CardTitle>
-                <CardDescription>Your financial accounts</CardDescription>
-              </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/accounts" className="flex items-center gap-1">
-                  <Eye className="h-3 w-3" />
-                  View All
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {accountsLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="animate-pulse flex items-center gap-3">
-                    <div className="w-10 h-10 bg-muted rounded-lg"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-muted rounded w-3/4"></div>
-                      <div className="h-3 bg-muted rounded w-1/2"></div>
-                    </div>
-                    <div className="h-4 bg-muted rounded w-16"></div>
-                  </div>
-                ))}
-              </div>
-            ) : accounts.length > 0 ? (
-              <div className="space-y-3">
-                {accounts.slice(0, 4).map((account: FinanceAccount) => (
-                  <div
-                    key={account.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="p-2 rounded-lg"
-                        style={{ backgroundColor: account.color + '20', color: account.color }}
-                      >
-                        <Wallet className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="font-medium">{account.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {account.type.replace('_', ' ')} • {account.currency}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">
-                        {account.currency === BASE_CURRENCY
-                          ? formatSummaryAmount(account.balance)
-                          : formatCurrency(account.balance, account.currency, {
-                              useLargeNumberFormat: false,
-                            })}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {account._count?.transactions || 0} transactions
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {accounts.length > 4 && (
-                  <div className="text-center pt-2">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href="/accounts">View {accounts.length - 4} more accounts</Link>
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-6">
-                <Wallet className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm mb-2">No accounts yet</p>
-                <Button size="sm" asChild>
-                  <Link href="/accounts">Create Account</Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Additional Widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Net Worth Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <PieChart className="h-5 w-5" />
-              Net Worth
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {isConverting ? 'Converting...' : formatSummaryAmount(totalBalanceEUR)}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                Across {summary?.active || 0} accounts
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Monthly Summary */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">This Month</CardTitle>
           </CardHeader>
           <CardContent>
-            {transactionSummary && (
+            {transactions.length > 0 && (
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-green-600">Income:</span>
@@ -450,20 +339,30 @@ export function FinanceDashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Net Worth Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <PieChart className="h-5 w-5" />
+              Net Worth
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {isConverting ? 'Converting...' : formatSummaryAmount(totalBalanceEUR)}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">
+                Across {summary?.active || 0} accounts
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Financial Analytics Charts */}
       <AnimatedDiv variant="slideUp" delay={0.3} className="space-y-6">
-        {/* Net Worth and Income/Expense Trends */}
-        <ResponsiveGrid cols={{ mobile: 1, tablet: 1, desktop: 2 }} gap={6}>
-          <ResponsiveChart height={{ mobile: 350, desktop: 500 }}>
-            <CategorySpendingChart />
-          </ResponsiveChart>
-          <ResponsiveChart height={{ mobile: 350, desktop: 500 }}>
-            <NetWorthChart />
-          </ResponsiveChart>
-        </ResponsiveGrid>
-
         {/* Category Analysis and Account Trends */}
         <ResponsiveGrid cols={{ mobile: 1, tablet: 1, desktop: 2 }} gap={6}>
           <ResponsiveChart height={{ mobile: 350, desktop: 500 }}>
@@ -471,6 +370,16 @@ export function FinanceDashboard() {
           </ResponsiveChart>
           <ResponsiveChart height={{ mobile: 350, desktop: 500 }}>
             <AccountBalanceTrendsChart />
+          </ResponsiveChart>
+        </ResponsiveGrid>
+
+        {/* Net Worth and Income/Expense Trends */}
+        <ResponsiveGrid cols={{ mobile: 1, tablet: 1, desktop: 2 }} gap={6}>
+          <ResponsiveChart height={{ mobile: 350, desktop: 500 }}>
+            <NetWorthChart />
+          </ResponsiveChart>
+          <ResponsiveChart height={{ mobile: 350, desktop: 500 }}>
+            <CategorySpendingChart />
           </ResponsiveChart>
         </ResponsiveGrid>
 

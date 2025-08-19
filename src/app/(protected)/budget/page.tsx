@@ -4,18 +4,44 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BudgetPerformanceChart } from '@/components/layout/charts/BudgetPerformanceChart';
 import { CreateBudgetForm } from '@/components/forms/CreateBudgetForm';
 import { Button } from '@/components/ui/button';
-import { Plus, PieChart, TrendingUp, DollarSign, Target } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Plus,
+  PieChart,
+  TrendingUp,
+  DollarSign,
+  Target,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Calendar,
+  Clock,
+} from 'lucide-react';
 import { useState } from 'react';
 import { AnimatedDiv } from '@/components/ui/animations';
-import { useBudgets } from '@/features/finance/queries/budget';
+import {
+  useBudgets,
+  useBudgetTemplates,
+  useApplyBudgetTemplate,
+} from '@/features/finance/queries/budget';
 import { useToast } from '@/hooks/use-toast';
-import { formatSummaryAmount, formatDisplayAmount } from '@/lib/currency';
+import { formatEuroAmount } from '@/lib/currency';
 import { StatCardSkeleton, ChartSkeleton, CardSkeleton } from '@/components/ui/loading-skeleton';
 
 export default function BudgetPage() {
   const { toast } = useToast();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const { data: budgetsData, isLoading, error, refetch } = useBudgets();
+  const { data: templates } = useBudgetTemplates();
+  const applyTemplate = useApplyBudgetTemplate();
 
   if (error) {
     toast({
@@ -115,9 +141,7 @@ export default function BudgetPage() {
               </div>
               <h3 className="font-semibold">Total Budgeted</h3>
             </div>
-            <div className="text-2xl font-bold mb-1">
-              {formatSummaryAmount(summary.totalPlanned)}
-            </div>
+            <div className="text-2xl font-bold mb-1">{formatEuroAmount(summary.totalPlanned)}</div>
             <p className="text-sm text-muted-foreground">Total planned</p>
           </Card>
 
@@ -128,9 +152,7 @@ export default function BudgetPage() {
               </div>
               <h3 className="font-semibold">Total Spent</h3>
             </div>
-            <div className="text-2xl font-bold mb-1">
-              {formatSummaryAmount(summary.totalActual)}
-            </div>
+            <div className="text-2xl font-bold mb-1">{formatEuroAmount(summary.totalActual)}</div>
             <p className="text-sm text-muted-foreground">
               {summary.totalPlanned > 0
                 ? Math.round((summary.totalActual / summary.totalPlanned) * 100)
@@ -147,7 +169,7 @@ export default function BudgetPage() {
               <h3 className="font-semibold">Remaining</h3>
             </div>
             <div className="text-2xl font-bold mb-1">
-              {formatSummaryAmount(Math.max(summary.totalPlanned - summary.totalActual, 0))}
+              {formatEuroAmount(Math.max(summary.totalPlanned - summary.totalActual, 0))}
             </div>
             <p className="text-sm text-muted-foreground">
               {summary.totalPlanned > 0
@@ -176,6 +198,184 @@ export default function BudgetPage() {
           </CardContent>
         </Card>
 
+        {/* Budget List */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              All Budgets
+            </CardTitle>
+            <CardDescription>Manage your budget templates and periods</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {budgets.length > 0 ? (
+              <div className="space-y-4">
+                {budgets.map(budget => (
+                  <div
+                    key={budget.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-3 h-3 rounded-full ${budget.isActive ? 'bg-green-500' : 'bg-gray-400'}`}
+                        ></div>
+                        <div>
+                          <h4 className="font-medium">{budget.name}</h4>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Badge variant="outline" className="text-xs">
+                              {budget.period}
+                            </Badge>
+                            <span>•</span>
+                            <Clock className="h-3 w-3" />
+                            <span>
+                              {new Date(budget.startDate).toLocaleDateString()} -{' '}
+                              {new Date(budget.endDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="font-medium">
+                          {formatEuroAmount(budget.totalActual)} /{' '}
+                          {formatEuroAmount(budget.totalPlanned)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {budget.totalPlanned > 0
+                            ? Math.round((budget.totalActual / budget.totalPlanned) * 100)
+                            : 0}
+                          % used
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {budget.isActive ? 'Deactivate' : 'Activate'}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-muted-foreground mb-4">No budgets created yet</div>
+                <Button onClick={() => setShowCreateForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Budget
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Budget Templates */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Monthly Budget Templates
+            </CardTitle>
+            <CardDescription>Templates for automatically creating monthly budgets</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {templates && templates.length > 0 ? (
+              <div className="space-y-4">
+                {templates.map(template => (
+                  <div
+                    key={template.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                        <div>
+                          <h4 className="font-medium">{template.templateName || template.name}</h4>
+                          <div className="text-sm text-muted-foreground">
+                            {template.categories.length} categories •{' '}
+                            {formatEuroAmount(template.totalPlanned)} total
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            await applyTemplate.mutateAsync({ templateId: template.id });
+                            toast({
+                              title: 'Success',
+                              description: `Budget created from template "${template.templateName || template.name}"`,
+                            });
+                          } catch (error: any) {
+                            toast({
+                              title: 'Error',
+                              description: error.message,
+                              variant: 'destructive',
+                            });
+                          }
+                        }}
+                        disabled={applyTemplate.isPending}
+                      >
+                        {applyTemplate.isPending ? 'Creating...' : 'Apply for This Month'}
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Template
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Template
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-muted-foreground mb-4">No budget templates created yet</div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Create a budget and mark it as a template to reuse it monthly
+                </p>
+                <Button onClick={() => setShowCreateForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Budget Template
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Category Budget Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className="p-6">
@@ -200,17 +400,8 @@ export default function BudgetPage() {
                         </div>
                         <div className="text-right">
                           <div className="font-medium">
-                            {formatDisplayAmount(
-                              budgetCategory.actual,
-                              activeBudget.currency,
-                              'detailed',
-                            )}{' '}
-                            /{' '}
-                            {formatDisplayAmount(
-                              budgetCategory.planned,
-                              activeBudget.currency,
-                              'detailed',
-                            )}
+                            {formatEuroAmount(budgetCategory.actual)} /{' '}
+                            {formatEuroAmount(budgetCategory.planned)}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {usagePercentage}% used
@@ -290,17 +481,14 @@ export default function BudgetPage() {
       </div>
 
       {/* Create Budget Form Modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg max-w-lg w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Create New Budget</h2>
-            <CreateBudgetForm
-              onClose={() => setShowCreateForm(false)}
-              onSuccess={handleFormSuccess}
-            />
-          </div>
-        </div>
-      )}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <CreateBudgetForm
+            onClose={() => setShowCreateForm(false)}
+            onSuccess={handleFormSuccess}
+          />
+        </DialogContent>
+      </Dialog>
     </AnimatedDiv>
   );
 }

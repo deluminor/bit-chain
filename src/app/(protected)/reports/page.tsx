@@ -337,7 +337,7 @@ export default function ReportsPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 variant="outline"
-                className="h-20 w-full sm:w-40 flex flex-col items-center justify-center gap-2"
+                className="w-full sm:w-40 flex flex-col items-center justify-center gap-2"
                 onClick={() => handleExportReport('income-expenses', 'pdf')}
                 disabled={exportReport.isPending}
               >
@@ -347,7 +347,7 @@ export default function ReportsPage() {
 
               <Button
                 variant="outline"
-                className="h-20 w-full sm:w-40 flex flex-col items-center justify-center gap-2"
+                className="w-full sm:w-40 flex flex-col items-center justify-center gap-2"
                 onClick={() => handleExportReport('category-analysis', 'csv')}
                 disabled={exportReport.isPending}
               >
@@ -357,7 +357,7 @@ export default function ReportsPage() {
 
               <Button
                 variant="outline"
-                className="h-20 w-full sm:w-40 flex flex-col items-center justify-center gap-2"
+                className="w-full sm:w-40 flex flex-col items-center justify-center gap-2"
                 onClick={() => handleExportReport('cash-flow', 'csv')}
                 disabled={exportReport.isPending}
               >

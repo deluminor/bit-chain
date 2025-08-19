@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "DeepGraph Next.js MCP": {
+      "command": "npx",
+      "args": ["-y", "mcp-code-graph@latest", "vercel/next.js"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@automatalabs/mcp-server-playwright"]
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "DeepGraph React MCP": {
+      "command": "npx",
+      "args": ["-y", "mcp-code-graph@latest", "facebook/react"]
+    },
+    "DeepGraph TypeScript MCP": {
+      "command": "npx",
+      "args": ["-y", "mcp-code-graph@latest", "microsoft/TypeScript"]
+    },
+    "DeepGraph Vue MCP": {
+      "command": "npx",
+      "args": ["-y", "mcp-code-graph@latest", "vuejs/core"]
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+    }
+  }
+}

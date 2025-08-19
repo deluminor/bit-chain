@@ -44,7 +44,7 @@ export function RadarChartComponent({
 }: RadarChartComponentProps) {
   const { theme } = useTheme();
   const isDark = theme === THEME.DARK;
-  const colors = getMinimalistColors(isDark);
+  const primaryColor = isDark ? '#ffffff' : '#6b7280';
 
   if (isLoading) {
     return <ChartSkeleton />;
@@ -53,7 +53,7 @@ export function RadarChartComponent({
   const chartConfig = {
     radar: {
       label: title,
-      color: colors.primary,
+      color: primaryColor,
     },
   } satisfies ChartConfig;
 
@@ -67,23 +67,30 @@ export function RadarChartComponent({
         <ChartContainer config={chartConfig} className="aspect-square h-[300px] w-full">
           <RadarChart data={data} margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
             <defs>
-              <radialGradient id="radarFill" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor={colors.primary} stopOpacity={0.15} />
-                <stop offset="70%" stopColor={colors.primary} stopOpacity={0.08} />
-                <stop offset="100%" stopColor={colors.primary} stopOpacity={0.02} />
-              </radialGradient>
+              <linearGradient id="radarFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={primaryColor} stopOpacity={0.55} />
+                <stop offset="15%" stopColor={primaryColor} stopOpacity={0.48} />
+                <stop offset="30%" stopColor={primaryColor} stopOpacity={0.38} />
+                <stop offset="50%" stopColor={primaryColor} stopOpacity={0.25} />
+                <stop offset="70%" stopColor={primaryColor} stopOpacity={0.15} />
+                <stop offset="85%" stopColor={primaryColor} stopOpacity={0.08} />
+                <stop offset="100%" stopColor={primaryColor} stopOpacity={0.02} />
+              </linearGradient>
             </defs>
             <PolarGrid
-              stroke={isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)'}
-              strokeWidth={0.3}
-              radialLines={true}
+              stroke={isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}
+              strokeWidth={0.5}
+              strokeDasharray="1 2"
+              radialLines={false}
               gridType="polygon"
             />
             <PolarAngleAxis
               dataKey="name"
+              axisLine={false}
+              tickLine={false}
               tick={{
-                fontSize: 11,
-                fill: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                fontSize: 12,
+                fill: isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
                 fontWeight: 400,
               }}
               tickSize={8}
@@ -91,20 +98,21 @@ export function RadarChartComponent({
             <Radar
               name="Value"
               dataKey="value"
-              stroke={colors.primary}
-              strokeWidth={0.8}
+              stroke={primaryColor}
+              strokeWidth={0.7}
               fill="url(#radarFill)"
               fillOpacity={1}
-              dot={{
-                r: 2.5,
-                fill: colors.primary,
-                stroke: isDark ? '#000000' : '#ffffff',
-                strokeWidth: 1,
-                opacity: 0.9,
+              dot={false}
+              activeDot={{
+                r: 4,
+                strokeWidth: 2,
+                stroke: primaryColor,
+                fill: isDark ? '#000000' : '#ffffff',
+                opacity: 1,
               }}
               isAnimationActive={true}
-              animationDuration={1000}
-              animationBegin={200}
+              animationDuration={800}
+              animationBegin={150}
             />
             <ChartTooltip
               cursor={false}

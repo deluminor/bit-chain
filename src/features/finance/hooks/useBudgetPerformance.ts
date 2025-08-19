@@ -2,6 +2,23 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+interface Budget {
+  startDate: string;
+  endDate: string;
+  categories: BudgetCategory[];
+}
+
+interface BudgetCategory {
+  categoryId: string;
+  planned: number;
+  category: { name: string };
+}
+
+interface Transaction {
+  categoryId: string;
+  amount: number;
+}
+
 interface BudgetPerformanceData {
   category: string;
   budgeted: number;
@@ -26,7 +43,7 @@ async function fetchBudgetPerformance(): Promise<BudgetPerformanceData[]> {
   const { budgets } = budgetsData;
 
   // Find current month budget
-  const currentBudget = budgets.find((budget: any) => {
+  const currentBudget = budgets.find((budget: Budget) => {
     const budgetStart = new Date(budget.startDate);
     const budgetEnd = new Date(budget.endDate);
     return budgetStart <= now && budgetEnd >= now;
@@ -51,7 +68,7 @@ async function fetchBudgetPerformance(): Promise<BudgetPerformanceData[]> {
   // Calculate spending by category
   const categorySpending = new Map<string, number>();
 
-  transactions.forEach((transaction: any) => {
+  transactions.forEach((transaction: Transaction) => {
     const categoryId = transaction.categoryId;
     const existing = categorySpending.get(categoryId) || 0;
     categorySpending.set(categoryId, existing + transaction.amount);
@@ -59,7 +76,7 @@ async function fetchBudgetPerformance(): Promise<BudgetPerformanceData[]> {
 
   // Build performance data
   const performanceData: BudgetPerformanceData[] = currentBudget.categories.map(
-    (budgetCategory: any) => {
+    (budgetCategory: BudgetCategory) => {
       const spent = categorySpending.get(budgetCategory.categoryId) || 0;
       const budgeted = budgetCategory.planned;
       const remaining = Math.max(0, budgeted - spent);

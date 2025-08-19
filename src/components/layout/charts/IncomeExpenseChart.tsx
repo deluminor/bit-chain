@@ -167,14 +167,14 @@ export function IncomeExpenseChart() {
                 fontSize: 12,
                 fill: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
               }}
-              tickFormatter={value => `€${(value / 1000).toFixed(0)}k`}
+              tickFormatter={value => `€ ${(value / 1000).toFixed(0)}k`}
             />
             <ChartTooltip
               content={
                 <ChartTooltipContent
                   formatter={(value, name) => [
                     formatSummaryAmount(Number(value)),
-                    name === 'income' ? 'Income' : 'Expenses',
+                    ` ${name === 'income' ? 'Income' : 'Expenses'}`,
                   ]}
                   labelFormatter={label => `Month: ${label}`}
                 />

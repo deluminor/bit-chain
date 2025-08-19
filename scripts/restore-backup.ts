@@ -5,7 +5,7 @@ import path from 'path';
 const prisma = new PrismaClient();
 
 async function restoreFromBackup() {
-  const backupFileName = 'emergency_backup_2025-08-08T15-31-33-871Z.json';
+  const backupFileName = 'full_backup_2025-08-13T15-48-27-035Z.json';
   const backupPath = path.join(process.cwd(), 'backups', backupFileName);
 
   console.log('🔄 Restoring data from backup...');
@@ -19,6 +19,21 @@ async function restoreFromBackup() {
 
     const backupData = JSON.parse(fs.readFileSync(backupPath, 'utf-8')) as any;
     console.log(`📊 Backup contains ${backupData.metadata.totalRecords} records`);
+
+    // Clear existing data first
+    console.log('🗑️ Clearing existing data...');
+    await prisma.$transaction(async tx => {
+      await tx.screenshot.deleteMany({});
+      await tx.trade.deleteMany({});
+      await tx.budgetCategory.deleteMany({});
+      await tx.budget.deleteMany({});
+      await tx.financialGoal.deleteMany({});
+      await tx.transaction.deleteMany({});
+      await tx.transactionCategory.deleteMany({});
+      await tx.financeAccount.deleteMany({});
+      await tx.category.deleteMany({});
+      await tx.user.deleteMany({});
+    });
 
     // Restore data in correct order (due to foreign key constraints)
     await prisma.$transaction(async tx => {

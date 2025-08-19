@@ -1,6 +1,6 @@
 'use client';
 
-import { PieChartComponent } from './PieChartComponent';
+import { RadarChartComponent } from './RadarChartComponent';
 import { useCategorySpending } from '@/features/finance/hooks/useCategorySpending';
 import { formatSummaryAmount } from '@/lib/currency';
 
@@ -9,12 +9,12 @@ export function CategorySpendingChart() {
 
   if (error) {
     return (
-      <PieChartComponent
+      <RadarChartComponent
         title="Category Spending"
         description="Breakdown of expenses by category"
         data={[]}
+        color="#3b82f6"
         isLoading={false}
-        error="Failed to load spending data"
       />
     );
   }
@@ -26,10 +26,11 @@ export function CategorySpendingChart() {
       : null;
 
   return (
-    <PieChartComponent
+    <RadarChartComponent
       title="Category Spending"
       description="Breakdown of expenses by category this month"
       data={categoryData || []}
+      color="#3b82f6"
       isLoading={isLoading}
       footer={
         topCategory ? (

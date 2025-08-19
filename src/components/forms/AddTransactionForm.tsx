@@ -153,6 +153,8 @@ export function AddTransactionForm({
   const accounts = accountsData?.accounts || [];
   const categories = categoriesData?.categories || [];
 
+  console.log({ categories });
+
   // Auto-update currency when account changes
   useEffect(() => {
     if (watchedAccountId && accounts.length > 0) {

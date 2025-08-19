@@ -54,13 +54,13 @@ export const getSideColorClass = (side: string): string => {
 export const getResultColorClass = (result: string): string => {
   switch (result) {
     case TRADE_RESULTS.PENDING:
-      return 'bg-yellow-100 dark:bg-transparent text-yellow-800 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-800/30';
+      return 'text-yellow-800 dark:text-yellow-400';
     case TRADE_RESULTS.WIN:
-      return 'bg-emerald-100 dark:bg-transparent text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/30';
+      return 'text-emerald-800 dark:text-emerald-400';
     case TRADE_RESULTS.LOSS:
-      return 'bg-rose-100 dark:bg-transparent text-rose-800 dark:text-rose-400 border border-rose-300 dark:border-rose-800/30';
+      return 'text-rose-800 dark:text-rose-400';
     default:
-      return 'bg-gray-100 dark:bg-transparent text-gray-800 dark:text-gray-400 border border-gray-300 dark:border-gray-500/30';
+      return 'text-gray-800 dark:text-gray-400';
   }
 };
 

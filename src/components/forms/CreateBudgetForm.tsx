@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Calendar, Plus, Trash2, DollarSign, Target, Clock } from 'lucide-react';
@@ -26,6 +27,8 @@ const budgetFormSchema = z.object({
     .number()
     .positive('Total planned amount must be positive')
     .min(1, 'Minimum amount is 1'),
+  isTemplate: z.boolean().default(false),
+  templateName: z.string().optional(),
   categories: z
     .array(
       z.object({
@@ -337,6 +340,38 @@ export function CreateBudgetForm({ onClose, onSuccess }: CreateBudgetFormProps) 
                 </p>
               )}
             </div>
+          </div>
+
+          {/* Template Options */}
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isTemplate"
+                checked={form.watch('isTemplate')}
+                onCheckedChange={checked => {
+                  form.setValue('isTemplate', checked as boolean);
+                  if (!checked) {
+                    form.setValue('templateName', '');
+                  }
+                }}
+              />
+              <Label htmlFor="isTemplate" className="text-sm font-medium">
+                Create as template for monthly budgets
+              </Label>
+            </div>
+            {form.watch('isTemplate') && (
+              <div className="space-y-2">
+                <Label htmlFor="templateName">Template Name</Label>
+                <Input
+                  id="templateName"
+                  placeholder="Monthly Living Expenses"
+                  {...form.register('templateName')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  This template can be applied to create budgets for future months
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

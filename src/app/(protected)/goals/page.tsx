@@ -123,7 +123,7 @@ export default function GoalsPage() {
 
         {/* Goals Overview Stats Skeleton */}
         <div className="px-4 lg:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <StatCardSkeleton />
             <StatCardSkeleton />
             <StatCardSkeleton />
@@ -215,18 +215,7 @@ export default function GoalsPage() {
 
       {/* Goals Overview Stats */}
       <div className="px-4 lg:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Target className="h-5 w-5 text-blue-500" />
-              </div>
-              <h3 className="font-semibold">Active Goals</h3>
-            </div>
-            <div className="text-2xl font-bold mb-1">{summary.active}</div>
-            <p className="text-sm text-muted-foreground">In progress</p>
-          </Card>
-
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-green-500/10 rounded-lg">
@@ -271,6 +260,16 @@ export default function GoalsPage() {
                 : 0}
             </div>
             <p className="text-sm text-muted-foreground">Days remaining</p>
+          </Card>
+          <Card className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Target className="h-5 w-5 text-blue-500" />
+              </div>
+              <h3 className="font-semibold">Active Goals</h3>
+            </div>
+            <div className="text-2xl font-bold mb-1">{summary.active}</div>
+            <p className="text-sm text-muted-foreground">In progress</p>
           </Card>
         </div>
       </div>

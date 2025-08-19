@@ -33,11 +33,11 @@ const goalFormSchema = z.object({
   name: z.string().min(1, 'Goal name is required').max(100, 'Goal name is too long'),
   description: z.string().max(500, 'Description is too long').optional(),
   targetAmount: z.number().positive('Target amount must be positive').min(1, 'Minimum amount is 1'),
-  currentAmount: z.number().min(0, 'Current amount cannot be negative').default(0),
-  currency: z.string().min(3).max(3).default(BASE_CURRENCY),
+  currentAmount: z.number().min(0, 'Current amount cannot be negative').optional().default(0),
+  currency: z.string().min(3).max(3).optional().default(BASE_CURRENCY),
   deadline: z.date().optional(),
-  color: z.string().default('#10B981'),
-  icon: z.string().default('🎯'),
+  color: z.string().optional().default('#10B981'),
+  icon: z.string().optional().default('🎯'),
 });
 
 type GoalFormData = z.infer<typeof goalFormSchema>;
@@ -124,7 +124,7 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
   const isEditing = !!goal;
 
   const form = useForm<GoalFormData>({
-    resolver: zodResolver(goalFormSchema) as any,
+    resolver: zodResolver(goalFormSchema),
     defaultValues: {
       name: goal?.name || '',
       description: goal?.description || '',
@@ -143,8 +143,9 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
   const watchedIcon = form.watch('icon');
 
   // Calculate progress when amounts change
-  const progress =
-    watchedTargetAmount > 0 ? Math.min((watchedCurrentAmount / watchedTargetAmount) * 100, 100) : 0;
+  const progress = (
+    watchedTargetAmount > 0 ? Math.min((watchedCurrentAmount / watchedTargetAmount) * 100, 100) : 0
+  ).toFixed(0);
 
   // Apply template
   const applyTemplate = (template: (typeof goalTemplates)[0]) => {
@@ -153,6 +154,9 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
     form.setValue('icon', template.icon);
     form.setValue('color', template.color);
     form.setValue('targetAmount', template.suggestedAmount);
+    // Sync local state with form values
+    setSelectedIcon(template.icon);
+    setSelectedColor(template.color);
   };
 
   const onSubmit = async (data: GoalFormData) => {
@@ -162,6 +166,8 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
         targetAmount: parseFloat(data.targetAmount.toFixed(2)),
         currentAmount: parseFloat(data.currentAmount.toFixed(2)),
         deadline: data.deadline ? data.deadline.toISOString() : undefined,
+        color: data.color, // Use form value instead of local state
+        icon: data.icon, // Use form value instead of local state
       };
 
       if (isEditing && goal) {
@@ -186,7 +192,7 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || `Failed to ${isEditing ? 'update' : 'create'} goal`,
+        description: error?.message || `Failed to ${isEditing ? 'update' : 'create'} goal`,
         variant: 'destructive',
       });
     }
@@ -202,7 +208,7 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
             : 'Set a financial target and track your progress towards achieving it'}
         </p>
       </div>
-      <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Goal Templates (only for new goals) */}
         {!isEditing && (
           <div className="space-y-3">
@@ -290,13 +296,10 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
             <CurrencyInput
               placeholder="15000.00"
               value={form.getValues('targetAmount')}
-              onValueChange={(value: number) => form.setValue('targetAmount', value)}
+              onAmountChange={(value: number) => form.setValue('targetAmount', value)}
               className={form.formState.errors.targetAmount ? 'border-destructive' : ''}
               currency={watchedCurrency}
               showCurrencySelect={false}
-              decimalScale={2}
-              fixedDecimalScale
-              allowNegativeValue={false}
             />
             {form.formState.errors.targetAmount && (
               <p className="text-sm text-destructive flex items-center gap-1">
@@ -312,13 +315,10 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
             <CurrencyInput
               placeholder="0.00"
               value={form.getValues('currentAmount')}
-              onValueChange={(value: number) => form.setValue('currentAmount', value)}
+              onAmountChange={(value: number) => form.setValue('currentAmount', value)}
               className={form.formState.errors.currentAmount ? 'border-destructive' : ''}
               currency={watchedCurrency}
               showCurrencySelect={false}
-              decimalScale={2}
-              fixedDecimalScale
-              allowNegativeValue={false}
             />
             {form.formState.errors.currentAmount && (
               <p className="text-sm text-destructive flex items-center gap-1">

@@ -1,23 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/features/auth/libs/auth';
 import { BackupService } from '@/lib/backup';
+import { PrismaClient } from '@/generated/prisma';
+
+const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const currentUserId = session.user.id;
+
     const searchParams = request.nextUrl.searchParams;
     const action = searchParams.get('action');
-    const userId = searchParams.get('userId');
     const filename = searchParams.get('filename');
 
     switch (action) {
       case 'list':
         const files = await BackupService.listBackupFiles();
-        return NextResponse.json({ files });
+        // Filter files to show only current user's backups
+        const filteredFiles = files.filter(filename => filename.includes(`user_${currentUserId}_`));
+        return NextResponse.json({ files: filteredFiles });
 
       case 'info':
         if (!filename) {
@@ -28,13 +35,13 @@ export async function GET(request: NextRequest) {
 
       case 'export':
         const backupData = await BackupService.exportAllData({
-          userId: userId || undefined,
+          userId: currentUserId,
           includeScreenshots: true,
         });
 
         return NextResponse.json(backupData, {
           headers: {
-            'Content-Disposition': `attachment; filename="backup_${new Date().toISOString().split('T')[0]}.json"`,
+            'Content-Disposition': `attachment; filename="my_backup_${new Date().toISOString().split('T')[0]}.json"`,
             'Content-Type': 'application/json',
           },
         });
@@ -50,20 +57,22 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const currentUserId = session.user.id;
+
     const body = await request.json();
-    const { action, userId, overwrite = false, data } = body;
+    const { action, overwrite = false, data } = body;
 
     switch (action) {
       case 'create':
-        const backupPath = await BackupService.createFullBackup(userId);
+        const backupPath = await BackupService.createFullBackup(currentUserId);
         return NextResponse.json({
           success: true,
-          message: 'Backup created successfully',
+          message: 'Personal backup created successfully',
           path: backupPath,
         });
 
@@ -72,10 +81,10 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Backup data required' }, { status: 400 });
         }
 
-        await BackupService.importData(data, { overwrite });
+        await BackupService.importData(data, { overwrite, userId: currentUserId });
         return NextResponse.json({
           success: true,
-          message: 'Data imported successfully',
+          message: 'Personal data imported successfully',
         });
 
       case 'restore':
@@ -84,12 +93,17 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Filename required' }, { status: 400 });
         }
 
+        // Verify user can access this backup file
+        if (!filename.includes(`user_${currentUserId}_`)) {
+          return NextResponse.json({ error: 'Access denied to this backup' }, { status: 403 });
+        }
+
         const backupData = await BackupService.loadBackupFromFile(filename);
-        await BackupService.importData(backupData, { overwrite });
+        await BackupService.importData(backupData, { overwrite, userId: currentUserId });
 
         return NextResponse.json({
           success: true,
-          message: 'Backup restored successfully',
+          message: 'Personal backup restored successfully',
         });
 
       default:

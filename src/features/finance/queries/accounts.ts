@@ -77,7 +77,7 @@ export interface AccountStats {
 export const accountKeys = {
   all: ['finance', 'accounts'] as const,
   lists: () => [...accountKeys.all, 'list'] as const,
-  list: (filters: Record<string, any>) => [...accountKeys.lists(), filters] as const,
+  list: (filters: Record<string, unknown>) => [...accountKeys.lists(), filters] as const,
   details: () => [...accountKeys.all, 'detail'] as const,
   detail: (id: string) => [...accountKeys.details(), id] as const,
   stats: () => [...accountKeys.all, 'stats'] as const,

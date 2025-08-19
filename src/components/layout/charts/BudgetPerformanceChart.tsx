@@ -1,27 +1,23 @@
 'use client';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
+import { CardContent } from '@/components/ui/card';
+import { ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { useTheme } from '@/providers/ThemeProvider';
 import { THEME } from '@/store';
-import { BAR_COLORS, CHART_CONFIG } from '@/constants/colors';
+// Removed BAR_COLORS and CHART_CONFIG imports - using minimalist styles instead
 import { useBudgetPerformance } from '@/features/finance/hooks/useBudgetPerformance';
 import { useIsClient } from '@/hooks/useIsClient';
+import { formatSummaryAmount } from '@/lib/currency';
 
 const chartConfig = {
   budgeted: {
     label: 'Budgeted',
-    color: '#3B82F6',
+    color: '#000000',
   },
   spent: {
     label: 'Spent',
-    color: '#F59E0B',
+    color: '#666666',
   },
 } satisfies ChartConfig;
 
@@ -40,17 +36,11 @@ export function BudgetPerformanceChart() {
 
   if (error || !budgetData?.length) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Budget vs Spending</CardTitle>
-          <CardDescription>Current month budget performance by category</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px] w-full flex items-center justify-center">
-            <div className="text-muted-foreground">No budget data available</div>
-          </div>
-        </CardContent>
-      </Card>
+      <CardContent>
+        <div className="h-[300px] w-full flex items-center justify-center">
+          <div className="text-muted-foreground">No budget data available</div>
+        </div>
+      </CardContent>
     );
   }
 
@@ -65,43 +55,122 @@ export function BudgetPerformanceChart() {
           >
             <defs>
               <linearGradient id="budgetGradient" x1="0" y1="0" x2="0" y2="1">
-                {BAR_COLORS.BUDGET.GRADIENT.map((stop, index) => (
-                  <stop
-                    key={index}
-                    offset={stop.offset}
-                    stopColor={stop.color}
-                    stopOpacity={stop.opacity}
-                  />
-                ))}
+                <stop
+                  offset="0%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.55}
+                />
+                <stop
+                  offset="15%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.48}
+                />
+                <stop
+                  offset="30%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.38}
+                />
+                <stop
+                  offset="50%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.25}
+                />
+                <stop
+                  offset="70%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.15}
+                />
+                <stop
+                  offset="85%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.08}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
+                  stopOpacity={0.02}
+                />
               </linearGradient>
               <linearGradient id="spentGradient" x1="0" y1="0" x2="0" y2="1">
-                {BAR_COLORS.SPENT.GRADIENT.map((stop, index) => (
-                  <stop
-                    key={index}
-                    offset={stop.offset}
-                    stopColor={stop.color}
-                    stopOpacity={stop.opacity}
-                  />
-                ))}
+                <stop
+                  offset="0%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.45}
+                />
+                <stop
+                  offset="15%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.38}
+                />
+                <stop
+                  offset="30%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.28}
+                />
+                <stop
+                  offset="50%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.18}
+                />
+                <stop
+                  offset="70%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.1}
+                />
+                <stop
+                  offset="85%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.05}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
+                  stopOpacity={0.01}
+                />
               </linearGradient>
               <linearGradient id="overSpentGradient" x1="0" y1="0" x2="0" y2="1">
-                {BAR_COLORS.OVER_SPENT.GRADIENT.map((stop, index) => (
-                  <stop
-                    key={index}
-                    offset={stop.offset}
-                    stopColor={stop.color}
-                    stopOpacity={stop.opacity}
-                  />
-                ))}
+                <stop
+                  offset="0%"
+                  stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
+                  stopOpacity={0.45}
+                />
+                <stop
+                  offset="15%"
+                  stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
+                  stopOpacity={0.38}
+                />
+                <stop
+                  offset="30%"
+                  stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
+                  stopOpacity={0.28}
+                />
+                <stop
+                  offset="50%"
+                  stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
+                  stopOpacity={0.18}
+                />
+                <stop
+                  offset="70%"
+                  stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
+                  stopOpacity={0.1}
+                />
+                <stop
+                  offset="85%"
+                  stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
+                  stopOpacity={0.05}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
+                  stopOpacity={0.01}
+                />
               </linearGradient>
-              <filter id="barShadow">
-                <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.15)" />
-              </filter>
             </defs>
             <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
+              strokeDasharray="1 2"
+              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}
               vertical={false}
+              strokeWidth={0.5}
             />
             <XAxis
               dataKey="category"
@@ -123,35 +192,70 @@ export function BudgetPerformanceChart() {
                 fontSize: 12,
                 fill: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
               }}
-              tickFormatter={value => `$${value}`}
+              tickFormatter={value => `€ ${(value / 1000).toFixed(0)}k`}
             />
             <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value, name, _props) => [
-                    `$${value}`,
-                    name === 'budgeted' ? 'Budgeted' : 'Spent',
-                  ]}
-                  labelFormatter={label => `Category: ${label}`}
-                />
-              }
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  // Sort payload by value in descending order (highest to lowest)
+                  const sortedPayload = [...payload].sort(
+                    (a, b) => (Number(b.value) || 0) - (Number(a.value) || 0),
+                  );
+
+                  return (
+                    <div className="rounded-lg border bg-background p-2 shadow-md">
+                      <div className="grid gap-2">
+                        <div className="flex flex-col">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                            Category: {label}
+                          </span>
+                        </div>
+                        {sortedPayload.map((entry, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div
+                              className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                              style={{
+                                backgroundColor:
+                                  entry.name === 'budgeted'
+                                    ? theme === THEME.DARK
+                                      ? '#ffffff'
+                                      : '#6b7280'
+                                    : theme === THEME.DARK
+                                      ? '#d1d5db'
+                                      : '#9ca3af',
+                              }}
+                            />
+                            <div className="flex w-full flex-wrap items-stretch gap-2">
+                              <span className="flex-1 text-xs text-muted-foreground">
+                                {entry.name === 'Budgeted' ? 'Budgeted' : 'Spent'}
+                              </span>
+                              <span className="text-xs font-mono font-medium tabular-nums text-foreground">
+                                {formatSummaryAmount(Number(entry.value))}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
             />
             <Bar
               dataKey="budgeted"
               name="Budgeted"
               fill="url(#budgetGradient)"
-              radius={[4, 4, 0, 0]}
-              filter="url(#barShadow)"
-              animationDuration={CHART_CONFIG.ANIMATION.DURATION.FAST}
-              animationBegin={CHART_CONFIG.ANIMATION.DELAY.SHORT}
+              radius={[2, 2, 0, 0]}
+              animationDuration={800}
+              animationBegin={150}
             />
             <Bar
               dataKey="spent"
               name="Spent"
-              radius={[4, 4, 0, 0]}
-              filter="url(#barShadow)"
-              animationDuration={CHART_CONFIG.ANIMATION.DURATION.FAST}
-              animationBegin={CHART_CONFIG.ANIMATION.DELAY.LONG}
+              radius={[2, 2, 0, 0]}
+              animationDuration={800}
+              animationBegin={250}
             >
               {budgetData.map((entry, index) => (
                 <Cell

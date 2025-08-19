@@ -85,12 +85,38 @@ export async function POST(request: Request) {
     const user = await findOrCreateUser(session.user.email);
     const data = await request.json();
 
-    const { name, period, startDate, endDate, currency = 'UAH', totalPlanned, categories } = data;
+    const {
+      name,
+      period,
+      startDate,
+      endDate,
+      currency = 'UAH',
+      totalPlanned,
+      categories,
+      isTemplate = false,
+      templateName,
+      autoApply = false,
+    } = data;
 
     // Validate required fields
     if (!name || !period || !startDate || !endDate || !totalPlanned) {
       return NextResponse.json(
         { error: 'Missing required fields: name, period, startDate, endDate, totalPlanned' },
+        { status: 400 },
+      );
+    }
+
+    // Check if budget with same name already exists for this user
+    const existingBudget = await prisma.budget.findFirst({
+      where: {
+        userId: user.id,
+        name: name,
+      },
+    });
+
+    if (existingBudget) {
+      return NextResponse.json(
+        { error: 'A budget with this name already exists. Please choose a different name.' },
         { status: 400 },
       );
     }
@@ -106,12 +132,19 @@ export async function POST(request: Request) {
         currency,
         totalPlanned: parseFloat(totalPlanned),
         isActive: true,
+        isTemplate,
+        templateName,
+        autoApply,
       },
     });
 
     // Create budget categories if provided
     if (categories && Array.isArray(categories) && categories.length > 0) {
-      const budgetCategories = categories.map((cat: any) => ({
+      interface BudgetCategoryInput {
+        categoryId: string;
+        planned: string;
+      }
+      const budgetCategories = categories.map((cat: BudgetCategoryInput) => ({
         budgetId: budget.id,
         categoryId: cat.categoryId,
         planned: parseFloat(cat.planned),
@@ -143,12 +176,10 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ budget: createdBudget });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating budget:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create budget' },
-      { status: 500 },
-    );
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create budget';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -163,8 +194,20 @@ export async function PUT(request: Request) {
     const user = await findOrCreateUser(session.user.email);
     const data = await request.json();
 
-    const { id, name, period, startDate, endDate, currency, totalPlanned, isActive, categories } =
-      data;
+    const {
+      id,
+      name,
+      period,
+      startDate,
+      endDate,
+      currency,
+      totalPlanned,
+      isActive,
+      categories,
+      isTemplate,
+      templateName,
+      autoApply,
+    } = data;
 
     // Verify budget ownership
     const existingBudget = await prisma.budget.findFirst({
@@ -178,6 +221,24 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Budget not found or access denied' }, { status: 404 });
     }
 
+    // Check if name is being changed and if new name already exists
+    if (name && name !== existingBudget.name) {
+      const nameExists = await prisma.budget.findFirst({
+        where: {
+          userId: user.id,
+          name: name,
+          id: { not: id }, // Exclude current budget
+        },
+      });
+
+      if (nameExists) {
+        return NextResponse.json(
+          { error: 'A budget with this name already exists. Please choose a different name.' },
+          { status: 400 },
+        );
+      }
+    }
+
     // Update the budget
     const _updatedBudget = await prisma.budget.update({
       where: { id },
@@ -189,6 +250,9 @@ export async function PUT(request: Request) {
         ...(currency && { currency }),
         ...(totalPlanned !== undefined && { totalPlanned: parseFloat(totalPlanned) }),
         ...(isActive !== undefined && { isActive }),
+        ...(isTemplate !== undefined && { isTemplate }),
+        ...(templateName !== undefined && { templateName }),
+        ...(autoApply !== undefined && { autoApply }),
       },
     });
 
@@ -201,7 +265,7 @@ export async function PUT(request: Request) {
 
       // Add new categories
       if (categories.length > 0) {
-        const budgetCategories = categories.map((cat: any) => ({
+        const budgetCategories = categories.map((cat: BudgetCategoryInput) => ({
           budgetId: id,
           categoryId: cat.categoryId,
           planned: parseFloat(cat.planned),
@@ -234,12 +298,10 @@ export async function PUT(request: Request) {
     });
 
     return NextResponse.json({ budget });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating budget:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update budget' },
-      { status: 500 },
-    );
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update budget';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -277,11 +339,9 @@ export async function DELETE(request: Request) {
     });
 
     return NextResponse.json({ message: 'Budget deleted successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting budget:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete budget' },
-      { status: 500 },
-    );
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete budget';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

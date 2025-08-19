@@ -194,6 +194,15 @@ model Budget {
   totalActual  Float          @default(0)
   isActive     Boolean        @default(true)
   isDemo       Boolean        @default(false)
+  
+  // Template functionality for recurring budgets
+  isTemplate   Boolean        @default(false)  // If true, this is a budget template
+  templateName String?        // Name of the template ("Monthly Expenses", "Living Costs")
+  autoApply    Boolean        @default(false)  // Automatically create budgets from template
+  parentTemplateId String?    // Reference to template if this budget was created from template
+  parentTemplate Budget?     @relation("BudgetTemplate", fields: [parentTemplateId], references: [id])
+  childBudgets   Budget[]     @relation("BudgetTemplate")
+  
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   

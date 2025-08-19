@@ -1,17 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -26,16 +18,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
-import { TableLoadingBar } from '@/components/ui/table-loading-bar';
 import { useToast } from '@/hooks/use-toast';
 import {
   Plus,
@@ -44,17 +26,13 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
-  Filter,
-  Search,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
-  RefreshCw,
   Receipt,
   DollarSign,
   Calendar,
   Tag,
-  X,
 } from 'lucide-react';
 import { AddTransactionForm } from '@/components/forms/AddTransactionForm';
 import {
@@ -64,8 +42,22 @@ import {
   TransactionFilters,
 } from '@/features/finance/queries/transactions';
 import { useAccounts } from '@/features/finance/queries/accounts';
-import { formatCurrency, formatSummaryAmount } from '@/lib/currency';
+import {
+  formatCurrency,
+  formatSummaryAmount,
+  currencyService,
+  BASE_CURRENCY,
+} from '@/lib/currency';
 import { AnimatedDiv } from '@/components/ui/animations';
+import {
+  DataTable,
+  TableFilters,
+  DataTableColumn,
+  FilterField,
+  createSearchFilter,
+  createSelectFilter,
+} from '@/components/ui/data-table';
+import { useDataTable } from '@/hooks/useDataTable';
 
 const transactionTypeIcons = {
   INCOME: Plus,
@@ -104,13 +96,17 @@ export function TransactionList() {
   const { data: accountsData } = useAccounts();
   const deleteTransaction = useDeleteTransaction();
 
+  // Data table hooks
+  const { currentPage, pageSize, onPageChange, onPageSizeChange, totalPages } = useDataTable({
+    initialPageSize: 50,
+  });
+
   // Filter states
   const [filters, setFilters] = useState<Partial<TransactionFilters>>({
     type: undefined,
     accountId: undefined,
     categoryId: undefined,
   });
-  const [limit, setLimit] = useState(50);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Dialog states
@@ -120,16 +116,25 @@ export function TransactionList() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Currency conversion states
+  const [incomeEUR, setIncomeEUR] = useState(0);
+  const [expensesEUR, setExpensesEUR] = useState(0);
+  const [transfersEUR, setTransfersEUR] = useState(0);
+  const [netIncomeEUR, setNetIncomeEUR] = useState(0);
+  const [isConverting, setIsConverting] = useState(false);
+
   // Get transactions with current filters
   const {
     data: transactionsData,
     isLoading,
     error,
     refetch,
+    isFetching,
   } = useTransactions({
     ...filters,
     search: searchTerm || undefined,
-    limit,
+    limit: pageSize,
+    offset: (currentPage - 1) * pageSize,
   });
 
   const transactions = transactionsData?.transactions || [];
@@ -144,6 +149,70 @@ export function TransactionList() {
   };
 
   const accounts = accountsData?.accounts || [];
+
+  // Convert transaction amounts to EUR
+  useEffect(() => {
+    const convertAmounts = async () => {
+      if (!summary) return;
+
+      setIsConverting(true);
+      try {
+        const fallbackRates: Record<string, number> = {
+          USD: 0.9,
+          UAH: 0.025,
+          GBP: 1.15,
+          PLN: 0.23,
+          CZK: 0.04,
+          CHF: 1.05,
+          CAD: 0.68,
+          JPY: 0.0062,
+        };
+
+        let convertedIncome = 0;
+        let convertedExpenses = 0;
+        let convertedTransfers = 0;
+
+        for (const transaction of transactions) {
+          const currency = transaction.currency || transaction.account.currency;
+          let amountInEUR = transaction.amount;
+
+          if (currency !== BASE_CURRENCY) {
+            try {
+              amountInEUR = await currencyService.convertToBaseCurrency(
+                transaction.amount,
+                currency,
+              );
+            } catch {
+              amountInEUR = transaction.amount * (fallbackRates[currency] || 1);
+            }
+          }
+
+          if (transaction.type === 'INCOME') {
+            convertedIncome += amountInEUR;
+          } else if (transaction.type === 'EXPENSE') {
+            convertedExpenses += amountInEUR;
+          } else if (transaction.type === 'TRANSFER') {
+            convertedTransfers += amountInEUR;
+          }
+        }
+
+        setIncomeEUR(convertedIncome);
+        setExpensesEUR(convertedExpenses);
+        setTransfersEUR(convertedTransfers);
+        setNetIncomeEUR(convertedIncome - convertedExpenses);
+      } catch (error) {
+        console.error('Failed to convert transaction amounts:', error);
+        setIncomeEUR(summary.income);
+        setExpensesEUR(summary.expenses);
+        setTransfersEUR(summary.transfers);
+        setNetIncomeEUR(summary.income - summary.expenses);
+      } finally {
+        setIsConverting(false);
+      }
+    };
+
+    convertAmounts();
+  }, [summary, transactions]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -201,24 +270,141 @@ export function TransactionList() {
       accountId: undefined,
       categoryId: undefined,
     });
-    setLimit(50);
     setSearchTerm('');
+    onPageChange(1);
   };
 
   const hasActiveFilters = filters.type || filters.accountId || filters.categoryId || searchTerm;
+
+  // Define table columns
+  const columns: DataTableColumn<Transaction>[] = [
+    {
+      key: 'date',
+      header: 'Date',
+      cell: transaction => (
+        <div className="flex items-center gap-2">
+          <Calendar className="h-3 w-3 text-muted-foreground" />
+          <span className="text-sm">{formatDate(transaction.date)}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'Type',
+      cell: transaction => {
+        const TypeIcon = transactionTypeIcons[transaction.type];
+        const typeColor = getTransactionTypeColor(transaction.type);
+        return (
+          <div
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${typeColor}`}
+          >
+            <TypeIcon className="h-3 w-3" />
+            {transaction.type.toLowerCase()}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'description',
+      header: 'Description',
+      cell: transaction => (
+        <div className="max-w-[200px]">
+          <div className="font-medium truncate">{transaction.description || 'No description'}</div>
+          {transaction.tags && transaction.tags.length > 0 && (
+            <div className="flex items-center gap-1 mt-1">
+              <Tag className="h-3 w-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                {transaction.tags.slice(0, 2).join(', ')}
+                {transaction.tags.length > 2 && ` +${transaction.tags.length - 2}`}
+              </span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      cell: transaction =>
+        transaction.category && (
+          <div className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: transaction.category.color }}
+            />
+            <span className="text-sm truncate max-w-[100px]">{transaction.category.name}</span>
+          </div>
+        ),
+    },
+    {
+      key: 'account',
+      header: 'Account',
+      cell: transaction => (
+        <div className="text-sm">
+          <div className="font-medium">{transaction.account.name}</div>
+          <Badge variant="outline" className="text-xs mt-1">
+            {transaction.currency || transaction.account.currency}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      key: 'amount',
+      header: 'Amount',
+      className: 'text-right',
+      cell: transaction => {
+        const amountColor = getAmountColor(transaction.type);
+        return (
+          <div className={`font-semibold ${amountColor}`}>
+            {transaction.type === 'EXPENSE' && '-'}
+            {transaction.type === 'INCOME' && '+'}
+            {formatCurrency(
+              transaction.amount,
+              transaction.currency || transaction.account.currency,
+              { useLargeNumberFormat: false },
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
+  // Define filter fields
+  const filterFields: FilterField[] = [
+    createSearchFilter('search', searchTerm, setSearchTerm, 'Search transactions...'),
+    createSelectFilter(
+      'type',
+      filters.type,
+      value =>
+        setFilters(prev => ({ ...prev, type: value === 'all' ? undefined : (value as any) })),
+      [
+        { value: 'INCOME', label: 'Income' },
+        { value: 'EXPENSE', label: 'Expense' },
+        { value: 'TRANSFER', label: 'Transfer' },
+      ],
+      'types',
+    ),
+    createSelectFilter(
+      'account',
+      filters.accountId,
+      value => setFilters(prev => ({ ...prev, accountId: value === 'all' ? undefined : value })),
+      accounts.map(account => ({ value: account.id, label: account.name })),
+      'accounts',
+    ),
+  ];
 
   if (error) {
     return (
       <AnimatedDiv variant="slideUp" className="container mx-auto py-6">
         <Card>
-          <CardContent className="py-8 text-center">
+          <div className="py-8 text-center">
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
             <p className="text-lg font-medium mb-2">Failed to load transactions</p>
             <p className="text-muted-foreground mb-4">
               There was an error loading your transactions.
             </p>
             <Button onClick={() => refetch()}>Try Again</Button>
-          </CardContent>
+          </div>
         </Card>
       </AnimatedDiv>
     );
@@ -247,13 +433,30 @@ export function TransactionList() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-500/10 rounded-lg">
+              <DollarSign className="h-5 w-5 text-purple-500" />
+            </div>
+            <h3 className="font-semibold">Net Income</h3>
+          </div>
+          <div
+            className={`text-2xl font-bold mb-1 ${
+              netIncomeEUR >= 0 ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
+            {isConverting ? 'Converting...' : formatSummaryAmount(netIncomeEUR)}
+          </div>
+          <p className="text-sm text-muted-foreground">This period</p>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-green-500/10 rounded-lg">
               <TrendingUp className="h-5 w-5 text-green-500" />
             </div>
             <h3 className="font-semibold">Income</h3>
           </div>
           <div className="text-2xl font-bold mb-1 text-green-600">
-            {formatSummaryAmount(summary.income)}
+            {isConverting ? 'Converting...' : formatSummaryAmount(incomeEUR)}
           </div>
           <p className="text-sm text-muted-foreground">{summary.incomeCount} transactions</p>
         </Card>
@@ -266,7 +469,7 @@ export function TransactionList() {
             <h3 className="font-semibold">Expenses</h3>
           </div>
           <div className="text-2xl font-bold mb-1 text-red-600">
-            {formatSummaryAmount(summary.expenses)}
+            {isConverting ? 'Converting...' : formatSummaryAmount(expensesEUR)}
           </div>
           <p className="text-sm text-muted-foreground">{summary.expenseCount} transactions</p>
         </Card>
@@ -279,326 +482,92 @@ export function TransactionList() {
             <h3 className="font-semibold">Transfers</h3>
           </div>
           <div className="text-2xl font-bold mb-1 text-blue-600">
-            {formatSummaryAmount(summary.transfers)}
+            {isConverting ? 'Converting...' : formatSummaryAmount(transfersEUR)}
           </div>
           <p className="text-sm text-muted-foreground">{summary.transferCount} transactions</p>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-purple-500/10 rounded-lg">
-              <DollarSign className="h-5 w-5 text-purple-500" />
-            </div>
-            <h3 className="font-semibold">Net Income</h3>
-          </div>
-          <div
-            className={`text-2xl font-bold mb-1 ${summary.income - summary.expenses >= 0 ? 'text-green-600' : 'text-red-600'}`}
-          >
-            {formatSummaryAmount(summary.income - summary.expenses)}
-          </div>
-          <p className="text-sm text-muted-foreground">This period</p>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filters
-              </CardTitle>
-              <CardDescription>Filter and search your transactions</CardDescription>
-            </div>
-            {hasActiveFilters && (
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                <X className="h-4 w-4 mr-2" />
-                Clear Filters
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search transactions..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            {/* Type Filter */}
-            <Select
-              value={filters.type || 'all'}
-              onValueChange={value =>
-                setFilters(prev => ({
-                  ...prev,
-                  type: value === 'all' ? undefined : (value as any),
-                }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="INCOME">Income</SelectItem>
-                <SelectItem value="EXPENSE">Expense</SelectItem>
-                <SelectItem value="TRANSFER">Transfer</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Account Filter */}
-            <Select
-              value={filters.accountId || 'all'}
-              onValueChange={value =>
-                setFilters(prev => ({ ...prev, accountId: value === 'all' ? undefined : value }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All accounts" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All accounts</SelectItem>
-                {accounts.map((account: any) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Limit */}
-            <Select value={limit.toString()} onValueChange={value => setLimit(parseInt(value))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="25">25 transactions</SelectItem>
-                <SelectItem value="50">50 transactions</SelectItem>
-                <SelectItem value="100">100 transactions</SelectItem>
-                <SelectItem value="200">200 transactions</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <TableFilters
+        fields={filterFields}
+        onClearFilters={clearFilters}
+        onRefresh={refetch}
+        isFetching={isFetching}
+        hasActiveFilters={hasActiveFilters}
+      />
 
       {/* Transactions Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Receipt className="h-5 w-5" />
-                Recent Transactions
-              </CardTitle>
-              <CardDescription>
-                Your transaction history {hasActiveFilters && '(filtered)'}
-              </CardDescription>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+      <DataTable
+        data={transactions}
+        columns={columns}
+        isLoading={isLoading}
+        isFetching={isFetching}
+        currentPage={currentPage}
+        totalPages={totalPages(summary.totalTransactions)}
+        pageSize={pageSize}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        title={
+          <>
+            <Receipt className="h-5 w-5" />
+            Recent Transactions
+          </>
+        }
+        description={`Your transaction history ${hasActiveFilters ? '(filtered)' : ''}`}
+        onRefresh={refetch}
+        actions={transaction => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedTransaction(transaction);
+                  setShowEditDialog(true);
+                }}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedTransaction(transaction);
+                  setShowDeleteDialog(true);
+                }}
+                className="text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        emptyMessage={
+          hasActiveFilters ? 'No transactions match your filters' : 'No transactions found'
+        }
+        emptyDescription={
+          hasActiveFilters
+            ? 'Try adjusting your filters or search terms'
+            : 'Create your first transaction to get started'
+        }
+        emptyActions={
+          !hasActiveFilters && (
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Transaction
             </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="relative">
-            <TableLoadingBar isLoading={isLoading} className="absolute top-0 left-0 right-0 z-10" />
-
-            {transactions.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 z-10">
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Account</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading
-                      ? // Skeleton loader rows
-                        Array.from({ length: 5 }).map((_, index) => (
-                          <TableRow key={`skeleton-${index}`}>
-                            <TableCell>
-                              <Skeleton className="h-4 w-16" />
-                            </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-6 w-20 rounded-full" />
-                            </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-4 w-40" />
-                            </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-4 w-24" />
-                            </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-4 w-28" />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Skeleton className="h-4 w-20 ml-auto" />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Skeleton className="h-8 w-8" />
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      : transactions.map(transaction => {
-                          const TypeIcon = transactionTypeIcons[transaction.type];
-                          const typeColor = getTransactionTypeColor(transaction.type);
-                          const amountColor = getAmountColor(transaction.type);
-
-                          return (
-                            <TableRow key={transaction.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-sm">{formatDate(transaction.date)}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${typeColor}`}
-                                >
-                                  <TypeIcon className="h-3 w-3" />
-                                  {transaction.type.toLowerCase()}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="max-w-[200px]">
-                                  <div className="font-medium truncate">
-                                    {transaction.description || 'No description'}
-                                  </div>
-                                  {transaction.tags && transaction.tags.length > 0 && (
-                                    <div className="flex items-center gap-1 mt-1">
-                                      <Tag className="h-3 w-3 text-muted-foreground" />
-                                      <span className="text-xs text-muted-foreground">
-                                        {transaction.tags.slice(0, 2).join(', ')}
-                                        {transaction.tags.length > 2 &&
-                                          ` +${transaction.tags.length - 2}`}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {transaction.category && (
-                                  <div className="flex items-center gap-2">
-                                    <div
-                                      className="w-3 h-3 rounded-full flex-shrink-0"
-                                      style={{ backgroundColor: transaction.category.color }}
-                                    />
-                                    <span className="text-sm truncate max-w-[100px]">
-                                      {transaction.category.name}
-                                    </span>
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  <div className="font-medium">{transaction.account.name}</div>
-                                  <Badge variant="outline" className="text-xs mt-1">
-                                    {transaction.currency || transaction.account.currency}
-                                  </Badge>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className={`font-semibold ${amountColor}`}>
-                                  {transaction.type === 'EXPENSE' && '-'}
-                                  {transaction.type === 'INCOME' && '+'}
-                                  {formatCurrency(
-                                    transaction.amount,
-                                    transaction.currency || transaction.account.currency,
-                                    {
-                                      useLargeNumberFormat: false,
-                                    },
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedTransaction(transaction);
-                                        setShowEditDialog(true);
-                                      }}
-                                    >
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedTransaction(transaction);
-                                        setShowDeleteDialog(true);
-                                      }}
-                                      className="text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Receipt className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">
-                  {hasActiveFilters
-                    ? 'No transactions match your filters'
-                    : 'No transactions found'}
-                </p>
-                <p className="text-muted-foreground mb-4">
-                  {hasActiveFilters
-                    ? 'Try adjusting your filters or search terms'
-                    : 'Create your first transaction to get started'}
-                </p>
-                {!hasActiveFilters && (
-                  <Button onClick={() => setShowCreateDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Transaction
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          )
+        }
+      />
 
       {/* Create Transaction Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New Transaction</DialogTitle>
-            <DialogDescription>
-              Record a new income, expense, or transfer transaction.
-            </DialogDescription>
-          </DialogHeader>
           <AddTransactionForm
             onSuccess={handleFormSuccess}
             onCancel={() => setShowCreateDialog(false)}

@@ -43,12 +43,17 @@ async function fetchFinanceStats(): Promise<FinanceStatsResponse> {
     throw new Error('Failed to fetch accounts');
   }
 
+  interface Account {
+    balance: number;
+    currency: string;
+    isActive: boolean;
+  }
   const accountsData = await accountsResponse.json();
-  const { accounts } = accountsData;
+  const { accounts } = accountsData as { accounts: Account[] };
 
   // Calculate current net worth (converted to EUR)
   let currentNetWorth = 0;
-  for (const acc of accounts.filter((acc: any) => acc.isActive)) {
+  for (const acc of accounts.filter((acc: Account) => acc.isActive)) {
     let balanceInEur = acc.balance;
     if (acc.currency !== BASE_CURRENCY) {
       try {
@@ -81,7 +86,13 @@ async function fetchFinanceStats(): Promise<FinanceStatsResponse> {
     const monthName = format(month, 'MMM');
 
     // Filter transactions for this month
-    const monthTransactions = transactions.filter((t: any) => {
+    interface Transaction {
+      date: string;
+      amount: number;
+      currency: string;
+      type: 'INCOME' | 'EXPENSE';
+    }
+    const monthTransactions = transactions.filter((t: Transaction) => {
       const transactionDate = new Date(t.date);
       return format(transactionDate, 'yyyy-MM') === monthKey;
     });
@@ -90,7 +101,7 @@ async function fetchFinanceStats(): Promise<FinanceStatsResponse> {
     let monthlyIncome = 0;
     let monthlyExpenses = 0;
 
-    for (const transaction of monthTransactions) {
+    for (const transaction of monthTransactions as Transaction[]) {
       let amountInEur = transaction.amount;
       if (transaction.currency && transaction.currency !== BASE_CURRENCY) {
         try {

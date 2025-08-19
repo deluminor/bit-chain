@@ -22,6 +22,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { subDays, startOfMonth } from 'date-fns';
 import { currencyService, formatCurrency, BASE_CURRENCY } from '@/lib/currency';
+import { useTheme } from '@/providers/ThemeProvider';
+import { THEME } from '@/store';
+import {
+  MINIMALIST_PIE_COLORS,
+  MINIMALIST_PIE_COLORS_DARK,
+} from '@/constants/minimalist-chart-styles';
 
 interface CategorySpendingChartProps {
   type?: 'INCOME' | 'EXPENSE';
@@ -33,6 +39,7 @@ export function CategorySpendingChart({
   period = 'month',
 }: CategorySpendingChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(period);
+  const { theme } = useTheme();
 
   // Calculate date range based on period
   const dateRange = useMemo(() => {
@@ -94,13 +101,12 @@ export function CategorySpendingChart({
       for (const transaction of transactionsData.transactions) {
         const categoryId = transaction.category.id;
         const categoryName = transaction.category.name;
-        const categoryColor = transaction.category.color;
 
         if (!categoryTotals.has(categoryId)) {
           categoryTotals.set(categoryId, {
             name: categoryName,
             amount: 0,
-            color: categoryColor,
+            color: '', // Will be set later with minimalist colors
             count: 0,
           });
         }
@@ -120,6 +126,12 @@ export function CategorySpendingChart({
         .sort((a, b) => b.amount - a.amount)
         .slice(0, 8); // Show top 8 categories
 
+      // Apply minimalist colors based on theme
+      const colors = theme === THEME.DARK ? MINIMALIST_PIE_COLORS_DARK : MINIMALIST_PIE_COLORS;
+      processedData.forEach((item, index) => {
+        item.color = colors[index % colors.length] || '#000000';
+      });
+
       setChartData(processedData);
     };
 
@@ -133,10 +145,10 @@ export function CategorySpendingChart({
 
   const chartConfig = useMemo(() => {
     const config: ChartConfig = {};
-    chartData.forEach((item, index) => {
+    chartData.forEach(item => {
       config[item.name] = {
         label: item.name,
-        color: item.color || `hsl(${(index * 45) % 360}, 70%, 50%)`,
+        color: item.color,
       };
     });
     return config;
@@ -212,10 +224,7 @@ export function CategorySpendingChart({
                     dataKey="amount"
                   >
                     {chartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color || `hsl(${(index * 45) % 360}, 70%, 50%)`}
-                      />
+                      <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <ChartTooltip
@@ -249,7 +258,7 @@ export function CategorySpendingChart({
             </div>
 
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
-              {chartData.map((item, index) => {
+              {chartData.map(item => {
                 const percentage = ((item.amount / total) * 100).toFixed(2);
                 return (
                   <div
@@ -260,7 +269,7 @@ export function CategorySpendingChart({
                       <div
                         className="w-3 h-3 rounded-full"
                         style={{
-                          backgroundColor: item.color || `hsl(${(index * 45) % 360}, 70%, 50%)`,
+                          backgroundColor: item.color,
                         }}
                       />
                       <div>

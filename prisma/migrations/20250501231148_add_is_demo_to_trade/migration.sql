@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "Trade" ADD COLUMN     "isDemo" BOOLEAN NOT NULL DEFAULT false,
-ALTER COLUMN "deposit" DROP DEFAULT;

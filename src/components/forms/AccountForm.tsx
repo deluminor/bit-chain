@@ -138,7 +138,9 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: (error as any)?.response?.data?.error || 'Something went wrong',
+        description:
+          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+          'Something went wrong',
         variant: 'destructive',
       });
     }

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 export interface ReportData {
   title: string;
   period: string;
-  data: any;
+  data: unknown;
   generatedAt: string;
 }
 

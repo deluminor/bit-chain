@@ -9,6 +9,7 @@ import {
   PieChartIcon,
   Target,
   TrendingUpIcon,
+  Tag,
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -66,6 +67,11 @@ const getFinanceNavigation = () => [
     title: 'Transactions',
     url: '/transactions',
     icon: ArrowRightLeftIcon,
+  },
+  {
+    title: 'Categories',
+    url: '/categories',
+    icon: Tag,
   },
   {
     title: 'Budget',

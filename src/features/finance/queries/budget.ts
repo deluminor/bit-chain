@@ -27,6 +27,13 @@ export interface Budget {
   totalActual: number;
   isActive: boolean;
   isDemo: boolean;
+
+  // Template functionality
+  isTemplate: boolean;
+  templateName?: string;
+  autoApply: boolean;
+  parentTemplateId?: string;
+
   createdAt: string;
   updatedAt: string;
   categories: BudgetCategory[];
@@ -46,6 +53,12 @@ export interface CreateBudgetData {
   endDate: string;
   currency?: string;
   totalPlanned: number;
+
+  // Template functionality
+  isTemplate?: boolean;
+  templateName?: string;
+  autoApply?: boolean;
+
   categories?: {
     categoryId: string;
     planned: number;
@@ -147,6 +160,49 @@ export const useDeleteBudget = () => {
       }
 
       return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    },
+  });
+};
+
+// Fetch budget templates
+export const useBudgetTemplates = () => {
+  return useQuery({
+    queryKey: ['budget-templates'],
+    queryFn: async () => {
+      const response = await fetch('/api/finance/budget/templates');
+      if (!response.ok) {
+        throw new Error('Failed to fetch budget templates');
+      }
+      const data = await response.json();
+      return data.templates as Budget[];
+    },
+  });
+};
+
+// Apply template to create new budget
+export const useApplyBudgetTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { templateId: string; targetDate?: string }) => {
+      const response = await fetch('/api/finance/budget/templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to apply budget template');
+      }
+
+      const result = await response.json();
+      return result.budget as Budget;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });

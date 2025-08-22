@@ -114,7 +114,7 @@ export default function CategoriesPage() {
       await deleteCategory.mutateAsync(selectedCategory.id);
       setShowDeleteDialog(false);
       setSelectedCategory(null);
-    } catch (error) {
+    } catch {
       // Error is handled by the mutation
     } finally {
       setIsDeleting(false);
@@ -127,7 +127,7 @@ export default function CategoriesPage() {
         id: category.id,
         isActive: !category.isActive,
       });
-    } catch (error) {
+    } catch {
       // Error is handled by the mutation
     }
   };
@@ -239,7 +239,10 @@ export default function CategoriesPage() {
       'type',
       filters.type,
       value =>
-        setFilters(prev => ({ ...prev, type: value === 'all' ? undefined : (value as any) })),
+        setFilters(prev => ({
+          ...prev,
+          type: value === 'all' ? undefined : (value as 'INCOME' | 'EXPENSE'),
+        })),
       [
         { value: 'INCOME', label: 'Income' },
         { value: 'EXPENSE', label: 'Expense' },
@@ -282,199 +285,213 @@ export default function CategoriesPage() {
   }
 
   return (
-    <AnimatedDiv variant="slideUp" className="container mx-auto py-6">
-      <div className="flex flex-col gap-4 md:gap-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-primary shadow-sm">
-              <Tag className="h-6 w-6 text-primary-foreground" />
+    <AnimatedDiv variant="slideUp" className="space-y-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col gap-3 md:gap-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-xl bg-primary shadow-sm">
+                <Tag className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold">Categories</h1>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Manage your transaction categories
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold">Categories</h1>
-              <p className="text-muted-foreground">Manage your transaction categories</p>
+            <Button onClick={() => setShowCreateDialog(true)} className="w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Category
+            </Button>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
+                {counts.income}
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Income Categories</p>
+            </div>
+
+            <div className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">
+                {counts.expense}
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Expense Categories</p>
+            </div>
+
+            <div className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">
+                {counts.parents}
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Parent Categories</p>
+            </div>
+
+            <div className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">
+                {counts.children}
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Subcategories</p>
             </div>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Category
-          </Button>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="p-6 rounded-lg border bg-card">
-            <div className="text-2xl font-bold text-green-600">{counts.income}</div>
-            <p className="text-sm text-muted-foreground">Income Categories</p>
-          </div>
+          {/* Filters */}
+          <TableFilters
+            fields={filterFields}
+            onClearFilters={clearFilters}
+            onRefresh={refetch}
+            isFetching={isFetching}
+            hasActiveFilters={hasActiveFilters}
+            gridColumns="grid-cols-1 md:grid-cols-3"
+          />
 
-          <div className="p-6 rounded-lg border bg-card">
-            <div className="text-2xl font-bold text-red-600">{counts.expense}</div>
-            <p className="text-sm text-muted-foreground">Expense Categories</p>
-          </div>
-
-          <div className="p-6 rounded-lg border bg-card">
-            <div className="text-2xl font-bold text-blue-600">{counts.parents}</div>
-            <p className="text-sm text-muted-foreground">Parent Categories</p>
-          </div>
-
-          <div className="p-6 rounded-lg border bg-card">
-            <div className="text-2xl font-bold text-purple-600">{counts.children}</div>
-            <p className="text-sm text-muted-foreground">Subcategories</p>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <TableFilters
-          fields={filterFields}
-          onClearFilters={clearFilters}
-          onRefresh={refetch}
-          isFetching={isFetching}
-          hasActiveFilters={hasActiveFilters}
-          gridColumns="grid-cols-1 md:grid-cols-3"
-        />
-
-        {/* Categories Table */}
-        <DataTable
-          data={categories}
-          columns={columns}
-          isLoading={isLoading}
-          isFetching={isFetching}
-          currentPage={currentPage}
-          totalPages={totalPages(categories.length)}
-          pageSize={pageSize}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
-          pageSizeOptions={[10, 25, 50, 100]}
-          title={
-            <>
-              <Tag className="h-5 w-5" />
-              Categories
-            </>
-          }
-          description={`Your transaction categories ${hasActiveFilters ? '(filtered)' : ''}`}
-          onRefresh={refetch}
-          actions={category => (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedCategory(category);
-                    setShowEditDialog(true);
-                  }}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleToggleActive(category)}>
-                  {category.isActive ? (
-                    <>
-                      <EyeOff className="h-4 w-4 mr-2" />
-                      Deactivate
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-4 w-4 mr-2" />
-                      Activate
-                    </>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedCategory(category);
-                    setShowDeleteDialog(true);
-                  }}
-                  className="text-destructive"
-                  disabled={category.isDefault}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          emptyMessage={
-            hasActiveFilters ? 'No categories match your filters' : 'No categories found'
-          }
-          emptyDescription={
-            hasActiveFilters
-              ? 'Try adjusting your filters'
-              : 'Create your first category to get started'
-          }
-          emptyActions={
-            !hasActiveFilters && (
-              <Button onClick={() => setShowCreateDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Category
-              </Button>
-            )
-          }
-          showPagination={categories.length > 10}
-        />
-
-        {/* Create Category Dialog */}
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create Category</DialogTitle>
-            </DialogHeader>
-            <CategoryForm
-              onSuccess={handleFormSuccess}
-              onCancel={() => setShowCreateDialog(false)}
+          {/* Categories Table */}
+          <div className="overflow-x-auto">
+            <DataTable
+              data={categories}
+              columns={columns}
+              isLoading={isLoading}
+              isFetching={isFetching}
+              currentPage={currentPage}
+              totalPages={totalPages(categories.length)}
+              pageSize={pageSize}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+              pageSizeOptions={[10, 25, 50, 100]}
+              title={
+                <>
+                  <Tag className="h-5 w-5" />
+                  Categories
+                </>
+              }
+              description={`Your transaction categories ${hasActiveFilters ? '(filtered)' : ''}`}
+              onRefresh={refetch}
+              actions={category => (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setShowEditDialog(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleToggleActive(category)}>
+                      {category.isActive ? (
+                        <>
+                          <EyeOff className="h-4 w-4 mr-2" />
+                          Deactivate
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Activate
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setShowDeleteDialog(true);
+                      }}
+                      className="text-destructive"
+                      disabled={category.isDefault}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              emptyMessage={
+                hasActiveFilters ? 'No categories match your filters' : 'No categories found'
+              }
+              emptyDescription={
+                hasActiveFilters
+                  ? 'Try adjusting your filters'
+                  : 'Create your first category to get started'
+              }
+              emptyActions={
+                !hasActiveFilters && (
+                  <Button onClick={() => setShowCreateDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Category
+                  </Button>
+                )
+              }
+              showPagination={categories.length > 10}
             />
-          </DialogContent>
-        </Dialog>
+          </div>
 
-        {/* Edit Category Dialog */}
-        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Category</DialogTitle>
-            </DialogHeader>
-            <CategoryForm
-              category={selectedCategory || undefined}
-              onSuccess={handleFormSuccess}
-              onCancel={() => {
-                setShowEditDialog(false);
-                setSelectedCategory(null);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+          {/* Create Category Dialog */}
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create Category</DialogTitle>
+              </DialogHeader>
+              <CategoryForm
+                onSuccess={handleFormSuccess}
+                onCancel={() => setShowCreateDialog(false)}
+              />
+            </DialogContent>
+          </Dialog>
 
-        {/* Delete Category Dialog */}
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Category</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete "{selectedCategory?.name}"? This action cannot be
-                undone.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDeleteDialog(false);
+          {/* Edit Category Dialog */}
+          <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Category</DialogTitle>
+              </DialogHeader>
+              <CategoryForm
+                category={selectedCategory || undefined}
+                onSuccess={handleFormSuccess}
+                onCancel={() => {
+                  setShowEditDialog(false);
                   setSelectedCategory(null);
                 }}
-                disabled={isDeleting}
-              >
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteCategory} disabled={isDeleting}>
-                {isDeleting ? 'Deleting...' : 'Delete Category'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Category Dialog */}
+          <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Category</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete "{selectedCategory?.name}"? This action cannot be
+                  undone.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteDialog(false);
+                    setSelectedCategory(null);
+                  }}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteCategory} disabled={isDeleting}>
+                  {isDeleting ? 'Deleting...' : 'Delete Category'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </AnimatedDiv>
   );

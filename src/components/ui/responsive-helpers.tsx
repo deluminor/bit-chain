@@ -142,12 +142,21 @@ interface ResponsiveChartProps {
 export function ResponsiveChart({
   children,
   className,
-  height = { mobile: 300, desktop: 400 },
+  height, // = { mobile: 300, desktop: 400 },
 }: ResponsiveChartProps) {
   const isMobile = useIsMobile();
-  const chartHeight = isMobile ? `h-[${height.mobile}px]` : `h-[${height.desktop}px]`;
 
-  return <div className={cn('w-full', chartHeight, className)}>{children}</div>;
+  return (
+    <div
+      className={cn('w-full', className)}
+      style={{
+        height: height ? (isMobile ? `${height.mobile}px` : `${height.desktop}px`) : 'auto',
+        minHeight: height ? (isMobile ? `${height.mobile}px` : `${height.desktop}px`) : 'auto',
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 // Responsive modal/dialog

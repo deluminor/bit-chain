@@ -19,7 +19,6 @@ import {
 import { useTheme } from '@/providers/ThemeProvider';
 import { THEME } from '@/store';
 import { ChartSkeleton } from './ChartSkeleton';
-import { getMinimalistColors } from '@/constants/minimalist-chart-styles';
 
 interface RadarChartData {
   name: string;
@@ -64,7 +63,7 @@ export function RadarChartComponent({
         <CardDescription className="text-sm text-muted-foreground">{description}</CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
-        <ChartContainer config={chartConfig} className="aspect-square h-[300px] w-full">
+        <ChartContainer config={chartConfig} className="aspect-square min-h-[250px] h-auto w-full">
           <RadarChart data={data} margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
             <defs>
               <linearGradient id="radarFill" x1="0" y1="0" x2="0" y2="1">
@@ -78,11 +77,12 @@ export function RadarChartComponent({
               </linearGradient>
             </defs>
             <PolarGrid
-              stroke={isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}
+              stroke={isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'}
               strokeWidth={0.5}
               strokeDasharray="1 2"
               radialLines={false}
               gridType="polygon"
+              className="hidden md:block" // Hide grid on mobile for simplicity
             />
             <PolarAngleAxis
               dataKey="name"

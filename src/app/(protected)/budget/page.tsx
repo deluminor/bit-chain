@@ -69,7 +69,7 @@ export default function BudgetPage() {
     return (
       <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 md:gap-0">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-xl bg-primary shadow-sm">
                 <PieChart className="h-6 w-6 text-primary-foreground" />
@@ -98,7 +98,7 @@ export default function BudgetPage() {
         </div>
 
         {/* Budget Performance Chart Skeleton */}
-        <div className="px-4 lg:px-6 space-y-6">
+        <div className="px-4 lg:px-6 space-y-8 md:space-y-12">
           <ChartSkeleton />
 
           {/* Category Budget Breakdown Skeleton */}
@@ -114,7 +114,7 @@ export default function BudgetPage() {
   return (
     <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 md:gap-0">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-xl bg-primary shadow-sm">
               <PieChart className="h-6 w-6 text-primary-foreground" />
@@ -124,7 +124,7 @@ export default function BudgetPage() {
               <p className="text-muted-foreground">Track your spending and manage your finances</p>
             </div>
           </div>
-          <Button onClick={() => setShowCreateForm(true)}>
+          <Button onClick={() => setShowCreateForm(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Create Budget
           </Button>
@@ -134,7 +134,7 @@ export default function BudgetPage() {
       {/* Budget Overview Stats */}
       <div className="px-4 lg:px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="p-6">
+          <Card className="p-2 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-green-500/10 rounded-lg">
                 <DollarSign className="h-5 w-5 text-green-500" />
@@ -145,7 +145,7 @@ export default function BudgetPage() {
             <p className="text-sm text-muted-foreground">Total planned</p>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-2 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <TrendingUp className="h-5 w-5 text-blue-500" />
@@ -161,7 +161,7 @@ export default function BudgetPage() {
             </p>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-2 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-purple-500/10 rounded-lg">
                 <Target className="h-5 w-5 text-purple-500" />
@@ -327,10 +327,11 @@ export default function BudgetPage() {
                               title: 'Success',
                               description: `Budget created from template "${template.templateName || template.name}"`,
                             });
-                          } catch (error: any) {
+                          } catch (error) {
                             toast({
                               title: 'Error',
-                              description: error.message,
+                              description:
+                                error instanceof Error ? error.message : 'Failed to apply template',
                               variant: 'destructive',
                             });
                           }
@@ -378,7 +379,7 @@ export default function BudgetPage() {
 
         {/* Category Budget Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card className="p-6">
+          <Card className="p-2 md:p-6">
             <h3 className="font-semibold mb-4">Category Breakdown</h3>
             <div className="space-y-4">
               {activeBudget ? (
@@ -419,7 +420,7 @@ export default function BudgetPage() {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-2 md:p-6">
             <h3 className="font-semibold mb-4">Budget Alerts</h3>
             <div className="space-y-3">
               {activeBudget && activeBudget.categories.length > 0 ? (

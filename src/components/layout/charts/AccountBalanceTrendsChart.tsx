@@ -14,6 +14,11 @@ import { useAccountBalanceTrends } from '@/features/finance/hooks/useAccountBala
 import { useIsClient } from '@/hooks/useIsClient';
 import { formatSummaryAmount } from '@/lib/currency';
 
+type BalanceTrendsData = {
+  date: string;
+  [accountName: string]: string | number;
+};
+
 const chartConfig = {
   accounts: {
     label: 'Account Balances',
@@ -48,14 +53,16 @@ export function AccountBalanceTrendsChart() {
   // Sort accounts by their latest balance (largest first)
   const sortedAccountNames = accountNames.sort((a, b) => {
     const latestDataPoint = balanceTrends[balanceTrends.length - 1] || {};
-    const balanceA = Number((latestDataPoint as any)[a] || 0);
-    const balanceB = Number((latestDataPoint as any)[b] || 0);
+    const balanceA = Number((latestDataPoint as BalanceTrendsData)[a] || 0);
+    const balanceB = Number((latestDataPoint as BalanceTrendsData)[b] || 0);
     return balanceB - balanceA;
   });
 
   // Filter to show only accounts with non-zero balances
   const filteredAccountNames = sortedAccountNames.filter(accountName => {
-    return balanceTrends.some(dataPoint => Number((dataPoint as any)[accountName] || 0) > 0);
+    return balanceTrends.some(
+      dataPoint => Number((dataPoint as BalanceTrendsData)[accountName] || 0) > 0,
+    );
   });
 
   // Use original balance trends data for individual account lines
@@ -182,8 +189,12 @@ export function AccountBalanceTrendsChart() {
               const isIncomeStyle = index % 2 === 0;
               const gradientId = isIncomeStyle ? 'incomeGradient' : 'expenseGradient';
               const strokeColor = isIncomeStyle
-                ? (theme === THEME.DARK ? '#ffffff' : '#4b5563')
-                : (theme === THEME.DARK ? '#d1d5db' : '#6b7280');
+                ? theme === THEME.DARK
+                  ? '#ffffff'
+                  : '#4b5563'
+                : theme === THEME.DARK
+                  ? '#d1d5db'
+                  : '#6b7280';
               return (
                 <Area
                   key={accountName}

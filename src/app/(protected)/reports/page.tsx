@@ -93,7 +93,13 @@ export default function ReportsPage() {
   const handleGenerateReport = async (reportId: string) => {
     try {
       await generateReport.mutateAsync({
-        type: reportId as any,
+        type: reportId as
+          | 'income-expenses'
+          | 'category-analysis'
+          | 'cash-flow'
+          | 'budget-performance'
+          | 'account-summary'
+          | 'goal-progress',
         period: selectedPeriod,
         format: 'json',
       });
@@ -102,10 +108,10 @@ export default function ReportsPage() {
         title: 'Success',
         description: 'Report generated successfully',
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to generate report',
+        description: error instanceof Error ? error.message : 'Failed to generate report',
         variant: 'destructive',
       });
     }
@@ -114,7 +120,13 @@ export default function ReportsPage() {
   const handleExportReport = async (reportId: string, format: 'csv' | 'pdf' = 'csv') => {
     try {
       await exportReport.mutateAsync({
-        type: reportId as any,
+        type: reportId as
+          | 'income-expenses'
+          | 'category-analysis'
+          | 'cash-flow'
+          | 'budget-performance'
+          | 'account-summary'
+          | 'goal-progress',
         period: selectedPeriod,
         format,
       });
@@ -123,10 +135,10 @@ export default function ReportsPage() {
         title: 'Success',
         description: `Report exported as ${format.toUpperCase()} successfully`,
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to export report',
+        description: error instanceof Error ? error.message : 'Failed to export report',
         variant: 'destructive',
       });
     }
@@ -156,278 +168,287 @@ export default function ReportsPage() {
   };
 
   return (
-    <AnimatedDiv variant="slideUp" className="flex flex-col gap-6 py-6 min-h-screen">
-      <div className="px-4 lg:px-6">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-semibold text-foreground mb-2">Financial Reports</h1>
-            <p className="text-muted-foreground">Comprehensive analysis of your financial data</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <Calendar className="h-4 w-4 mr-2" />
-              Custom Range
-            </Button>
-            <Button size="sm" onClick={handleExportAll} disabled={exportReport.isPending}>
-              <Download className="h-4 w-4 mr-2" />
-              {exportReport.isPending ? 'Exporting...' : 'Export All'}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Stats Overview */}
-      <div className="px-4 lg:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {statsLoading
-            ? Array.from({ length: 4 }).map((_, index) => (
-                <Card key={index} className="p-4">
-                  <div className="animate-pulse space-y-3">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="h-8 bg-muted rounded w-1/2"></div>
-                    <div className="h-6 bg-muted rounded w-full"></div>
-                  </div>
-                </Card>
-              ))
-            : quickStats.map((stat, index) => (
-                <Card key={index} className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium text-sm text-muted-foreground">{stat.title}</h3>
-                    <div
-                      className={`p-1.5 rounded-lg ${
-                        stat.trend === 'up'
-                          ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400'
-                          : 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400'
-                      }`}
-                    >
-                      {stat.trend === 'up' ? (
-                        <ArrowUpRight className="h-4 w-4" />
-                      ) : (
-                        <ArrowDownRight className="h-4 w-4" />
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-2xl font-semibold mb-2">{stat.value}</div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-sm font-medium px-2 py-1 rounded ${
-                        stat.trend === 'up'
-                          ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400'
-                          : 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400'
-                      }`}
-                    >
-                      {stat.change}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{stat.period}</span>
-                  </div>
-                </Card>
-              ))}
-        </div>
-      </div>
-
-      {/* Period Selection */}
-      <div className="px-4 lg:px-6">
-        <div className="flex items-center justify-center mb-8">
-          <div className="inline-flex bg-muted rounded-lg p-1">
-            {['weekly', 'monthly', 'quarterly', 'yearly'].map(period => (
-              <button
-                key={period}
-                onClick={() => setSelectedPeriod(period as 'weekly' | 'monthly' | 'yearly')}
-                className={`px-4 py-2 rounded-md font-medium transition-colors text-sm ${
-                  selectedPeriod === period
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+    <AnimatedDiv variant="slideUp" className="space-y-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col gap-3 md:gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">
+                Financial Reports
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                Comprehensive analysis of your financial data
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                <Calendar className="h-4 w-4 mr-2" />
+                Custom Range
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleExportAll}
+                disabled={exportReport.isPending}
+                className="w-full sm:w-auto"
               >
-                {period.charAt(0).toUpperCase() + period.slice(1)}
-              </button>
-            ))}
+                <Download className="h-4 w-4 mr-2" />
+                {exportReport.isPending ? 'Exporting...' : 'Export All'}
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Available Reports */}
-      <div className="px-4 lg:px-6 space-y-6">
-        <h2 className="text-xl font-semibold mb-6">Available Reports</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {reports.map((report, index) => (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <report.icon className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold mb-2">{report.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-3">{report.description}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="secondary" className="text-xs">
-                        {report.type}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {report.period}
-                      </Badge>
-                      <Badge
-                        variant={report.status === 'ready' ? 'default' : 'secondary'}
-                        className={`text-xs ${
-                          report.status === 'ready'
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-                            : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+          {/* Quick Stats Overview */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {statsLoading
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <Card key={index} className="p-4 sm:p-5 lg:p-6">
+                    <div className="animate-pulse space-y-3">
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="h-8 bg-muted rounded w-1/2"></div>
+                      <div className="h-6 bg-muted rounded w-full"></div>
+                    </div>
+                  </Card>
+                ))
+              : quickStats.map((stat, index) => (
+                  <Card key={index} className="p-4 sm:p-5 lg:p-6">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <h3 className="font-medium text-xs sm:text-sm text-muted-foreground">
+                        {stat.title}
+                      </h3>
+                      <div
+                        className={`p-1 sm:p-1.5 rounded-lg ${
+                          stat.trend === 'up'
+                            ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400'
+                            : 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400'
                         }`}
                       >
-                        {report.status === 'ready' ? 'Ready' : 'Generating'}
-                      </Badge>
+                        {stat.trend === 'up' ? (
+                          <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                        ) : (
+                          <ArrowDownRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-lg sm:text-xl lg:text-2xl font-semibold mb-1 sm:mb-2">
+                      {stat.value}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-xs sm:text-sm font-medium px-2 py-1 rounded ${
+                          stat.trend === 'up'
+                            ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400'
+                            : 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400'
+                        }`}
+                      >
+                        {stat.change}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{stat.period}</span>
+                    </div>
+                  </Card>
+                ))}
+          </div>
+
+          {/* Period Selection */}
+          <div className="flex items-center justify-center">
+            <div className="inline-flex bg-muted rounded-lg p-1 w-full sm:w-auto overflow-x-auto">
+              {['weekly', 'monthly', 'quarterly', 'yearly'].map(period => (
+                <button
+                  key={period}
+                  onClick={() => setSelectedPeriod(period as 'weekly' | 'monthly' | 'yearly')}
+                  className={`px-3 sm:px-4 py-2 rounded-md font-medium transition-colors text-xs sm:text-sm whitespace-nowrap ${
+                    selectedPeriod === period
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Available Reports */}
+          <div className="space-y-4 sm:space-y-6">
+            <h2 className="text-lg sm:text-xl font-semibold">Available Reports</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reports.map((report, index) => (
+                <Card key={index}>
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="p-3 bg-muted rounded-lg">
+                        <report.icon className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold mb-2">{report.title}</h3>
+                        <p className="text-sm text-muted-foreground mb-3">{report.description}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="secondary" className="text-xs">
+                            {report.type}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {report.period}
+                          </Badge>
+                          <Badge
+                            variant={report.status === 'ready' ? 'default' : 'secondary'}
+                            className={`text-xs ${
+                              report.status === 'ready'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+                            }`}
+                          >
+                            {report.status === 'ready' ? 'Ready' : 'Generating'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <span className="text-xs text-muted-foreground">
+                        Last updated: {report.lastGenerated}
+                      </span>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleGenerateReport(report.id)}
+                          disabled={generateReport.isPending}
+                        >
+                          View
+                        </Button>
+                        {report.status === 'ready' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleExportReport(report.id, 'csv')}
+                            disabled={exportReport.isPending}
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            Export
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => handleGenerateReport(report.id)}
+                          disabled={report.status === 'generating' || generateReport.isPending}
+                        >
+                          {report.status === 'generating' || generateReport.isPending
+                            ? 'Generating...'
+                            : 'Generate'}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Export Options */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <Download className="h-5 w-5" />
+                Export Options
+              </CardTitle>
+              <CardDescription>Choose your preferred format for data export</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-40 flex flex-col items-center justify-center gap-2"
+                  onClick={() => handleExportReport('income-expenses', 'pdf')}
+                  disabled={exportReport.isPending}
+                >
+                  <FileText className="h-6 w-6 text-red-500" />
+                  <span className="text-sm font-medium">PDF Report</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-40 flex flex-col items-center justify-center gap-2"
+                  onClick={() => handleExportReport('category-analysis', 'csv')}
+                  disabled={exportReport.isPending}
+                >
+                  <BarChart3 className="h-6 w-6 text-emerald-500" />
+                  <span className="text-sm font-medium">Excel</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-40 flex flex-col items-center justify-center gap-2"
+                  onClick={() => handleExportReport('cash-flow', 'csv')}
+                  disabled={exportReport.isPending}
+                >
+                  <Activity className="h-6 w-6 text-blue-500" />
+                  <span className="text-sm font-medium">CSV Data</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Your latest report generations and downloads</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                    <div>
+                      <span className="font-medium text-sm">Income vs Expenses - January 2024</span>
+                      <p className="text-xs text-muted-foreground">PDF • 2.4 MB</p>
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <span className="text-xs text-muted-foreground">
-                    Last updated: {report.lastGenerated}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleGenerateReport(report.id)}
-                      disabled={generateReport.isPending}
-                    >
-                      View
-                    </Button>
-                    {report.status === 'ready' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleExportReport(report.id, 'csv')}
-                        disabled={exportReport.isPending}
-                      >
-                        <Download className="h-3 w-3 mr-1" />
-                        Export
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      onClick={() => handleGenerateReport(report.id)}
-                      disabled={report.status === 'generating' || generateReport.isPending}
-                    >
-                      {report.status === 'generating' || generateReport.isPending
-                        ? 'Generating...'
-                        : 'Generate'}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">2 hours ago</span>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                      <Download className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div>
+                      <span className="font-medium text-sm">Category Analysis - December 2023</span>
+                      <p className="text-xs text-muted-foreground">Excel • 1.8 MB</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">1 day ago</span>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                      <Download className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <div>
+                      <span className="font-medium text-sm">
+                        Budget Performance - December 2023
+                      </span>
+                      <p className="text-xs text-muted-foreground">PDF • 3.1 MB</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">3 days ago</span>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                      <Download className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
-
-      {/* Export Options */}
-      <div className="px-4 lg:px-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Download className="h-5 w-5" />
-              Export Options
-            </CardTitle>
-            <CardDescription>Choose your preferred format for data export</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                variant="outline"
-                className="w-full sm:w-40 flex flex-col items-center justify-center gap-2"
-                onClick={() => handleExportReport('income-expenses', 'pdf')}
-                disabled={exportReport.isPending}
-              >
-                <FileText className="h-6 w-6 text-red-500" />
-                <span className="text-sm font-medium">PDF Report</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full sm:w-40 flex flex-col items-center justify-center gap-2"
-                onClick={() => handleExportReport('category-analysis', 'csv')}
-                disabled={exportReport.isPending}
-              >
-                <BarChart3 className="h-6 w-6 text-emerald-500" />
-                <span className="text-sm font-medium">Excel</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full sm:w-40 flex flex-col items-center justify-center gap-2"
-                onClick={() => handleExportReport('cash-flow', 'csv')}
-                disabled={exportReport.isPending}
-              >
-                <Activity className="h-6 w-6 text-blue-500" />
-                <span className="text-sm font-medium">CSV Data</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="px-4 lg:px-6 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Your latest report generations and downloads</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                  <div>
-                    <span className="font-medium text-sm">Income vs Expenses - January 2024</span>
-                    <p className="text-xs text-muted-foreground">PDF • 2.4 MB</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">2 hours ago</span>
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                    <Download className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <div>
-                    <span className="font-medium text-sm">Category Analysis - December 2023</span>
-                    <p className="text-xs text-muted-foreground">Excel • 1.8 MB</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">1 day ago</span>
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                    <Download className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <div>
-                    <span className="font-medium text-sm">Budget Performance - December 2023</span>
-                    <p className="text-xs text-muted-foreground">PDF • 3.1 MB</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">3 days ago</span>
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                    <Download className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AnimatedDiv>
   );

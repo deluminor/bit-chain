@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -98,13 +98,17 @@ export function AccountList() {
   const [totalBalanceEUR, setTotalBalanceEUR] = useState<number>(0);
   const [isConverting, setIsConverting] = useState<boolean>(false);
 
-  const accounts = accountsData?.accounts || [];
-  const summary = accountsData?.summary || {
-    total: 0,
-    active: 0,
-    inactive: 0,
-    totalBalance: 0,
-  };
+  const accounts = useMemo(() => accountsData?.accounts || [], [accountsData?.accounts]);
+  const summary = useMemo(
+    () =>
+      accountsData?.summary || {
+        total: 0,
+        active: 0,
+        inactive: 0,
+        totalBalance: 0,
+      },
+    [accountsData?.summary],
+  );
 
   // Convert account balances to EUR
   useEffect(() => {
@@ -151,10 +155,20 @@ export function AccountList() {
         description: `Account ${account.isActive ? 'deactivated' : 'activated'} successfully`,
       });
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to update account',
+        description:
+          error instanceof Error &&
+          'response' in error &&
+          error.response &&
+          typeof error.response === 'object' &&
+          'data' in error.response &&
+          error.response.data &&
+          typeof error.response.data === 'object' &&
+          'error' in error.response.data
+            ? String(error.response.data.error)
+            : 'Failed to update account',
         variant: 'destructive',
       });
     }
@@ -176,10 +190,20 @@ export function AccountList() {
       setShowDeleteDialog(false);
       setSelectedAccount(null);
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to delete account',
+        description:
+          error instanceof Error &&
+          'response' in error &&
+          error.response &&
+          typeof error.response === 'object' &&
+          'data' in error.response &&
+          error.response.data &&
+          typeof error.response.data === 'object' &&
+          'error' in error.response.data
+            ? String(error.response.data.error)
+            : 'Failed to delete account',
         variant: 'destructive',
       });
     } finally {
@@ -210,343 +234,355 @@ export function AccountList() {
   }
 
   return (
-    <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 md:gap-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-primary shadow-sm">
-            <Wallet className="h-6 w-6 text-primary-foreground" />
+    <AnimatedDiv variant="slideUp" className="space-y-6">
+      <div className="flex flex-col gap-3 md:gap-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-3 rounded-xl bg-primary shadow-sm">
+              <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">Accounts</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                Manage your financial accounts
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">Accounts</h1>
-            <p className="text-muted-foreground">Manage your financial accounts</p>
-          </div>
+          <Button onClick={() => setShowCreateDialog(true)} className="w-full sm:w-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Account
+          </Button>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Account
-        </Button>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-purple-500/10 rounded-lg">
-              <DollarSign className="h-5 w-5 text-purple-500" />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="p-4 sm:p-5 lg:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-purple-500/10 rounded-lg">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+              </div>
+              <h3 className="font-medium sm:font-semibold text-sm sm:text-base">Total Balance</h3>
             </div>
-            <h3 className="font-semibold">Total Balance</h3>
-          </div>
-          <div className="text-2xl font-bold mb-1">
-            <TotalBalanceDisplay size="md" showLoading={isLoading} />
-          </div>
-          <p className="text-sm text-muted-foreground">Converted to EUR</p>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-orange-500/10 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-orange-500" />
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1">
+              <TotalBalanceDisplay size="md" showLoading={isLoading} />
             </div>
-            <h3 className="font-semibold">Avg Balance</h3>
-          </div>
-          <div className="text-2xl font-bold mb-1">
-            {isConverting ? (
-              <span className="text-muted-foreground">Converting...</span>
-            ) : (
-              formatSummaryAmount(totalBalanceEUR / Math.max(summary.active, 1))
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground">Per active account</p>
-        </Card>
+            <p className="text-xs sm:text-sm text-muted-foreground">Converted to EUR</p>
+          </Card>
 
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <Wallet className="h-5 w-5 text-blue-500" />
+          <Card className="p-4 sm:p-5 lg:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-orange-500/10 rounded-lg">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
+              </div>
+              <h3 className="font-medium sm:font-semibold text-sm sm:text-base">Avg Balance</h3>
             </div>
-            <h3 className="font-semibold">Total Accounts</h3>
-          </div>
-          <div className="text-2xl font-bold mb-1">{summary.total}</div>
-          <p className="text-sm text-muted-foreground">All accounts</p>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-green-500/10 rounded-lg">
-              <Activity className="h-5 w-5 text-green-500" />
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1">
+              {isConverting ? (
+                <span className="text-muted-foreground">Converting...</span>
+              ) : (
+                formatSummaryAmount(totalBalanceEUR / Math.max(summary.active, 1))
+              )}
             </div>
-            <h3 className="font-semibold">Active</h3>
-          </div>
-          <div className="text-2xl font-bold mb-1">{summary.active}</div>
-          <p className="text-sm text-muted-foreground">Currently active</p>
-        </Card>
-      </div>
+            <p className="text-xs sm:text-sm text-muted-foreground">Per active account</p>
+          </Card>
 
-      {/* Accounts Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" />
-            Your Accounts
-          </CardTitle>
-          <CardDescription>Manage your financial accounts and track balances</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="relative">
-            <TableLoadingBar isLoading={isLoading} className="absolute top-0 left-0 right-0 z-10" />
+          <Card className="p-4 sm:p-5 lg:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg">
+                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+              </div>
+              <h3 className="font-medium sm:font-semibold text-sm sm:text-base">Total Accounts</h3>
+            </div>
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1">{summary.total}</div>
+            <p className="text-xs sm:text-sm text-muted-foreground">All accounts</p>
+          </Card>
 
-            {accounts.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 z-10">
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead>Account</TableHead>
-                      <TableHead className="text-center">Type</TableHead>
-                      <TableHead className="text-right">Balance</TableHead>
-                      <TableHead className="text-center">Currency</TableHead>
-                      <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="text-center">Transactions</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading
-                      ? // Skeleton loader rows
-                        Array.from({ length: 3 }).map((_, index) => (
-                          <TableRow key={`skeleton-${index}`}>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Skeleton className="h-8 w-8 rounded" />
-                                <div className="space-y-2">
-                                  <Skeleton className="h-4 w-32" />
-                                  <Skeleton className="h-3 w-24" />
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Skeleton className="h-6 w-16 mx-auto rounded-full" />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Skeleton className="h-4 w-20 ml-auto" />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Skeleton className="h-4 w-8 mx-auto" />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Skeleton className="h-6 w-16 mx-auto rounded-full" />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Skeleton className="h-4 w-12 mx-auto" />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Skeleton className="h-8 w-8" />
-                                <Skeleton className="h-8 w-8" />
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      : accounts.map((account: FinanceAccount) => {
-                          const TypeIcon =
-                            accountTypeIcons[account.type as keyof typeof accountTypeIcons] ||
-                            Wallet;
-                          const typeColor = getAccountTypeColor(account.type);
-                          const balanceColor = getBalanceColor(account.balance);
+          <Card className="p-4 sm:p-5 lg:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <div className="p-1.5 sm:p-2 bg-green-500/10 rounded-lg">
+                <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+              </div>
+              <h3 className="font-medium sm:font-semibold text-sm sm:text-base">Active</h3>
+            </div>
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1">{summary.active}</div>
+            <p className="text-xs sm:text-sm text-muted-foreground">Currently active</p>
+          </Card>
+        </div>
 
-                          return (
-                            <TableRow key={account.id}>
-                              <TableCell>
+        {/* Accounts Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              Your Accounts
+            </CardTitle>
+            <CardDescription>Manage your financial accounts and track balances</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="relative">
+              <TableLoadingBar
+                isLoading={isLoading}
+                className="absolute top-0 left-0 right-0 z-10"
+              />
+
+              {accounts.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 z-10">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead>Account</TableHead>
+                        <TableHead className="text-center">Type</TableHead>
+                        <TableHead className="text-right">Balance</TableHead>
+                        <TableHead className="text-center">Currency</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-center">Transactions</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading
+                        ? // Skeleton loader rows
+                          Array.from({ length: 3 }).map((_, index) => (
+                            <TableRow key={`skeleton-${index}`}>
+                              <TableCell className="py-2 px-3 sm:py-4 sm:px-6">
                                 <div className="flex items-center gap-3">
-                                  <div
-                                    className="w-3 h-3 rounded-full flex-shrink-0"
-                                    style={{ backgroundColor: account.color || '#3B82F6' }}
-                                  />
-                                  <div>
-                                    <div className="font-medium">{account.name}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {account.description || 'No description'}
-                                    </div>
+                                  <Skeleton className="h-8 w-8 rounded" />
+                                  <div className="space-y-2">
+                                    <Skeleton className="h-4 w-32" />
+                                    <Skeleton className="h-3 w-24" />
                                   </div>
                                 </div>
                               </TableCell>
                               <TableCell className="text-center">
-                                <div
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${typeColor}`}
-                                >
-                                  <TypeIcon className="h-3 w-3" />
-                                  {account.type.replace('_', ' ')}
-                                </div>
+                                <Skeleton className="h-6 w-16 mx-auto rounded-full" />
                               </TableCell>
                               <TableCell className="text-right">
-                                <div className={`font-semibold ${balanceColor}`}>
-                                  {formatCurrency(account.balance, account.currency, {
-                                    useLargeNumberFormat: false,
-                                  })}
-                                </div>
+                                <Skeleton className="h-4 w-20 ml-auto" />
                               </TableCell>
                               <TableCell className="text-center">
-                                <Badge variant="outline" className="text-xs">
-                                  {account.currency}
-                                </Badge>
+                                <Skeleton className="h-4 w-8 mx-auto" />
                               </TableCell>
                               <TableCell className="text-center">
-                                {account.isActive ? (
-                                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-                                    Active
-                                  </Badge>
-                                ) : (
-                                  <Badge
-                                    variant="secondary"
-                                    className="bg-gray-100 text-gray-800 dark:bg-gray-900/20"
-                                  >
-                                    Inactive
-                                  </Badge>
-                                )}
+                                <Skeleton className="h-6 w-16 mx-auto rounded-full" />
                               </TableCell>
                               <TableCell className="text-center">
-                                <span className="text-sm text-muted-foreground">
-                                  {account._count?.transactions || 0}
-                                </span>
+                                <Skeleton className="h-4 w-12 mx-auto" />
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          setSelectedAccount(account);
-                                          setShowEditDialog(true);
-                                        }}
-                                      >
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Edit
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleToggleActive(account)}>
-                                        {account.isActive ? (
-                                          <>
-                                            <EyeOff className="h-4 w-4 mr-2" />
-                                            Deactivate
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Eye className="h-4 w-4 mr-2" />
-                                            Activate
-                                          </>
-                                        )}
-                                      </DropdownMenuItem>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          setSelectedAccount(account);
-                                          setShowDeleteDialog(true);
-                                        }}
-                                        className="text-destructive"
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
+                                  <Skeleton className="h-8 w-8" />
+                                  <Skeleton className="h-8 w-8" />
                                 </div>
                               </TableCell>
                             </TableRow>
-                          );
-                        })}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Wallet className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No accounts found</p>
-                <p className="text-muted-foreground mb-4">
-                  Create your first account to get started
-                </p>
-                <Button onClick={() => setShowCreateDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Account
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                          ))
+                        : accounts.map((account: FinanceAccount) => {
+                            const TypeIcon =
+                              accountTypeIcons[account.type as keyof typeof accountTypeIcons] ||
+                              Wallet;
+                            const typeColor = getAccountTypeColor(account.type);
+                            const balanceColor = getBalanceColor(account.balance);
 
-      {/* Create Account Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Account</DialogTitle>
-            <DialogDescription>
-              Add a new financial account to track your balance and transactions.
-            </DialogDescription>
-          </DialogHeader>
-          <AccountForm onSuccess={handleFormSuccess} onCancel={() => setShowCreateDialog(false)} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Account Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Account</DialogTitle>
-            <DialogDescription>Update your account details and settings.</DialogDescription>
-          </DialogHeader>
-          <AccountForm
-            account={selectedAccount || undefined}
-            onSuccess={handleFormSuccess}
-            onCancel={() => {
-              setShowEditDialog(false);
-              setSelectedAccount(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Account Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Account</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{selectedAccount?.name}"? This action cannot be
-              undone.
-              {selectedAccount?._count?.transactions !== 0 && (
-                <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      This account has {selectedAccount?._count?.transactions} transaction(s)
-                      associated with it.
-                    </span>
-                  </div>
+                            return (
+                              <TableRow key={account.id}>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className="w-3 h-3 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: account.color || '#3B82F6' }}
+                                    />
+                                    <div>
+                                      <div className="font-medium">{account.name}</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {account.description || 'No description'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <div
+                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${typeColor}`}
+                                  >
+                                    <TypeIcon className="h-3 w-3" />
+                                    {account.type.replace('_', ' ')}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className={`font-semibold ${balanceColor}`}>
+                                    {formatCurrency(account.balance, account.currency, {
+                                      useLargeNumberFormat: false,
+                                    })}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Badge variant="outline" className="text-xs">
+                                    {account.currency}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {account.isActive ? (
+                                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                      Active
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-gray-100 text-gray-800 dark:bg-gray-900/20"
+                                    >
+                                      Inactive
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <span className="text-sm text-muted-foreground">
+                                    {account._count?.transactions || 0}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-1">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                          <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedAccount(account);
+                                            setShowEditDialog(true);
+                                          }}
+                                        >
+                                          <Edit className="h-4 w-4 mr-2" />
+                                          Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() => handleToggleActive(account)}
+                                        >
+                                          {account.isActive ? (
+                                            <>
+                                              <EyeOff className="h-4 w-4 mr-2" />
+                                              Deactivate
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Eye className="h-4 w-4 mr-2" />
+                                              Activate
+                                            </>
+                                          )}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedAccount(account);
+                                            setShowDeleteDialog(true);
+                                          }}
+                                          className="text-destructive"
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Wallet className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-lg font-medium mb-2">No accounts found</p>
+                  <p className="text-muted-foreground mb-4">
+                    Create your first account to get started
+                  </p>
+                  <Button onClick={() => setShowCreateDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Account
+                  </Button>
                 </div>
               )}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowDeleteDialog(false);
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Create Account Dialog */}
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create New Account</DialogTitle>
+              <DialogDescription>
+                Add a new financial account to track your balance and transactions.
+              </DialogDescription>
+            </DialogHeader>
+            <AccountForm
+              onSuccess={handleFormSuccess}
+              onCancel={() => setShowCreateDialog(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Account Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Account</DialogTitle>
+              <DialogDescription>Update your account details and settings.</DialogDescription>
+            </DialogHeader>
+            <AccountForm
+              account={selectedAccount || undefined}
+              onSuccess={handleFormSuccess}
+              onCancel={() => {
+                setShowEditDialog(false);
                 setSelectedAccount(null);
               }}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteAccount} disabled={isDeleting}>
-              {isDeleting ? 'Deleting...' : 'Delete Account'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Account Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Account</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete "{selectedAccount?.name}"? This action cannot be
+                undone.
+                {selectedAccount?._count?.transactions !== 0 && (
+                  <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        This account has {selectedAccount?._count?.transactions} transaction(s)
+                        associated with it.
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  setSelectedAccount(null);
+                }}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteAccount} disabled={isDeleting}>
+                {isDeleting ? 'Deleting...' : 'Delete Account'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </AnimatedDiv>
   );
 }

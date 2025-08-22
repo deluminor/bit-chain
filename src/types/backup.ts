@@ -1,14 +1,14 @@
-import { 
-  User, 
-  Category, 
-  Trade, 
+import {
+  User,
+  Category,
+  Trade,
   Screenshot,
   FinanceAccount,
   Transaction,
   TransactionCategory,
   Budget,
   BudgetCategory,
-  FinancialGoal
+  FinancialGoal,
 } from '@/generated/prisma/index';
 
 export interface BackupData {

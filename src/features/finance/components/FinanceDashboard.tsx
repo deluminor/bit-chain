@@ -7,7 +7,6 @@ import {
   TrendingUp,
   TrendingDown,
   Wallet,
-  Eye,
   Target,
   PieChart,
   BarChart3,
@@ -39,11 +38,11 @@ interface QuickStatsProps {
 
 function QuickStatCard({ title, value, change, changeType, icon, href }: QuickStatsProps) {
   const content = (
-    <CardContent className="pt-6">
+    <CardContent className="p-4 md:p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold">{value}</p>
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-lg sm:text-xl lg:text-2xl font-bold">{value}</p>
           {change && (
             <p
               className={`text-xs flex items-center gap-1 mt-1 ${
@@ -73,12 +72,12 @@ function QuickStatCard({ title, value, change, changeType, icon, href }: QuickSt
     );
   }
 
-  return <Card>{content}</Card>;
+  return <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">{content}</Card>;
 }
 
 export function FinanceDashboard() {
-  const { data: accountsData, isLoading: _accountsLoading } = useAccounts();
-  const { data: transactionsData } = useTransactions({
+  const { data: accountsData, isLoading: accountsLoading } = useAccounts();
+  const { data: transactionsData, isLoading: transactionsLoading } = useTransactions({
     dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
       .toISOString()
       .split('T')[0],
@@ -101,7 +100,9 @@ export function FinanceDashboard() {
   // Convert all account balances and transactions to EUR
   useEffect(() => {
     const convertBalances = async () => {
-      if (!accounts.length) return;
+      if (!accounts.length || isConverting) return;
+
+      if (accountsLoading || transactionsLoading) return;
 
       setIsConverting(true);
       try {
@@ -140,6 +141,13 @@ export function FinanceDashboard() {
 
         setTotalBalanceEUR(totalInEUR);
 
+        // Skip if no transactions
+        if (transactions.length === 0) {
+          setMonthlyIncomeEUR(0);
+          setMonthlyExpensesEUR(0);
+          return;
+        }
+
         // Convert individual transactions to EUR for accurate calculation
         let totalIncomeEUR = 0;
         let totalExpensesEUR = 0;
@@ -173,9 +181,11 @@ export function FinanceDashboard() {
         setMonthlyIncomeEUR(totalIncomeEUR);
         setMonthlyExpensesEUR(totalExpensesEUR);
 
-        console.info(
-          `Converted ${transactions.length} transactions to EUR: Income=${totalIncomeEUR.toFixed(2)}, Expenses=${totalExpensesEUR.toFixed(2)}`,
-        );
+        if (transactions.length > 0) {
+          console.info(
+            `Converted ${transactions.length} transactions to EUR: Income=${totalIncomeEUR.toFixed(2)}, Expenses=${totalExpensesEUR.toFixed(2)}`,
+          );
+        }
       } catch (error) {
         console.error('Failed to convert balances:', error);
       } finally {
@@ -184,210 +194,228 @@ export function FinanceDashboard() {
     };
 
     convertBalances();
-  }, [accounts, transactions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts.length, transactions.length, accountsLoading, transactionsLoading]);
 
   return (
-    <AnimatedDiv variant="slideUp" className="space-y-6">
-      {/* Quick Stats Grid */}
-      <ResponsiveGrid cols={{ mobile: 1, tablet: 2, desktop: 4 }} className="mb-6">
-        <QuickStatCard
-          title="Total Balance"
-          value={isConverting ? 'Converting...' : formatSummaryAmount(totalBalanceEUR)}
-          icon={
-            isConverting ? (
-              <RefreshCw className="h-6 w-6 animate-spin" />
-            ) : (
-              <Wallet className="h-6 w-6" />
-            )
-          }
-          href="/accounts"
-        />
+    <AnimatedDiv variant="slideUp" className="space-y-4">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {/* Quick Stats Grid */}
+        <ResponsiveGrid cols={{ mobile: 1, tablet: 2, desktop: 4 }} className="mb-6">
+          <QuickStatCard
+            title="Total Balance"
+            value={isConverting ? 'Converting...' : formatSummaryAmount(totalBalanceEUR)}
+            icon={
+              isConverting ? (
+                <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 animate-spin" />
+              ) : (
+                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+              )
+            }
+            href="/accounts"
+          />
 
-        <QuickStatCard
-          title="This Month Income"
-          value={isConverting ? 'Converting...' : formatSummaryAmount(monthlyIncomeEUR)}
-          changeType="positive"
-          change={`${transactions.filter(t => t.amount > 0).length} transactions`}
-          icon={<TrendingUp className="h-6 w-6" />}
-          href="/transactions"
-        />
+          <QuickStatCard
+            title="This Month Income"
+            value={isConverting ? 'Converting...' : formatSummaryAmount(monthlyIncomeEUR)}
+            changeType="positive"
+            change={`${transactions.filter(t => t.amount > 0).length} transactions`}
+            icon={<TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
+            href="/transactions"
+          />
 
-        <QuickStatCard
-          title="This Month Expenses"
-          value={isConverting ? 'Converting...' : formatSummaryAmount(monthlyExpensesEUR)}
-          changeType="negative"
-          change={`${transactions.filter(t => t.amount < 0).length} transactions`}
-          icon={<TrendingDown className="h-6 w-6" />}
-          href="/transactions"
-        />
+          <QuickStatCard
+            title="This Month Expenses"
+            value={isConverting ? 'Converting...' : formatSummaryAmount(monthlyExpensesEUR)}
+            changeType="negative"
+            change={`${transactions.filter(t => t.amount < 0).length} transactions`}
+            icon={<TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
+            href="/transactions"
+          />
 
-        <QuickStatCard
-          title="Active Accounts"
-          value={summary?.active?.toString() || '0'}
-          change={`of ${summary?.total || 0} total`}
-          icon={<BarChart3 className="h-6 w-6" />}
-          href="/accounts"
-        />
-      </ResponsiveGrid>
+          <QuickStatCard
+            title="Active Accounts"
+            value={summary?.active?.toString() || '0'}
+            change={`of ${summary?.total || 0} total`}
+            icon={<BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
+            href="/accounts"
+          />
+        </ResponsiveGrid>
 
-      {/* Additional Widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Monthly Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">This Month</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {transactions.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-green-600">Income:</span>
-                  <span className="font-semibold text-green-600">
-                    +{formatSummaryAmount(monthlyIncomeEUR)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-red-600">Expenses:</span>
-                  <span className="font-semibold text-red-600">
-                    -{formatSummaryAmount(monthlyExpensesEUR)}
-                  </span>
-                </div>
-                <div className="border-t pt-2">
+        {/* Additional Widgets */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
+          {/* Monthly Summary */}
+          <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="text-lg">This Month</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6">
+              {transactions.length > 0 && (
+                <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="font-medium">Net:</span>
-                    <span
-                      className={`font-bold ${
-                        monthlyIncomeEUR - monthlyExpensesEUR >= 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }`}
-                    >
-                      {monthlyIncomeEUR - monthlyExpensesEUR >= 0 ? '+' : ''}
-                      {formatSummaryAmount(monthlyIncomeEUR - monthlyExpensesEUR)}
+                    <span className="text-green-600">Income:</span>
+                    <span className="font-semibold text-green-600">
+                      +{formatSummaryAmount(monthlyIncomeEUR)}
                     </span>
                   </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Goals Preview */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Goals
-              </CardTitle>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/goals" className="flex items-center gap-1">
-                  <Eye className="h-3 w-3" />
-                  View All
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {goalsLoading ? (
-              <div className="space-y-3">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                  <div className="h-2 bg-muted rounded w-full"></div>
-                </div>
-              </div>
-            ) : goals.length > 0 ? (
-              <div className="space-y-3">
-                {goals.slice(0, 2).map(goal => (
-                  <div key={goal.id} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">{goal.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {calculateGoalProgress(goal.currentAmount, goal.targetAmount)}%
+                  <div className="flex justify-between">
+                    <span className="text-red-600">Expenses:</span>
+                    <span className="font-semibold text-red-600">
+                      -{formatSummaryAmount(monthlyExpensesEUR)}
+                    </span>
+                  </div>
+                  <div className="border-t pt-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Net:</span>
+                      <span
+                        className={`font-bold ${
+                          monthlyIncomeEUR - monthlyExpensesEUR >= 0
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
+                      >
+                        {monthlyIncomeEUR - monthlyExpensesEUR >= 0 ? '+' : ''}
+                        {formatSummaryAmount(monthlyIncomeEUR - monthlyExpensesEUR)}
                       </span>
                     </div>
-                    <div className="w-full bg-secondary rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${calculateGoalProgress(goal.currentAmount, goal.targetAmount)}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{formatSummaryAmount(goal.currentAmount)}</span>
-                      <span>{formatSummaryAmount(goal.targetAmount)}</span>
-                    </div>
                   </div>
-                ))}
-                {goals.length > 2 && (
-                  <div className="text-center pt-2">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href="/goals">View {goals.length - 2} more goals</Link>
-                    </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Goals Preview */}
+          <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex flex-col md:flex-row items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <div className="rounded-full p-1 bg-black text-white">
+                    <Target className="h-4 w-4" />
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground">
-                <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm mb-2">No goals yet</p>
-                <Button size="sm" asChild>
-                  <Link href="/goals">Create Goal</Link>
+                  Financial Goals
+                </CardTitle>
+                <Button size="sm" className="mt-2 md:mt-0">
+                  + New Goal
                 </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6">
+              {goalsLoading ? (
+                <div className="space-y-3">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-2 bg-muted rounded w-full"></div>
+                  </div>
+                </div>
+              ) : goals.length > 0 ? (
+                <div className="space-y-3">
+                  {goals.slice(0, 2).map(goal => (
+                    <div key={goal.id} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">{goal.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {calculateGoalProgress(goal.currentAmount, goal.targetAmount)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-secondary rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${calculateGoalProgress(goal.currentAmount, goal.targetAmount)}%`,
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{formatSummaryAmount(goal.currentAmount)}</span>
+                        <span>{formatSummaryAmount(goal.targetAmount)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {goals.length > 2 && (
+                    <div className="text-center pt-2">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href="/goals">View {goals.length - 2} more goals</Link>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm mb-2">No goals yet</p>
+                  <Button size="sm" asChild>
+                    <Link href="/goals">Create Goal</Link>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Net Worth Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <PieChart className="h-5 w-5" />
-              Net Worth
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {isConverting ? 'Converting...' : formatSummaryAmount(totalBalanceEUR)}
+          {/* Net Worth Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <PieChart className="h-5 w-5" />
+                Net Worth
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {isConverting ? 'Converting...' : formatSummaryAmount(totalBalanceEUR)}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  Across {summary?.active || 0} accounts
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                Across {summary?.active || 0} accounts
-              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Financial Analytics Charts */}
+        <AnimatedDiv variant="slideUp" delay={0.3} className="space-y-8">
+          {/* Category Analysis and Account Trends */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="w-full">
+              <ResponsiveChart height={{ mobile: 300, desktop: 400 }} className="animate-fade-in">
+                <IncomeExpenseChart />
+              </ResponsiveChart>
             </div>
-          </CardContent>
-        </Card>
+            <div className="w-full">
+              <ResponsiveChart height={{ mobile: 300, desktop: 400 }} className="animate-fade-in">
+                <AccountBalanceTrendsChart />
+              </ResponsiveChart>
+            </div>
+          </div>
+
+          {/* Net Worth and Category Spending */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="w-full">
+              <ResponsiveChart
+                // height={{ mobile: 300, desktop: 400 }}
+                className="animate-fade-in h-full"
+              >
+                <NetWorthChart />
+              </ResponsiveChart>
+            </div>
+            <div className="w-full">
+              <ResponsiveChart
+                // height={{ mobile: 300, desktop: 400 }}
+                className="animate-fade-in h-full"
+              >
+                <CategorySpendingChart />
+              </ResponsiveChart>
+            </div>
+          </div>
+
+          {/* Budget Performance */}
+          <div className="w-full">
+            <ResponsiveChart height={{ mobile: 350, desktop: 450 }} className="animate-fade-in">
+              <BudgetPerformanceChart />
+            </ResponsiveChart>
+          </div>
+        </AnimatedDiv>
       </div>
-
-      {/* Financial Analytics Charts */}
-      <AnimatedDiv variant="slideUp" delay={0.3} className="space-y-6">
-        {/* Category Analysis and Account Trends */}
-        <ResponsiveGrid cols={{ mobile: 1, tablet: 1, desktop: 2 }} gap={6}>
-          <ResponsiveChart height={{ mobile: 350, desktop: 500 }}>
-            <IncomeExpenseChart />
-          </ResponsiveChart>
-          <ResponsiveChart height={{ mobile: 350, desktop: 500 }}>
-            <AccountBalanceTrendsChart />
-          </ResponsiveChart>
-        </ResponsiveGrid>
-
-        {/* Net Worth and Income/Expense Trends */}
-        <ResponsiveGrid cols={{ mobile: 1, tablet: 1, desktop: 2 }} gap={6}>
-          <ResponsiveChart height={{ mobile: 350, desktop: 500 }}>
-            <NetWorthChart />
-          </ResponsiveChart>
-          <ResponsiveChart height={{ mobile: 350, desktop: 500 }}>
-            <CategorySpendingChart />
-          </ResponsiveChart>
-        </ResponsiveGrid>
-
-        {/* Budget Performance */}
-        <ResponsiveChart height={{ mobile: 400, desktop: 500 }}>
-          <BudgetPerformanceChart />
-        </ResponsiveChart>
-      </AnimatedDiv>
     </AnimatedDiv>
   );
 }

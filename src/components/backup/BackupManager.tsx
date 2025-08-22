@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,20 +54,9 @@ export function BackupManager() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const { toast } = useToast();
 
-  // Don't render if no user session
-  if (!session?.user?.id) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Please log in to access backup management</p>
-      </div>
-    );
-  }
+  const loadBackupFiles = useCallback(async () => {
+    if (!session?.user?.id) return;
 
-  useEffect(() => {
-    loadBackupFiles();
-  }, []);
-
-  const loadBackupFiles = async () => {
     try {
       const response = await axios.get(`/api/backup?action=list&userId=${session.user.id}`);
 
@@ -77,22 +66,36 @@ export function BackupManager() {
           try {
             const infoResponse = await axios.get(`/api/backup?action=info&filename=${filename}`);
             return { filename, ...infoResponse.data.info };
-          } catch {
-            return { filename };
+          } catch (error) {
+            console.error(`Error getting info for ${filename}:`, error);
+            return { filename, error: 'Failed to load info' };
           }
         }),
       );
 
       setBackupFiles(filesWithInfo);
-    } catch {
-      console.error('Error loading backup files:');
+    } catch (error) {
+      console.error('Error loading backup files:', error);
       toast({
         title: 'Error',
         description: 'Failed to load backup files',
         variant: 'destructive',
       });
     }
-  };
+  }, [session?.user?.id, toast]);
+
+  useEffect(() => {
+    loadBackupFiles();
+  }, [loadBackupFiles]);
+
+  // Don't render if no user session
+  if (!session?.user?.id) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Please log in to access backup management</p>
+      </div>
+    );
+  }
 
   const createBackup = async () => {
     setIsLoading(true);
@@ -254,8 +257,8 @@ export function BackupManager() {
             <AlertTriangleIcon className="h-4 w-4" />
             <AlertTitle>Important</AlertTitle>
             <AlertDescription>
-              Always create a backup before making significant changes to your data. Personal backups include
-              your trades, categories, and screenshots.
+              Always create a backup before making significant changes to your data. Personal
+              backups include your trades, categories, and screenshots.
             </AlertDescription>
           </Alert>
 

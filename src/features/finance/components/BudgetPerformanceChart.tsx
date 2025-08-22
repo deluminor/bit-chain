@@ -11,7 +11,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { THEME, useStore } from '@/store';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { Target, AlertTriangle, CheckCircle } from 'lucide-react';
 import { formatSummaryAmount, useCurrencyConverter } from '@/lib/currency';
@@ -34,47 +34,49 @@ export function BudgetPerformanceChart({ period = 'This Month' }: BudgetPerforma
   const { convertToBase } = useCurrencyConverter();
   const { data: budgetsResponse, isLoading } = useBudgets();
 
-  // Process budget data with currency conversion
-  const budgetData = useMemo(async () => {
-    if (!budgetsResponse?.budgets?.length) return [];
+  const [budgetData, setBudgetData] = useState<BudgetCategory[]>([]);
 
-    const activeBudgets = budgetsResponse.budgets.filter(budget => budget.isActive);
-    if (!activeBudgets.length) return [];
+  useEffect(() => {
+    const processBudgets = async () => {
+      const activeBudgets = budgetsResponse?.budgets?.filter(budget => budget.isActive);
+      const currentBudget = activeBudgets?.[0];
 
-    // Get the most recent active budget
-    const currentBudget = activeBudgets[0];
+      if (!budgetsResponse?.budgets?.length || !activeBudgets?.length || !currentBudget) {
+        setBudgetData([]);
+        return;
+      }
 
-    return currentBudget?.categories?.map(
-      async (category: ApiBudgetCategory): Promise<BudgetCategory> => ({
-        id: category.id,
-        name: category.category.name,
-        planned: await convertToBase(category.planned, currentBudget.currency),
-        actual: await convertToBase(category.actual, currentBudget.currency),
-        color: category.category.color,
-      }),
-    );
+      const processed = await Promise.all(
+        currentBudget.categories.map(async (category: ApiBudgetCategory) => ({
+          id: category.id,
+          name: category.category.name,
+          planned: await convertToBase(category.planned, currentBudget?.currency || 'EUR'),
+          actual: await convertToBase(category.actual, currentBudget?.currency || 'EUR'),
+          color: category.category.color,
+        })),
+      );
+
+      setBudgetData(processed);
+    };
+
+    processBudgets();
   }, [budgetsResponse, convertToBase]);
 
-  // Process data for chart
-  const chartData = useMemo(async () => {
-    return Promise.all((await budgetData) ?? []).then(categories =>
-      categories.map((category: BudgetCategory) => ({
-        category: category.name,
-        planned: category.planned,
-        actual: category.actual,
-        variance: category.actual - category.planned,
-        percentage: category.planned > 0 ? (category.actual / category.planned) * 100 : 0,
-      })),
-    );
+  const chartData = useMemo(() => {
+    return budgetData.map(category => ({
+      category: category.name,
+      planned: category.planned,
+      actual: category.actual,
+      variance: category.actual - category.planned,
+      percentage: category.planned > 0 ? (category.actual / category.planned) * 100 : 0,
+    }));
   }, [budgetData]);
 
-  // Calculate overall performance metrics
-  const performance = useMemo(async () => {
-    const resolvedBudgetData = await budgetData;
-    const totalPlanned = resolvedBudgetData?.reduce((sum, cat) => sum + cat.planned, 0) ?? 0;
-    const totalActual = (await budgetData)?.reduce((sum, cat) => sum + cat.actual, 0) ?? 0;
-    const onBudgetCount = (await budgetData)?.filter(cat => cat.actual <= cat.planned).length ?? 0;
-    const overBudgetCount = (await budgetData)?.filter(cat => cat.actual > cat.planned).length ?? 0;
+  const performance = useMemo(() => {
+    const totalPlanned = budgetData.reduce((sum, cat) => sum + cat.planned, 0);
+    const totalActual = budgetData.reduce((sum, cat) => sum + cat.actual, 0);
+    const onBudgetCount = budgetData.filter(cat => cat.actual <= cat.planned).length;
+    const overBudgetCount = budgetData.filter(cat => cat.actual > cat.planned).length;
 
     return {
       totalPlanned,
@@ -180,7 +182,7 @@ export function BudgetPerformanceChart({ period = 'This Month' }: BudgetPerforma
         </div>
 
         {/* Chart */}
-        <ChartContainer config={chartConfig} className="aspect-auto h-[300px] w-full">
+        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] md:h-[300px] w-full">
           <BarChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
             <CartesianGrid
               vertical={false}

@@ -81,10 +81,10 @@ export default function GoalsPage() {
       });
 
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to add funds',
+        description: error instanceof Error ? error.message : 'Failed to add funds',
         variant: 'destructive',
       });
     }
@@ -104,7 +104,7 @@ export default function GoalsPage() {
     return (
       <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="px-4 lg:px-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 md:gap-0">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-xl bg-primary shadow-sm">
                 <Target className="h-6 w-6 text-primary-foreground" />
@@ -196,7 +196,7 @@ export default function GoalsPage() {
   return (
     <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 md:gap-0">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-xl bg-primary shadow-sm">
               <Target className="h-6 w-6 text-primary-foreground" />
@@ -206,7 +206,7 @@ export default function GoalsPage() {
               <p className="text-muted-foreground">Track and achieve your financial objectives</p>
             </div>
           </div>
-          <Button onClick={() => setShowCreateForm(true)}>
+          <Button onClick={() => setShowCreateForm(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             New Goal
           </Button>
@@ -216,7 +216,7 @@ export default function GoalsPage() {
       {/* Goals Overview Stats */}
       <div className="px-4 lg:px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-6">
+          <Card className="p-2 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-green-500/10 rounded-lg">
                 <DollarSign className="h-5 w-5 text-green-500" />
@@ -229,7 +229,7 @@ export default function GoalsPage() {
             <p className="text-sm text-muted-foreground">Across all goals</p>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-2 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-purple-500/10 rounded-lg">
                 <TrendingUp className="h-5 w-5 text-purple-500" />
@@ -242,7 +242,7 @@ export default function GoalsPage() {
             <p className="text-sm text-muted-foreground">Target amount</p>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-2 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-orange-500/10 rounded-lg">
                 <Calendar className="h-5 w-5 text-orange-500" />
@@ -261,7 +261,7 @@ export default function GoalsPage() {
             </div>
             <p className="text-sm text-muted-foreground">Days remaining</p>
           </Card>
-          <Card className="p-6">
+          <Card className="p-2 md:p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <Target className="h-5 w-5 text-blue-500" />

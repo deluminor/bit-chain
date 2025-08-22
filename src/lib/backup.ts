@@ -76,10 +76,10 @@ export class BackupService {
         ? await prisma.financialGoal.findMany({ where: { userId } })
         : await prisma.financialGoal.findMany();
 
-      const totalRecords = 
-        users.length + 
-        categories.length + 
-        trades.length + 
+      const totalRecords =
+        users.length +
+        categories.length +
+        trades.length +
         screenshots.length +
         financeAccounts.length +
         transactions.length +
@@ -230,10 +230,10 @@ export class BackupService {
         }
 
         // Import categories (filter by userId if provided)
-        const categoriesToImport = userId 
+        const categoriesToImport = userId
           ? backupData.categories.filter(cat => cat.userId === userId)
           : backupData.categories;
-          
+
         for (const category of categoriesToImport) {
           await tx.category.upsert({
             where: { id: category.id },
@@ -243,10 +243,10 @@ export class BackupService {
         }
 
         // Import trades (filter by userId if provided)
-        const tradesToImport = userId 
+        const tradesToImport = userId
           ? backupData.trades.filter(trade => trade.userId === userId)
           : backupData.trades;
-          
+
         for (const trade of tradesToImport) {
           await tx.trade.upsert({
             where: { id: trade.id },
@@ -267,12 +267,12 @@ export class BackupService {
         }
 
         // Import financial data
-        
+
         // Import finance accounts (filter by userId if provided)
-        const financeAccountsToImport = userId 
+        const financeAccountsToImport = userId
           ? backupData.financeAccounts.filter(acc => acc.userId === userId)
           : backupData.financeAccounts;
-          
+
         for (const account of financeAccountsToImport) {
           await tx.financeAccount.upsert({
             where: { id: account.id },
@@ -282,10 +282,10 @@ export class BackupService {
         }
 
         // Import transaction categories (filter by userId if provided)
-        const transactionCategoriesToImport = userId 
+        const transactionCategoriesToImport = userId
           ? backupData.transactionCategories.filter(cat => cat.userId === userId)
           : backupData.transactionCategories;
-          
+
         for (const category of transactionCategoriesToImport) {
           await tx.transactionCategory.upsert({
             where: { id: category.id },
@@ -295,10 +295,10 @@ export class BackupService {
         }
 
         // Import transactions (filter by userId if provided)
-        const transactionsToImport = userId 
+        const transactionsToImport = userId
           ? backupData.transactions.filter(trans => trans.userId === userId)
           : backupData.transactions;
-          
+
         for (const transaction of transactionsToImport) {
           await tx.transaction.upsert({
             where: { id: transaction.id },
@@ -308,10 +308,10 @@ export class BackupService {
         }
 
         // Import budgets (filter by userId if provided)
-        const budgetsToImport = userId 
+        const budgetsToImport = userId
           ? backupData.budgets.filter(budget => budget.userId === userId)
           : backupData.budgets;
-          
+
         for (const budget of budgetsToImport) {
           await tx.budget.upsert({
             where: { id: budget.id },
@@ -321,13 +321,13 @@ export class BackupService {
         }
 
         // Import budget categories (filter by budget userId if provided)
-        const budgetCategoriesToImport = userId 
+        const budgetCategoriesToImport = userId
           ? backupData.budgetCategories.filter(bc => {
               const budget = backupData.budgets.find(b => b.id === bc.budgetId);
               return budget && budget.userId === userId;
             })
           : backupData.budgetCategories;
-          
+
         for (const budgetCategory of budgetCategoriesToImport) {
           await tx.budgetCategory.upsert({
             where: { id: budgetCategory.id },
@@ -337,10 +337,10 @@ export class BackupService {
         }
 
         // Import financial goals (filter by userId if provided)
-        const financialGoalsToImport = userId 
+        const financialGoalsToImport = userId
           ? backupData.financialGoals.filter(goal => goal.userId === userId)
           : backupData.financialGoals;
-          
+
         for (const goal of financialGoalsToImport) {
           await tx.financialGoal.upsert({
             where: { id: goal.id },

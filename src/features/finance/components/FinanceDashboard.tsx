@@ -24,7 +24,12 @@ import { BudgetPerformanceChart } from '@/components/layout/charts/BudgetPerform
 import { AnimatedDiv } from '@/components/ui/animations';
 import { ResponsiveGrid, ResponsiveChart } from '@/components/ui/responsive-helpers';
 
-import { currencyService, formatSummaryAmount, BASE_CURRENCY } from '@/lib/currency';
+import {
+  currencyService,
+  formatSummaryAmount,
+  formatDisplayAmount,
+  BASE_CURRENCY,
+} from '@/lib/currency';
 import { useState, useEffect } from 'react';
 
 interface QuickStatsProps {
@@ -326,8 +331,12 @@ export function FinanceDashboard() {
                         />
                       </div>
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{formatSummaryAmount(goal.currentAmount)}</span>
-                        <span>{formatSummaryAmount(goal.targetAmount)}</span>
+                        <span>
+                          {formatDisplayAmount(goal.currentAmount, goal.currency, 'summary')}
+                        </span>
+                        <span>
+                          {formatDisplayAmount(goal.targetAmount, goal.currency, 'summary')}
+                        </span>
                       </div>
                     </div>
                   ))}

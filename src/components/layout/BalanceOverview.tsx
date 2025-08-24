@@ -269,7 +269,7 @@ export function BalanceOverview({
         {showDetails && inactiveBalances.length > 0 && (
           <div className="space-y-3">
             <div className="text-sm font-medium text-muted-foreground">
-              Inactive Accounts ({inactiveBalances.length})
+              Deactivated Accounts ({inactiveBalances.length})
             </div>
             <div className="space-y-2">
               {inactiveBalances.map(balance => (
@@ -283,8 +283,11 @@ export function BalanceOverview({
                       style={{ backgroundColor: balance.accountColor || '#3B82F6' }}
                     />
                     <span className="text-sm">{balance.accountName}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      Inactive
+                    <Badge
+                      variant="secondary"
+                      className="text-xs bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                    >
+                      Deactivated
                     </Badge>
                   </div>
                   <div className="text-sm text-muted-foreground">

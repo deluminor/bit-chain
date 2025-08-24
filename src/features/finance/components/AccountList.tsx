@@ -47,8 +47,8 @@ import {
 import { AccountForm } from '@/components/forms/AccountForm';
 import {
   useAccounts,
-  useDeleteAccount,
   useAccountAction,
+  useDeleteAccount,
   FinanceAccount,
 } from '@/features/finance/queries/accounts';
 import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
@@ -85,15 +85,17 @@ const getBalanceColor = (balance: number) => {
 };
 
 export function AccountList() {
-  const { data: accountsData, isLoading, error, refetch } = useAccounts();
-  const deleteAccount = useDeleteAccount();
+  const { data: accountsData, isLoading, error, refetch } = useAccounts(true);
   const accountAction = useAccountAction();
+  const deleteAccount = useDeleteAccount();
   const { toast } = useToast();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<FinanceAccount | null>(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [totalBalanceEUR, setTotalBalanceEUR] = useState<number>(0);
   const [isConverting, setIsConverting] = useState<boolean>(false);
@@ -110,7 +112,7 @@ export function AccountList() {
     [accountsData?.summary],
   );
 
-  // Convert account balances to EUR
+  // Convert account balances to EUR (only active accounts)
   useEffect(() => {
     const convertBalances = async () => {
       if (!accounts || accounts.length === 0) {
@@ -121,6 +123,7 @@ export function AccountList() {
       setIsConverting(true);
       try {
         let totalEUR = 0;
+        // Only include active accounts in calculations
         const activeAccounts = accounts.filter((account: FinanceAccount) => account.isActive);
 
         for (const account of activeAccounts) {
@@ -134,8 +137,11 @@ export function AccountList() {
         setTotalBalanceEUR(totalEUR);
       } catch (error) {
         console.error('Error converting balances:', error);
-        // Fallback to summary.totalBalance if conversion fails
-        setTotalBalanceEUR(summary?.totalBalance || 0);
+        // Fallback calculation should also exclude deactivated accounts
+        const activeAccountsBalance = accounts
+          .filter((account: FinanceAccount) => account.isActive)
+          .reduce((sum: number, account: FinanceAccount) => sum + account.balance, 0);
+        setTotalBalanceEUR(activeAccountsBalance);
       } finally {
         setIsConverting(false);
       }
@@ -174,6 +180,43 @@ export function AccountList() {
     }
   };
 
+  const handleDeactivateAccount = async () => {
+    if (!selectedAccount) return;
+
+    setIsDeactivating(true);
+    try {
+      await accountAction.mutateAsync({
+        id: selectedAccount.id,
+        action: 'deactivate',
+      });
+      toast({
+        title: 'Success',
+        description: 'Account deactivated successfully. All transaction history is preserved.',
+      });
+      setShowDeactivateDialog(false);
+      setSelectedAccount(null);
+      refetch();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description:
+          error instanceof Error &&
+          'response' in error &&
+          error.response &&
+          typeof error.response === 'object' &&
+          'data' in error.response &&
+          error.response.data &&
+          typeof error.response.data === 'object' &&
+          'error' in error.response.data
+            ? String(error.response.data.error)
+            : 'Failed to deactivate account',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     if (!selectedAccount) return;
 
@@ -181,11 +224,11 @@ export function AccountList() {
     try {
       await deleteAccount.mutateAsync({
         id: selectedAccount.id,
-        force: selectedAccount._count?.transactions === 0,
+        force: false,
       });
       toast({
         title: 'Success',
-        description: 'Account deleted successfully',
+        description: 'Account deleted successfully.',
       });
       setShowDeleteDialog(false);
       setSelectedAccount(null);
@@ -215,6 +258,7 @@ export function AccountList() {
     refetch();
     setShowCreateDialog(false);
     setShowEditDialog(false);
+    setShowDeactivateDialog(false);
     setSelectedAccount(null);
   };
 
@@ -428,9 +472,9 @@ export function AccountList() {
                                   ) : (
                                     <Badge
                                       variant="secondary"
-                                      className="bg-gray-100 text-gray-800 dark:bg-gray-900/20"
+                                      className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
                                     >
-                                      Inactive
+                                      Deactivated
                                     </Badge>
                                   )}
                                 </TableCell>
@@ -473,6 +517,16 @@ export function AccountList() {
                                           )}
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedAccount(account);
+                                            setShowDeactivateDialog(true);
+                                          }}
+                                          className="text-orange-600"
+                                        >
+                                          <EyeOff className="h-4 w-4 mr-2" />
+                                          Deactivate
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem
                                           onClick={() => {
                                             setSelectedAccount(account);
@@ -544,21 +598,70 @@ export function AccountList() {
           </DialogContent>
         </Dialog>
 
+        {/* Deactivate Account Dialog */}
+        <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Deactivate Account</DialogTitle>
+              <DialogDescription className="space-y-2">
+                <p>
+                  Are you sure you want to deactivate "{selectedAccount?.name}"? The account will
+                  remain in the list with a "Deactivated" status and can be reactivated later.
+                </p>
+                {selectedAccount?._count?.transactions !== 0 && (
+                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        This account has {selectedAccount?._count?.transactions} transaction(s)
+                        associated with it. All transaction history will be preserved and the
+                        account can be reactivated at any time.
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeactivateDialog(false);
+                  setSelectedAccount(null);
+                }}
+                disabled={isDeactivating}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeactivateAccount}
+                disabled={isDeactivating}
+              >
+                {isDeactivating ? 'Deactivating...' : 'Deactivate Account'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Delete Account Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Delete Account</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete "{selectedAccount?.name}"? This action cannot be
-                undone.
+              <DialogDescription className="space-y-2">
+                <p>
+                  Are you sure you want to permanently delete "{selectedAccount?.name}"? This action
+                  cannot be undone.
+                </p>
                 {selectedAccount?._count?.transactions !== 0 && (
-                  <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                  <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                    <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
                       <AlertTriangle className="h-4 w-4" />
                       <span className="text-sm font-medium">
-                        This account has {selectedAccount?._count?.transactions} transaction(s)
-                        associated with it.
+                        Warning: This account has {selectedAccount?._count?.transactions}{' '}
+                        transaction(s) associated with it. Deleting this account will also remove
+                        all transaction history. Consider deactivating instead to preserve data.
                       </span>
                     </div>
                   </div>

@@ -273,20 +273,24 @@ export default function CategoriesPage() {
 
   if (error) {
     return (
-      <AnimatedDiv variant="slideUp" className="container mx-auto py-6">
-        <div className="text-center py-8">
-          <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
-          <p className="text-lg font-medium mb-2">Failed to load categories</p>
-          <p className="text-muted-foreground mb-4">There was an error loading your categories.</p>
-          <Button onClick={() => refetch()}>Try Again</Button>
+      <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <div className="px-4 lg:px-6">
+          <div className="text-center py-8">
+            <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
+            <p className="text-lg font-medium mb-2">Failed to load categories</p>
+            <p className="text-muted-foreground mb-4">
+              There was an error loading your categories.
+            </p>
+            <Button onClick={() => refetch()}>Try Again</Button>
+          </div>
         </div>
       </AnimatedDiv>
     );
   }
 
   return (
-    <AnimatedDiv variant="slideUp" className="space-y-6">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <div className="px-4 lg:px-6">
         <div className="flex flex-col gap-3 md:gap-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

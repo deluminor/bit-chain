@@ -415,7 +415,7 @@ export function TransactionList() {
 
   if (error) {
     return (
-      <AnimatedDiv variant="slideUp" className="container mx-auto py-6">
+      <AnimatedDiv variant="slideUp" className="container ">
         <Card>
           <div className="py-8 text-center">
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />

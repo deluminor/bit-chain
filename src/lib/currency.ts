@@ -225,23 +225,9 @@ class CurrencyService {
   formatDisplayAmount(
     amount: number,
     currency: string = BASE_CURRENCY,
-    context: 'summary' | 'detailed' = 'summary',
+    _context: 'summary' | 'detailed' = 'summary',
   ): string {
-    const currencyInfo = this.getCurrencyInfo(currency);
-
-    if (context === 'summary') {
-      // For summary stats, always use standard format for EUR
-      if (currency === BASE_CURRENCY) {
-        return this.formatEuroAmount(amount);
-      }
-      // For other currencies in summary, still convert to standard format
-      return `${currencyInfo.symbol}${amount.toLocaleString('en-US', {
-        minimumFractionDigits: currencyInfo.decimals,
-        maximumFractionDigits: currencyInfo.decimals,
-      })}`;
-    }
-
-    // For detailed view, use the regular formatting with K/M/B for large amounts
+    // For both summary and detailed view, use the regular formatting with K/M/B for large amounts
     return this.formatCurrency(amount, currency, { useLargeNumberFormat: true });
   }
 }
@@ -273,9 +259,9 @@ export function formatEuroAmount(amount: number, options?: { showSymbol?: boolea
 export function formatDisplayAmount(
   amount: number,
   currency: string = BASE_CURRENCY,
-  context: 'summary' | 'detailed' = 'summary',
+  _context: 'summary' | 'detailed' = 'summary',
 ): string {
-  return currencyService.formatDisplayAmount(amount, currency, context);
+  return currencyService.formatDisplayAmount(amount, currency, _context);
 }
 
 export function formatSummaryAmount(amount: number): string {

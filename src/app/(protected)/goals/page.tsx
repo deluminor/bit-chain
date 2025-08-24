@@ -24,7 +24,7 @@ import {
   FinancialGoal,
 } from '@/features/finance/queries/goals';
 import { useToast } from '@/hooks/use-toast';
-import { formatSummaryAmount, formatDisplayAmount } from '@/lib/currency';
+import { formatDisplayAmount, BASE_CURRENCY } from '@/lib/currency';
 import { StatCardSkeleton } from '@/components/ui/loading-skeleton';
 
 export default function GoalsPage() {
@@ -218,26 +218,13 @@ export default function GoalsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-2 md:p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <DollarSign className="h-5 w-5 text-green-500" />
-              </div>
-              <h3 className="font-semibold">Total Saved</h3>
-            </div>
-            <div className="text-2xl font-bold mb-1">
-              {formatSummaryAmount(summary.totalCurrent)}
-            </div>
-            <p className="text-sm text-muted-foreground">Across all goals</p>
-          </Card>
-
-          <Card className="p-2 md:p-6">
-            <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-purple-500/10 rounded-lg">
                 <TrendingUp className="h-5 w-5 text-purple-500" />
               </div>
               <h3 className="font-semibold">Total Target</h3>
             </div>
             <div className="text-2xl font-bold mb-1">
-              {formatSummaryAmount(summary.totalTarget)}
+              {formatDisplayAmount(summary.totalTarget, BASE_CURRENCY, 'summary')}
             </div>
             <p className="text-sm text-muted-foreground">Target amount</p>
           </Card>
@@ -323,11 +310,11 @@ export default function GoalsPage() {
                           <TableCell className="text-right">
                             <div className="space-y-1">
                               <div className="font-semibold">
-                                {formatDisplayAmount(goal.currentAmount, goal.currency, 'summary')}
+                                {formatDisplayAmount(goal.currentAmount, goal.currency, 'detailed')}
                               </div>
                               <div className="text-xs text-muted-foreground">
                                 of{' '}
-                                {formatDisplayAmount(goal.targetAmount, goal.currency, 'summary')}
+                                {formatDisplayAmount(goal.targetAmount, goal.currency, 'detailed')}
                               </div>
                             </div>
                           </TableCell>
@@ -438,7 +425,11 @@ export default function GoalsPage() {
 
               <div className="text-center p-4 bg-blue-500/10 rounded-lg">
                 <div className="text-2xl font-bold text-blue-500">
-                  {formatSummaryAmount(summary.totalCurrent / Math.max(goals.length, 1))}
+                  {formatDisplayAmount(
+                    summary.totalCurrent / Math.max(goals.length, 1),
+                    BASE_CURRENCY,
+                    'summary',
+                  )}
                 </div>
                 <div className="text-sm text-muted-foreground">Avg per Goal</div>
               </div>

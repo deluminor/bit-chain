@@ -5,7 +5,7 @@ import { AnimatedDiv } from '@/components/ui/animations';
 
 export default function JournalPage() {
   return (
-    <AnimatedDiv variant="slideUp" className="container mx-auto py-6">
+    <AnimatedDiv variant="slideUp" className="container py-6">
       <TablePositions />
     </AnimatedDiv>
   );

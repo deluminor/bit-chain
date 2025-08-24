@@ -199,7 +199,7 @@ export function FinanceDashboard() {
 
   return (
     <AnimatedDiv variant="slideUp" className="space-y-4">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="container">
         {/* Quick Stats Grid */}
         <ResponsiveGrid cols={{ mobile: 1, tablet: 2, desktop: 4 }} className="mb-6">
           <QuickStatCard

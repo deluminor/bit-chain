@@ -2,6 +2,7 @@ import { authOptions } from '@/features/auth/libs/auth';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
+import { currencyService, BASE_CURRENCY } from '@/lib/currency';
 
 async function findOrCreateUser(email: string) {
   let user = await prisma.user.findUnique({
@@ -44,12 +45,43 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Calculate summary
+    // Calculate summary with currency conversion to base currency (EUR)
+    let totalTargetInBase = 0;
+    let totalCurrentInBase = 0;
+
+    // Convert all amounts to base currency for proper summary calculation
+    for (const goal of goals) {
+      try {
+        if (goal.currency === BASE_CURRENCY) {
+          // No conversion needed for base currency
+          totalTargetInBase += goal.targetAmount;
+          totalCurrentInBase += goal.currentAmount;
+        } else {
+          // Convert to base currency
+          const targetInBase = await currencyService.convertToBaseCurrency(
+            goal.targetAmount,
+            goal.currency,
+          );
+          const currentInBase = await currencyService.convertToBaseCurrency(
+            goal.currentAmount,
+            goal.currency,
+          );
+          totalTargetInBase += targetInBase;
+          totalCurrentInBase += currentInBase;
+        }
+      } catch (error) {
+        console.warn(`Failed to convert currency for goal ${goal.id}:`, error);
+        // Fallback: treat as base currency if conversion fails
+        totalTargetInBase += goal.targetAmount;
+        totalCurrentInBase += goal.currentAmount;
+      }
+    }
+
     const summary = {
       total: goals.length,
       active: goals.filter(g => g.isActive).length,
-      totalTarget: goals.reduce((sum, g) => sum + g.targetAmount, 0),
-      totalCurrent: goals.reduce((sum, g) => sum + g.currentAmount, 0),
+      totalTarget: totalTargetInBase,
+      totalCurrent: totalCurrentInBase,
       completed: goals.filter(g => g.currentAmount >= g.targetAmount).length,
     };
 

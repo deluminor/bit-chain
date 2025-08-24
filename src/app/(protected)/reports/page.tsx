@@ -168,8 +168,8 @@ export default function ReportsPage() {
   };
 
   return (
-    <AnimatedDiv variant="slideUp" className="space-y-6">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <div className="px-4 lg:px-6">
         <div className="flex flex-col gap-3 md:gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
@@ -196,7 +196,11 @@ export default function ReportsPage() {
               </Button>
             </div>
           </div>
+        </div>
+      </div>
 
+      <div className="px-4 lg:px-6">
+        <div className="flex flex-col gap-3 md:gap-6">
           {/* Quick Stats Overview */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {statsLoading

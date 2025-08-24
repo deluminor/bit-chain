@@ -92,10 +92,8 @@ export function AccountList() {
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<FinanceAccount | null>(null);
-  const [isDeactivating, setIsDeactivating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [totalBalanceEUR, setTotalBalanceEUR] = useState<number>(0);
   const [isConverting, setIsConverting] = useState<boolean>(false);
@@ -180,43 +178,6 @@ export function AccountList() {
     }
   };
 
-  const handleDeactivateAccount = async () => {
-    if (!selectedAccount) return;
-
-    setIsDeactivating(true);
-    try {
-      await accountAction.mutateAsync({
-        id: selectedAccount.id,
-        action: 'deactivate',
-      });
-      toast({
-        title: 'Success',
-        description: 'Account deactivated successfully. All transaction history is preserved.',
-      });
-      setShowDeactivateDialog(false);
-      setSelectedAccount(null);
-      refetch();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description:
-          error instanceof Error &&
-          'response' in error &&
-          error.response &&
-          typeof error.response === 'object' &&
-          'data' in error.response &&
-          error.response.data &&
-          typeof error.response.data === 'object' &&
-          'error' in error.response.data
-            ? String(error.response.data.error)
-            : 'Failed to deactivate account',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeactivating(false);
-    }
-  };
-
   const handleDeleteAccount = async () => {
     if (!selectedAccount) return;
 
@@ -258,7 +219,6 @@ export function AccountList() {
     refetch();
     setShowCreateDialog(false);
     setShowEditDialog(false);
-    setShowDeactivateDialog(false);
     setSelectedAccount(null);
   };
 
@@ -520,16 +480,6 @@ export function AccountList() {
                                         <DropdownMenuItem
                                           onClick={() => {
                                             setSelectedAccount(account);
-                                            setShowDeactivateDialog(true);
-                                          }}
-                                          className="text-orange-600"
-                                        >
-                                          <EyeOff className="h-4 w-4 mr-2" />
-                                          Deactivate
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            setSelectedAccount(account);
                                             setShowDeleteDialog(true);
                                           }}
                                           className="text-destructive"
@@ -595,52 +545,6 @@ export function AccountList() {
                 setSelectedAccount(null);
               }}
             />
-          </DialogContent>
-        </Dialog>
-
-        {/* Deactivate Account Dialog */}
-        <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Deactivate Account</DialogTitle>
-              <DialogDescription className="space-y-2">
-                <p>
-                  Are you sure you want to deactivate "{selectedAccount?.name}"? The account will
-                  remain in the list with a "Deactivated" status and can be reactivated later.
-                </p>
-                {selectedAccount?._count?.transactions !== 0 && (
-                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span className="text-sm font-medium">
-                        This account has {selectedAccount?._count?.transactions} transaction(s)
-                        associated with it. All transaction history will be preserved and the
-                        account can be reactivated at any time.
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDeactivateDialog(false);
-                  setSelectedAccount(null);
-                }}
-                disabled={isDeactivating}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeactivateAccount}
-                disabled={isDeactivating}
-              >
-                {isDeactivating ? 'Deactivating...' : 'Deactivate Account'}
-              </Button>
-            </div>
           </DialogContent>
         </Dialog>
 

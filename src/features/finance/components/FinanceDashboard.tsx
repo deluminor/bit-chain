@@ -397,30 +397,28 @@ export function FinanceDashboard() {
             </div>
           </div>
 
-          {/* Net Worth and Category Spending */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="w-full">
               <ResponsiveChart
-                // height={{ mobile: 300, desktop: 400 }}
-                className="animate-fade-in h-full"
-              >
-                <NetWorthChart />
-              </ResponsiveChart>
-            </div>
-            <div className="w-full">
-              <ResponsiveChart
-                // height={{ mobile: 300, desktop: 400 }}
+                height={{ mobile: 240, desktop: 240 }}
                 className="animate-fade-in h-full"
               >
                 <CategorySpendingChart />
               </ResponsiveChart>
             </div>
+            <div className="w-full">
+              <ResponsiveChart height={{ mobile: 350, desktop: 450 }} className="animate-fade-in">
+                <BudgetPerformanceChart />
+              </ResponsiveChart>
+            </div>
           </div>
 
-          {/* Budget Performance */}
           <div className="w-full">
-            <ResponsiveChart height={{ mobile: 350, desktop: 450 }} className="animate-fade-in">
-              <BudgetPerformanceChart />
+            <ResponsiveChart
+              // height={{ mobile: 300, desktop: 400 }}
+              className="animate-fade-in h-full"
+            >
+              <NetWorthChart />
             </ResponsiveChart>
           </div>
         </AnimatedDiv>

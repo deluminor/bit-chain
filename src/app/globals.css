@@ -297,3 +297,7 @@ button {
   width: 100% !important;
   max-width: 100% !important;
 }
+
+.max-h-260 {
+  max-height: 260px;
+}

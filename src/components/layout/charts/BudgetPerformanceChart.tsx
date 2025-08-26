@@ -8,7 +8,7 @@ import { THEME } from '@/store';
 // Removed BAR_COLORS and CHART_CONFIG imports - using minimalist styles instead
 import { useBudgetPerformance } from '@/features/finance/hooks/useBudgetPerformance';
 import { useIsClient } from '@/hooks/useIsClient';
-import { formatSummaryAmount } from '@/lib/currency';
+import { formatSummaryAmount, SUPPORTED_CURRENCIES, BASE_CURRENCY } from '@/lib/currency';
 
 const chartConfig = {
   budgeted: {
@@ -192,7 +192,9 @@ export function BudgetPerformanceChart() {
                 fontSize: 12,
                 fill: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
               }}
-              tickFormatter={value => `€ ${(value / 1000).toFixed(0)}k`}
+              tickFormatter={value =>
+                `${SUPPORTED_CURRENCIES[BASE_CURRENCY]?.symbol || '€'} ${(value / 1000).toFixed(0)}k`
+              }
             />
             <ChartTooltip
               content={({ active, payload, label }) => {

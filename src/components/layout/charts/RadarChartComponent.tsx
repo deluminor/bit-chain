@@ -19,10 +19,12 @@ import {
 import { useTheme } from '@/providers/ThemeProvider';
 import { THEME } from '@/store';
 import { ChartSkeleton } from './ChartSkeleton';
+import { formatSummaryAmount } from '@/lib/currency';
 
 interface RadarChartData {
   name: string;
   value: number;
+  amount?: number;
 }
 
 interface RadarChartComponentProps {
@@ -62,8 +64,8 @@ export function RadarChartComponent({
         <CardTitle className="text-lg font-semibold">{title}</CardTitle>
         <CardDescription className="text-sm text-muted-foreground">{description}</CardDescription>
       </CardHeader>
-      <CardContent className="pt-0">
-        <ChartContainer config={chartConfig} className="aspect-square min-h-[250px] h-auto w-full">
+      <CardContent className="pt-0 max-h-260 overflow-hidden">
+        <ChartContainer config={chartConfig} className="aspect-square max-h-260 h-auto w-full">
           <RadarChart data={data} margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
             <defs>
               <linearGradient id="radarFill" x1="0" y1="0" x2="0" y2="1">
@@ -119,10 +121,14 @@ export function RadarChartComponent({
               content={
                 <ChartTooltipContent
                   labelFormatter={value => value}
-                  formatter={(value, name) => [
-                    `${typeof value === 'number' ? value.toFixed(1) : value}%`,
-                    name,
-                  ]}
+                  formatter={(value, name, props) => {
+                    const percentage = typeof value === 'number' ? value.toFixed(1) : value;
+                    const amount = props?.payload?.amount;
+                    if (amount !== undefined) {
+                      return [`${formatSummaryAmount(amount)} (${percentage}%)`, name];
+                    }
+                    return [`${percentage}%`, name];
+                  }}
                   indicator="dot"
                   className="rounded-lg border-0 bg-background/95 backdrop-blur-sm shadow-lg"
                 />

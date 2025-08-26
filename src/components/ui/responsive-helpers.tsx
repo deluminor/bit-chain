@@ -139,11 +139,7 @@ interface ResponsiveChartProps {
   };
 }
 
-export function ResponsiveChart({
-  children,
-  className,
-  height, // = { mobile: 300, desktop: 400 },
-}: ResponsiveChartProps) {
+export function ResponsiveChart({ children, className, height }: ResponsiveChartProps) {
   const isMobile = useIsMobile();
 
   return (

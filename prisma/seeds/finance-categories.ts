@@ -353,4 +353,13 @@ export const DEFAULT_FINANCE_CATEGORIES: DefaultCategoryData[] = [
       },
     ],
   },
+
+  // === TRANSFER CATEGORIES ===
+  {
+    name: 'Transfer',
+    type: TransactionType.TRANSFER,
+    color: '#3B82F6', // blue-500
+    icon: 'ArrowRightLeft',
+    isDefault: true,
+  },
 ];

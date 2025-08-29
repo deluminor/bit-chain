@@ -20,6 +20,8 @@ const createTransactionSchema = z.object({
     .optional(),
   tags: z.array(z.string()).default([]),
   transferToId: z.string().cuid().optional(), // For transfer transactions
+  transferAmount: z.number().positive().optional(), // Amount received in destination account
+  transferCurrency: z.string().min(3).max(3).optional(), // Currency of destination account
   isRecurring: z.boolean().default(false),
   recurringPattern: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY']).optional(),
 });
@@ -217,7 +219,7 @@ export async function POST(request: NextRequest) {
       where: {
         id: validatedData.categoryId,
         userId: user.id,
-        type: validatedData.type === 'TRANSFER' ? 'EXPENSE' : validatedData.type, // Transfers use EXPENSE categories
+        type: validatedData.type, // Now TRANSFER type is supported
         isActive: true,
       },
     });
@@ -316,10 +318,11 @@ export async function POST(request: NextRequest) {
               data: { balance: { decrement: validatedData.amount } },
             });
 
-            // Add to destination account (convert currency if needed)
+            // Add to destination account (use transferAmount for multi-currency transfers)
+            const amountToAdd = validatedData.transferAmount || validatedData.amount;
             await tx.financeAccount.update({
               where: { id: validatedData.transferToId },
-              data: { balance: { increment: validatedData.amount } },
+              data: { balance: { increment: amountToAdd } },
             });
           }
           break;

@@ -43,6 +43,12 @@ const transactionFormSchema = z.object({
   date: z.date(),
   tags: z.array(z.string()).default([]),
   transferToId: z.string().optional(),
+  transferAmount: z
+    .number()
+    .positive('Transfer amount must be positive')
+    .min(0.01, 'Minimum amount is 0.01')
+    .optional(),
+  transferCurrency: z.string().min(3).max(3).optional(),
   isRecurring: z.boolean().default(false),
   recurringPattern: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY']).optional(),
 });
@@ -119,6 +125,8 @@ export function AddTransactionForm({
       date: transaction?.date ? new Date(transaction.date) : new Date(),
       tags: transaction?.tags || [],
       transferToId: transaction?.transferTo?.id || '',
+      transferAmount: 0,
+      transferCurrency: BASE_CURRENCY,
       isRecurring: transaction?.isRecurring || false,
       recurringPattern: transaction?.recurringPattern,
     },
@@ -131,6 +139,9 @@ export function AddTransactionForm({
   const watchedAmount = form.watch('amount');
   const watchedCurrency = form.watch('currency');
   const watchedAccountId = form.watch('accountId');
+  const watchedTransferToId = form.watch('transferToId');
+  const watchedTransferAmount = form.watch('transferAmount');
+  const watchedTransferCurrency = form.watch('transferCurrency');
 
   // Sync date state with form changes
   useEffect(() => {
@@ -146,9 +157,7 @@ export function AddTransactionForm({
 
   // Get accounts and categories
   const { data: accountsData } = useAccounts();
-  const { data: categoriesData } = useTransactionCategories(
-    watchedType === 'TRANSFER' ? 'EXPENSE' : watchedType,
-  );
+  const { data: categoriesData } = useTransactionCategories(watchedType);
 
   const accounts = accountsData?.accounts || [];
   const categories = categoriesData?.categories || [];
@@ -164,6 +173,16 @@ export function AddTransactionForm({
       }
     }
   }, [watchedAccountId, accounts, form, watchedCurrency]);
+
+  // Auto-update transfer currency when transfer destination account changes
+  useEffect(() => {
+    if (watchedTransferToId && accounts.length > 0) {
+      const selectedAccount = accounts.find(acc => acc.id === watchedTransferToId);
+      if (selectedAccount && selectedAccount.currency !== watchedTransferCurrency) {
+        form.setValue('transferCurrency', selectedAccount.currency);
+      }
+    }
+  }, [watchedTransferToId, accounts, form, watchedTransferCurrency]);
 
   // Filter accounts for transfer destination (exclude source account)
   const transferAccounts = accounts.filter(acc => acc.id !== form.watch('accountId'));
@@ -198,9 +217,19 @@ export function AddTransactionForm({
         return;
       }
 
-      if (data.type === 'TRANSFER' && !data.transferToId) {
-        form.setError('transferToId', { message: 'Destination account is required for transfers' });
-        return;
+      if (data.type === 'TRANSFER') {
+        if (!data.transferToId) {
+          form.setError('transferToId', {
+            message: 'Destination account is required for transfers',
+          });
+          return;
+        }
+        if (!data.transferAmount || data.transferAmount <= 0) {
+          form.setError('transferAmount', {
+            message: 'Transfer amount is required and must be positive',
+          });
+          return;
+        }
       }
 
       const formData = {
@@ -208,7 +237,15 @@ export function AddTransactionForm({
         amount: parseFloat(data.amount.toFixed(2)), // Ensure proper decimal formatting
         date:
           data.date instanceof Date ? data.date.toISOString() : new Date(data.date).toISOString(),
-        ...(data.type !== 'TRANSFER' && { transferToId: undefined }),
+        ...(data.type !== 'TRANSFER' && {
+          transferToId: undefined,
+          transferAmount: undefined,
+          transferCurrency: undefined,
+        }),
+        ...(data.type === 'TRANSFER' &&
+          data.transferAmount && {
+            transferAmount: parseFloat(data.transferAmount.toFixed(2)),
+          }),
       };
 
       if (isEditing && transaction) {
@@ -333,12 +370,14 @@ export function AddTransactionForm({
           {/* Transfer To Account (only for transfers) */}
           {watchedType === 'TRANSFER' && (
             <div className="space-y-2">
-              <Label htmlFor="transferToId">To Account</Label>
+              <Label htmlFor="transferToId">To Account *</Label>
               <Select
                 value={form.watch('transferToId')}
                 onValueChange={value => form.setValue('transferToId', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  className={form.formState.errors.transferToId ? 'border-destructive' : ''}
+                >
                   <SelectValue placeholder="Select destination account" />
                 </SelectTrigger>
                 <SelectContent>
@@ -358,6 +397,12 @@ export function AddTransactionForm({
                   ))}
                 </SelectContent>
               </Select>
+              {form.formState.errors.transferToId && (
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <span className="text-xs">⚠</span>
+                  {form.formState.errors.transferToId.message}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -436,6 +481,63 @@ export function AddTransactionForm({
             )}
           </div>
         </div>
+
+        {/* Transfer Amount (only for transfers) */}
+        {watchedType === 'TRANSFER' && (
+          <div className="space-y-2">
+            <Label htmlFor="transferAmount">Amount Received *</Label>
+            <div className="text-xs text-muted-foreground mb-2">
+              How much will be received in the destination account?
+            </div>
+            <CurrencyInput
+              placeholder="0.00"
+              value={watchedTransferAmount || 0}
+              currency={watchedTransferCurrency || BASE_CURRENCY}
+              onChange={(value, currency) => {
+                form.setValue('transferAmount', value);
+                form.setValue('transferCurrency', currency);
+                form.clearErrors('transferAmount');
+              }}
+              showCurrencySelect={true}
+              className={form.formState.errors.transferAmount ? 'border-destructive' : ''}
+              required
+            />
+            {form.formState.errors.transferAmount && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <span className="text-xs">⚠</span>
+                {form.formState.errors.transferAmount.message}
+              </p>
+            )}
+            {watchedTransferAmount &&
+            watchedTransferAmount > 0 &&
+            !form.formState.errors.transferAmount ? (
+              <p className="text-xs text-muted-foreground">
+                Preview:{' '}
+                {formatCurrency(watchedTransferAmount, watchedTransferCurrency || BASE_CURRENCY)}
+              </p>
+            ) : (
+              ''
+            )}
+            {watchedAmount > 0 && watchedTransferAmount && watchedTransferAmount > 0 ? (
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="text-xs font-medium text-muted-foreground">Exchange Summary</div>
+                <div className="text-sm">
+                  Send: {formatCurrency(watchedAmount, watchedCurrency)} → Receive:{' '}
+                  {formatCurrency(watchedTransferAmount, watchedTransferCurrency || BASE_CURRENCY)}
+                </div>
+                {watchedCurrency !== watchedTransferCurrency && (
+                  <div className="text-xs text-muted-foreground">
+                    Rate: 1 {watchedCurrency} ≈{' '}
+                    {((watchedTransferAmount || 0) / (watchedAmount || 1)).toFixed(4)}{' '}
+                    {watchedTransferCurrency}
+                  </div>
+                )}
+              </div>
+            ) : (
+              ''
+            )}
+          </div>
+        )}
 
         {/* Description */}
         <div className="space-y-2">

@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 // Validation schemas
 const createCategorySchema = z.object({
   name: z.string().min(1, 'Category name is required').max(50, 'Category name too long'),
-  type: z.enum(['INCOME', 'EXPENSE']),
+  type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']),
   parentId: z.string().cuid().optional(),
   color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid color format'),
   icon: z.string().min(1, 'Icon is required'),
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') as 'INCOME' | 'EXPENSE' | null;
+    const type = searchParams.get('type') as 'INCOME' | 'EXPENSE' | 'TRANSFER' | null;
     const includeInactive = searchParams.get('includeInactive') === 'true';
     const hierarchical = searchParams.get('hierarchical') === 'true';
 

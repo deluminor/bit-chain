@@ -40,7 +40,7 @@ export interface Transaction {
 export interface TransactionCategory {
   id: string;
   name: string;
-  type: 'INCOME' | 'EXPENSE';
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
   parentId?: string;
   color: string;
   icon: string;
@@ -69,6 +69,8 @@ export interface CreateTransactionData {
   date?: string;
   tags?: string[];
   transferToId?: string;
+  transferAmount?: number; // Amount received in destination account
+  transferCurrency?: string; // Currency of destination account
   isRecurring?: boolean;
   recurringPattern?: Transaction['recurringPattern'];
 }
@@ -214,7 +216,7 @@ export function useDeleteTransaction() {
 
 // Categories hooks
 export function useTransactionCategories(
-  type?: 'INCOME' | 'EXPENSE',
+  type?: 'INCOME' | 'EXPENSE' | 'TRANSFER',
   includeInactive = false,
   hierarchical = false,
 ) {
@@ -238,7 +240,7 @@ export function useCreateTransactionCategory() {
   return useMutation({
     mutationFn: async (categoryData: {
       name: string;
-      type: 'INCOME' | 'EXPENSE';
+      type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
       parentId?: string;
       color: string;
       icon: string;
@@ -290,7 +292,7 @@ export function useDeleteTransactionCategory() {
 }
 
 export interface CategoryFilters {
-  type?: 'INCOME' | 'EXPENSE';
+  type?: 'INCOME' | 'EXPENSE' | 'TRANSFER';
   includeInactive?: boolean;
   hierarchical?: boolean;
 }

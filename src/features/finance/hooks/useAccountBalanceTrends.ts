@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { subMonths, format, eachMonthOfInterval } from 'date-fns';
+import { format, eachMonthOfInterval } from 'date-fns';
 import { currencyService, BASE_CURRENCY } from '@/lib/currency';
 
 interface Transaction {
@@ -26,9 +26,10 @@ async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
   const accountsData = await accountsResponse.json();
   const { accounts } = accountsData;
 
-  // Get last 12 months of data
-  const endDate = new Date();
-  const startDate = subMonths(endDate, 11);
+  // Get months from current year only
+  const currentYear = new Date().getFullYear();
+  const startDate = new Date(currentYear, 0, 1); // January 1st of current year
+  const endDate = new Date(); // Today
   const months = eachMonthOfInterval({ start: startDate, end: endDate });
 
   // Get transactions for balance calculations

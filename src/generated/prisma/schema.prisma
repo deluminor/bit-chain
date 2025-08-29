@@ -141,8 +141,10 @@ model Transaction {
   isDemo      Boolean             @default(false)
 
   // Transfer specific fields
-  transferToId String? // For transfer transactions
-  transferTo   FinanceAccount? @relation("TransferTo", fields: [transferToId], references: [id])
+  transferToId     String? // For transfer transactions
+  transferTo       FinanceAccount? @relation("TransferTo", fields: [transferToId], references: [id])
+  transferAmount   Float? // Amount received in destination account for transfers
+  transferCurrency String? // Currency of the amount received in destination account
 
   // Recurring transaction info
   isRecurring         Boolean           @default(false)

@@ -181,7 +181,7 @@ export function AccountBalanceTrendsChart() {
                     if (numValue === 0) return null;
                     return [formatSummaryAmount(numValue), ` ${name as string}`];
                   }}
-                  labelFormatter={label => `Month: ${label}`}
+                  labelFormatter={label => `${label}`}
                 />
               }
             />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,25 +33,62 @@ import { useAccounts } from '@/features/finance/queries/accounts';
 import { formatCurrency, useCurrencyConverter, BASE_CURRENCY } from '@/lib/currency';
 import { DatePicker } from '@/components/ui/date-picker';
 
-const transactionFormSchema = z.object({
-  accountId: z.string().min(1, 'Account is required'),
-  categoryId: z.string().min(1, 'Category is required'),
-  type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']),
-  amount: z.number().positive('Amount must be positive').min(0.01, 'Minimum amount is 0.01'),
-  currency: z.string().min(3).max(3).default('EUR'),
-  description: z.string().max(200).optional(),
-  date: z.date(),
-  tags: z.array(z.string()).default([]),
-  transferToId: z.string().optional(),
-  transferAmount: z
-    .number()
-    .positive('Transfer amount must be positive')
-    .min(0.01, 'Minimum amount is 0.01')
-    .optional(),
-  transferCurrency: z.string().min(3).max(3).optional(),
-  isRecurring: z.boolean().default(false),
-  recurringPattern: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY']).optional(),
-});
+const transactionFormSchema = z
+  .object({
+    accountId: z.string().min(1, 'Account is required'),
+    categoryId: z.string().min(1, 'Category is required'),
+    type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']),
+    amount: z.number().positive('Amount must be positive').min(0.01, 'Minimum amount is 0.01'),
+    currency: z.string().min(3).max(3).default('EUR'),
+    description: z.string().max(200).optional(),
+    date: z.date(),
+    tags: z.array(z.string()).default([]),
+    transferToId: z.string().optional(),
+    transferAmount: z.number().optional().nullable(),
+    transferCurrency: z.string().min(3).max(3).optional(),
+    isRecurring: z.boolean().default(false),
+    recurringPattern: z
+      .enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'])
+      .optional()
+      .nullable(),
+  })
+  .refine(
+    data => {
+      if (data.type === 'TRANSFER') {
+        return data.transferToId && data.transferToId.length > 0;
+      }
+      return true;
+    },
+    {
+      message: 'Destination account is required for transfers',
+      path: ['transferToId'],
+    },
+  )
+  .refine(
+    data => {
+      if (data.type === 'TRANSFER') {
+        return data.transferAmount != null && data.transferAmount > 0;
+      }
+      // For non-transfer transactions, transferAmount can be undefined or any value
+      return true;
+    },
+    {
+      message: 'Transfer amount must be positive',
+      path: ['transferAmount'],
+    },
+  )
+  .refine(
+    data => {
+      if (data.isRecurring) {
+        return data.recurringPattern != null;
+      }
+      return true;
+    },
+    {
+      message: 'Recurring pattern is required when recurring is enabled',
+      path: ['recurringPattern'],
+    },
+  );
 
 type TransactionFormData = z.infer<typeof transactionFormSchema>;
 
@@ -105,6 +142,17 @@ export function AddTransactionForm({
   const { toast } = useToast();
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
+
+  // Log mutation errors
+  React.useEffect(() => {
+    if (createTransaction.error) {
+      console.error('Create transaction error:', createTransaction.error);
+    }
+    if (updateTransaction.error) {
+      console.error('Update transaction error:', updateTransaction.error);
+    }
+  }, [createTransaction.error, updateTransaction.error]);
+
   const { convertToBase: _convertToBase } = useCurrencyConverter();
   const [newTag, setNewTag] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
@@ -125,12 +173,12 @@ export function AddTransactionForm({
       date: transaction?.date ? new Date(transaction.date) : new Date(),
       tags: transaction?.tags || [],
       transferToId: transaction?.transferTo?.id || '',
-      transferAmount: 0,
+      transferAmount: null,
       transferCurrency: BASE_CURRENCY,
       isRecurring: transaction?.isRecurring || false,
-      recurringPattern: transaction?.recurringPattern,
+      recurringPattern: transaction?.recurringPattern || null,
     },
-    mode: 'onChange',
+    mode: 'all',
   });
 
   const watchedType = form.watch('type');
@@ -161,8 +209,6 @@ export function AddTransactionForm({
 
   const accounts = accountsData?.accounts || [];
   const categories = categoriesData?.categories || [];
-
-  console.log({ categories });
 
   // Auto-update currency when account changes
   useEffect(() => {
@@ -508,7 +554,7 @@ export function AddTransactionForm({
                 {form.formState.errors.transferAmount.message}
               </p>
             )}
-            {watchedTransferAmount &&
+            {watchedTransferAmount != null &&
             watchedTransferAmount > 0 &&
             !form.formState.errors.transferAmount ? (
               <p className="text-xs text-muted-foreground">
@@ -518,7 +564,7 @@ export function AddTransactionForm({
             ) : (
               ''
             )}
-            {watchedAmount > 0 && watchedTransferAmount && watchedTransferAmount > 0 ? (
+            {watchedAmount > 0 && watchedTransferAmount != null && watchedTransferAmount > 0 ? (
               <div className="p-3 bg-muted/50 rounded-lg">
                 <div className="text-xs font-medium text-muted-foreground">Exchange Summary</div>
                 <div className="text-sm">

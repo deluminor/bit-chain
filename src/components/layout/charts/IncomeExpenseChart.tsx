@@ -176,7 +176,7 @@ export function IncomeExpenseChart() {
                     formatSummaryAmount(Number(value)),
                     ` ${name === 'income' ? 'Income' : 'Expenses'}`,
                   ]}
-                  labelFormatter={label => `Month: ${label}`}
+                  labelFormatter={label => `${label}`}
                 />
               }
             />

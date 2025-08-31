@@ -83,7 +83,7 @@ async function fetchFinanceStats(): Promise<FinanceStatsResponse> {
   for (let i = 0; i < months.length; i++) {
     const month = months[i];
     const monthKey = format(month, 'yyyy-MM');
-    const monthName = format(month, 'MMM');
+    const monthName = format(month, 'MMM yyyy');
 
     // Filter transactions for this month
     interface Transaction {

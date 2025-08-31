@@ -23,7 +23,10 @@ const createTransactionSchema = z.object({
   transferAmount: z.number().positive().optional(), // Amount received in destination account
   transferCurrency: z.string().min(3).max(3).optional(), // Currency of destination account
   isRecurring: z.boolean().default(false),
-  recurringPattern: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY']).optional(),
+  recurringPattern: z
+    .enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'])
+    .optional()
+    .nullable(),
 });
 
 const updateTransactionSchema = createTransactionSchema.partial().extend({

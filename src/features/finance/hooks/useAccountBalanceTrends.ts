@@ -9,6 +9,8 @@ interface Transaction {
   date: string;
   type: string;
   amount: number;
+  transferToId?: string;
+  transferAmount?: number;
 }
 
 interface AccountBalanceTrend {
@@ -26,10 +28,10 @@ async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
   const accountsData = await accountsResponse.json();
   const { accounts } = accountsData;
 
-  // Get months from current year only
-  const currentYear = new Date().getFullYear();
-  const startDate = new Date(currentYear, 0, 1); // January 1st of current year
-  const endDate = new Date(); // Today
+  // Get months from last 12 months (including previous year if needed)
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setMonth(startDate.getMonth() - 11); // Go back 11 months to get 12 months total
   const months = eachMonthOfInterval({ start: startDate, end: endDate });
 
   // Get transactions for balance calculations
@@ -58,7 +60,7 @@ async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
 
   // Calculate balance trends with currency conversion
   const trendsPromises = months.map(async month => {
-    const monthName = format(month, 'MMM');
+    const monthName = format(month, 'MMM yyyy');
 
     const result: AccountBalanceTrend = {
       date: monthName,
@@ -66,23 +68,44 @@ async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
 
     // For each account, calculate the balance at the end of this month
     for (const account of accounts) {
-      // Get all transactions for this account up to the end of this month
       const monthEndDate = new Date(month.getFullYear(), month.getMonth() + 1, 0);
 
-      // Calculate balance based on current balance minus future transactions
-      let calculatedBalance = account.balance;
-      const futureTransactions = transactions.filter(
-        (t: Transaction) => t.accountId === account.id && new Date(t.date) > monthEndDate,
+      // Get all transactions for this account up to the end of this month
+      const accountTransactionsUpToMonth = transactions.filter(
+        (t: Transaction) => t.accountId === account.id && new Date(t.date) <= monthEndDate,
       );
 
-      // Subtract future transactions to get historical balance
-      futureTransactions.forEach((t: Transaction) => {
-        if (t.type === 'INCOME') {
-          calculatedBalance -= t.amount;
-        } else if (t.type === 'EXPENSE') {
-          calculatedBalance += t.amount;
+      // Calculate balance by starting from 0 and adding all transactions chronologically
+      let calculatedBalance = 0;
+
+      for (const transaction of accountTransactionsUpToMonth) {
+        const transactionAmount = transaction.amount;
+
+        if (transaction.type === 'INCOME') {
+          calculatedBalance += transactionAmount;
+        } else if (transaction.type === 'EXPENSE') {
+          calculatedBalance -= transactionAmount;
+        } else if (transaction.type === 'TRANSFER') {
+          // For transfers, subtract from source account
+          if (transaction.accountId === account.id) {
+            calculatedBalance -= transactionAmount;
+          }
         }
-      });
+      }
+
+      // Add incoming transfers to this account
+      const incomingTransfers = transactions.filter(
+        (t: Transaction) =>
+          t.transferToId === account.id &&
+          t.type === 'TRANSFER' &&
+          new Date(t.date) <= monthEndDate,
+      );
+
+      for (const transfer of incomingTransfers) {
+        // Use transferAmount if available, otherwise use the original amount
+        const amountReceived = transfer.transferAmount || transfer.amount;
+        calculatedBalance += amountReceived;
+      }
 
       // Convert to EUR if not already in EUR
       let convertedBalance = calculatedBalance;

@@ -134,7 +134,7 @@ export function NetWorthChart() {
                 content={
                   <ChartTooltipContent
                     formatter={value => [formatSummaryAmount(Number(value)), ' Net Worth']}
-                    labelFormatter={label => `Month: ${label}`}
+                    labelFormatter={label => `${label}`}
                   />
                 }
               />

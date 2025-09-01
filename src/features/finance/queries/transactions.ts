@@ -35,6 +35,8 @@ export interface Transaction {
     type: string;
     currency: string;
   };
+  transferAmount?: number; // Amount received in destination account for transfers
+  transferCurrency?: string; // Currency of destination account
 }
 
 export interface TransactionCategory {

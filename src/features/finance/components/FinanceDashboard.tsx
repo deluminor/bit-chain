@@ -3,15 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-import {
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  Target,
-  PieChart,
-  BarChart3,
-  RefreshCw,
-} from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Target, BarChart3, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useAccounts } from '@/features/finance/queries/accounts';
 import { useTransactions } from '@/features/finance/queries/transactions';
@@ -86,9 +78,7 @@ export function FinanceDashboard() {
     dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
       .toISOString()
       .split('T')[0],
-    dateTo: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
-      .toISOString()
-      .split('T')[0],
+    dateTo: new Date().toISOString().split('T')[0],
   });
   const { data: goalsData, isLoading: goalsLoading } = useGoals();
 
@@ -289,8 +279,8 @@ export function FinanceDashboard() {
             </CardContent>
           </Card>
 
-          {/* Goals Preview */}
-          <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
+          {/* Goals Preview - займає 2 колонки */}
+          <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow lg:col-span-2">
             <CardHeader>
               <div className="flex flex-col md:flex-row items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -313,37 +303,39 @@ export function FinanceDashboard() {
                   </div>
                 </div>
               ) : goals.length > 0 ? (
-                <div className="space-y-3">
-                  {goals.slice(0, 2).map(goal => (
-                    <div key={goal.id} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{goal.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {calculateGoalProgress(goal.currentAmount, goal.targetAmount)}%
-                        </span>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {goals.slice(0, 4).map(goal => (
+                      <div key={goal.id} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">{goal.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {calculateGoalProgress(goal.currentAmount, goal.targetAmount)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-secondary rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${calculateGoalProgress(goal.currentAmount, goal.targetAmount)}%`,
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>
+                            {formatDisplayAmount(goal.currentAmount, goal.currency, 'summary')}
+                          </span>
+                          <span>
+                            {formatDisplayAmount(goal.targetAmount, goal.currency, 'summary')}
+                          </span>
+                        </div>
                       </div>
-                      <div className="w-full bg-secondary rounded-full h-2">
-                        <div
-                          className="bg-primary h-2 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${calculateGoalProgress(goal.currentAmount, goal.targetAmount)}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>
-                          {formatDisplayAmount(goal.currentAmount, goal.currency, 'summary')}
-                        </span>
-                        <span>
-                          {formatDisplayAmount(goal.targetAmount, goal.currency, 'summary')}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  {goals.length > 2 && (
+                    ))}
+                  </div>
+                  {goals.length > 4 && (
                     <div className="text-center pt-2">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href="/goals">View {goals.length - 2} more goals</Link>
+                        <Link href="/goals">View {goals.length - 4} more goals</Link>
                       </Button>
                     </div>
                   )}
@@ -357,26 +349,6 @@ export function FinanceDashboard() {
                   </Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Net Worth Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <PieChart className="h-5 w-5" />
-                Net Worth
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {isConverting ? 'Converting...' : formatSummaryAmount(totalBalanceEUR)}
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  Across {summary?.active || 0} accounts
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

@@ -34,7 +34,7 @@ async function fetchBudgetPerformance(): Promise<BudgetPerformanceData[]> {
   // Get current month date range
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const monthEnd = now;
 
   // Get current month budget
   const budgetsResponse = await fetch('/api/finance/budget');

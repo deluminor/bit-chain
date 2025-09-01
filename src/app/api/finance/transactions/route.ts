@@ -108,7 +108,21 @@ export async function GET(request: NextRequest) {
     const [transactions, totalCount] = await Promise.all([
       prisma.transaction.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          type: true,
+          amount: true,
+          currency: true,
+          description: true,
+          date: true,
+          tags: true,
+          transferToId: true,
+          transferAmount: true,
+          transferCurrency: true,
+          isRecurring: true,
+          recurringPattern: true,
+          createdAt: true,
+          updatedAt: true,
           account: {
             select: {
               id: true,
@@ -266,7 +280,21 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           date: validatedData.date || new Date(),
         },
-        include: {
+        select: {
+          id: true,
+          type: true,
+          amount: true,
+          currency: true,
+          description: true,
+          date: true,
+          tags: true,
+          transferToId: true,
+          transferAmount: true,
+          transferCurrency: true,
+          isRecurring: true,
+          recurringPattern: true,
+          createdAt: true,
+          updatedAt: true,
           account: {
             select: {
               id: true,
@@ -399,9 +427,11 @@ export async function PUT(request: NextRequest) {
               where: { id: existingTransaction.accountId },
               data: { balance: { increment: existingTransaction.amount } },
             });
+            // Use transferAmount from existing transaction if available, otherwise use amount
+            const amountToRevert = existingTransaction.transferAmount || existingTransaction.amount;
             await tx.financeAccount.update({
               where: { id: existingTransaction.transferToId },
-              data: { balance: { decrement: existingTransaction.amount } },
+              data: { balance: { decrement: amountToRevert } },
             });
           }
           break;
@@ -411,7 +441,21 @@ export async function PUT(request: NextRequest) {
       const updatedTransaction = await tx.transaction.update({
         where: { id },
         data: updateData,
-        include: {
+        select: {
+          id: true,
+          type: true,
+          amount: true,
+          currency: true,
+          description: true,
+          date: true,
+          tags: true,
+          transferToId: true,
+          transferAmount: true,
+          transferCurrency: true,
+          isRecurring: true,
+          recurringPattern: true,
+          createdAt: true,
+          updatedAt: true,
           account: {
             select: {
               id: true,
@@ -467,9 +511,12 @@ export async function PUT(request: NextRequest) {
               where: { id: newAccountId },
               data: { balance: { decrement: newAmount } },
             });
+            // Use transferAmount for destination account if available, otherwise use amount
+            const amountToAdd =
+              updateData.transferAmount || existingTransaction.transferAmount || newAmount;
             await tx.financeAccount.update({
               where: { id: newTransferToId },
-              data: { balance: { increment: newAmount } },
+              data: { balance: { increment: amountToAdd } },
             });
           }
           break;
@@ -543,9 +590,11 @@ export async function DELETE(request: NextRequest) {
               where: { id: existingTransaction.accountId },
               data: { balance: { increment: existingTransaction.amount } },
             });
+            // Use transferAmount from existing transaction if available, otherwise use amount
+            const amountToRevert = existingTransaction.transferAmount || existingTransaction.amount;
             await tx.financeAccount.update({
               where: { id: existingTransaction.transferToId },
-              data: { balance: { decrement: existingTransaction.amount } },
+              data: { balance: { decrement: amountToRevert } },
             });
           }
           break;

@@ -371,10 +371,36 @@ export function TransactionList() {
       className: 'text-right',
       cell: transaction => {
         const amountColor = getAmountColor(transaction.type);
+
+        // For transfers, show both amounts if transferAmount exists
+        if (transaction.type === 'TRANSFER' && transaction.transferAmount != null) {
+          return (
+            <div className={`font-semibold ${amountColor}`}>
+              <div>
+                -
+                {formatCurrency(
+                  transaction.amount,
+                  transaction.currency || transaction.account.currency,
+                  { useLargeNumberFormat: false },
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                +
+                {formatCurrency(
+                  transaction.transferAmount,
+                  transaction.transferCurrency || transaction.transferTo?.currency || BASE_CURRENCY,
+                  { useLargeNumberFormat: false },
+                )}
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div className={`font-semibold ${amountColor}`}>
             {transaction.type === 'EXPENSE' && '-'}
             {transaction.type === 'INCOME' && '+'}
+            {transaction.type === 'TRANSFER' && '-'}
             {formatCurrency(
               transaction.amount,
               transaction.currency || transaction.account.currency,

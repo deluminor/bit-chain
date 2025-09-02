@@ -51,10 +51,6 @@ export default function Dashboard() {
           {/* PnL Growth Chart */}
           <div className="px-4 lg:px-6">
             <ChartLoader>
-              <div className="mb-6">
-                <h2 className="text-3xl font-bold text-foreground">PnL Growth</h2>
-                <p className="text-muted-foreground mt-2">Your cumulative profit/loss over time</p>
-              </div>
               <ChartAreaInteractive />
             </ChartLoader>
           </div>

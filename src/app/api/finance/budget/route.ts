@@ -3,6 +3,11 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 
+interface BudgetCategoryInput {
+  categoryId: string;
+  planned: string;
+}
+
 async function findOrCreateUser(email: string) {
   let user = await prisma.user.findUnique({
     where: { email },
@@ -59,15 +64,56 @@ export async function GET() {
       orderBy: { startDate: 'desc' },
     });
 
+    // Calculate actual spending for each budget category
+    const budgetsWithActual = await Promise.all(
+      budgets.map(async budget => {
+        const categoriesWithActual = await Promise.all(
+          budget.categories.map(async budgetCategory => {
+            // Get transactions for this category within budget period
+            const transactions = await prisma.transaction.findMany({
+              where: {
+                userId: user.id,
+                categoryId: budgetCategory.categoryId,
+                type: 'EXPENSE',
+                date: {
+                  gte: budget.startDate,
+                  lte: budget.endDate,
+                },
+              },
+            });
+
+            // Calculate total actual spending
+            const actualSpending = transactions.reduce((sum, transaction) => {
+              return sum + transaction.amount;
+            }, 0);
+
+            return {
+              ...budgetCategory,
+              actual: actualSpending,
+            };
+          }),
+        );
+
+        // Calculate total actual for budget
+        const totalActual = categoriesWithActual.reduce((sum, cat) => sum + cat.actual, 0);
+
+        return {
+          ...budget,
+          totalActual,
+          categories: categoriesWithActual,
+        };
+      }),
+    );
+
     // Calculate summary
     const summary = {
-      total: budgets.length,
-      active: budgets.filter(b => b.isActive).length,
-      totalPlanned: budgets.reduce((sum, b) => sum + b.totalPlanned, 0),
-      totalActual: budgets.reduce((sum, b) => sum + b.totalActual, 0),
+      total: budgetsWithActual.length,
+      active: budgetsWithActual.filter(b => b.isActive).length,
+      totalPlanned: budgetsWithActual.reduce((sum, b) => sum + b.totalPlanned, 0),
+      totalActual: budgetsWithActual.reduce((sum, b) => sum + b.totalActual, 0),
     };
 
-    return NextResponse.json({ budgets, summary });
+    return NextResponse.json({ budgets: budgetsWithActual, summary });
   } catch (error) {
     console.error('Error fetching budgets:', error);
     return NextResponse.json({ error: 'Failed to fetch budgets' }, { status: 500 });
@@ -140,10 +186,6 @@ export async function POST(request: Request) {
 
     // Create budget categories if provided
     if (categories && Array.isArray(categories) && categories.length > 0) {
-      interface BudgetCategoryInput {
-        categoryId: string;
-        planned: string;
-      }
       const budgetCategories = categories.map((cat: BudgetCategoryInput) => ({
         budgetId: budget.id,
         categoryId: cat.categoryId,

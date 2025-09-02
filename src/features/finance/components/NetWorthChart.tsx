@@ -1,7 +1,7 @@
 'use client';
 
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ReferenceLine } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import { Badge } from '@/components/ui/badge';
 import {
   ChartConfig,
@@ -289,28 +289,24 @@ export function NetWorthChart() {
 
   if (accountsLoading || transactionsLoading || isConverting) return <ChartSkeleton />;
 
+  const headerActions = (
+    <DatePicker
+      dateRange={dateRange}
+      onDateRangeChange={handleDateRangeChange}
+      mode="range"
+      showPresets
+      placeholder="Last 6 months"
+      className="w-full"
+    />
+  );
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Net Worth Tracking (EUR)
-          </CardTitle>
-          <CardDescription>Your total wealth over time (converted to EUR)</CardDescription>
-        </div>
-
-        <DatePicker
-          dateRange={dateRange}
-          onDateRangeChange={handleDateRangeChange}
-          mode="range"
-          showPresets
-          placeholder="Last 6 months"
-          className="w-full"
-        />
-      </CardHeader>
-
-      <CardContent className="space-y-6">
+    <ChartWrapper
+      title="Net Worth Tracking (EUR)"
+      description="Your total wealth over time (converted to EUR)"
+      headerActions={headerActions}
+    >
+      <div className="space-y-6">
         {/* Performance Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-3 rounded-lg bg-muted/50">
@@ -546,7 +542,7 @@ export function NetWorthChart() {
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </ChartWrapper>
   );
 }

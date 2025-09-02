@@ -1,7 +1,7 @@
 'use client';
 
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import {
   ChartConfig,
   ChartContainer,
@@ -16,7 +16,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { DateRange } from 'react-day-picker';
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { useTransactions } from '../queries/transactions';
-import { TrendingUp } from 'lucide-react';
+
 import { formatSummaryAmount } from '@/lib/currency';
 
 export function IncomeExpenseChart() {
@@ -124,28 +124,25 @@ export function IncomeExpenseChart() {
 
   if (isLoading) return <ChartSkeleton />;
 
+  const headerActions = (
+    <DatePicker
+      dateRange={dateRange}
+      onDateRangeChange={handleDateRangeChange}
+      mode="range"
+      showPresets
+      placeholder="Last 3 months"
+      className="w-full"
+    />
+  );
+
   return (
-    <Card className="@container/card">
-      <CardHeader className="flex items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-500" />
-            Income vs Expenses
-          </CardTitle>
-          <CardDescription>Daily income and expense tracking over time</CardDescription>
-        </div>
-        <div>
-          <DatePicker
-            dateRange={dateRange}
-            onDateRangeChange={handleDateRangeChange}
-            mode="range"
-            showPresets
-            placeholder="Last 3 months"
-            className="w-full"
-          />
-        </div>
-      </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+    <ChartWrapper
+      title="Income vs Expenses"
+      description="Daily income and expense tracking over time"
+      headerActions={headerActions}
+      className="@container/card"
+    >
+      <div className="px-2 pt-4 sm:px-6 sm:pt-6">
         {/* Summary Stats */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="text-center">
@@ -303,7 +300,7 @@ export function IncomeExpenseChart() {
                       year: 'numeric',
                     });
                   }}
-                  formatter={(value: any, name: string) => [
+                  formatter={(value: any, name: any) => [
                     formatSummaryAmount(typeof value === 'number' ? value : Number(value)),
                     name === 'income' ? 'Income' : 'Expenses',
                   ]}
@@ -351,7 +348,7 @@ export function IncomeExpenseChart() {
             />
           </AreaChart>
         </ChartContainer>
-      </CardContent>
-    </Card>
+      </div>
+    </ChartWrapper>
   );
 }

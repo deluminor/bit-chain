@@ -1,7 +1,7 @@
 'use client';
 
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import { Badge } from '@/components/ui/badge';
 import {
   ChartConfig,
@@ -158,56 +158,45 @@ export function CategorySpendingChart({
 
   if (!chartData.length) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PieChartIcon className="h-5 w-5" />
-            {type === 'INCOME' ? 'Income' : 'Expense'} Categories
-          </CardTitle>
-          <CardDescription>Category breakdown for {selectedPeriod}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-muted-foreground py-8">
-            <PieChartIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No {type.toLowerCase()} transactions found</p>
-          </div>
-        </CardContent>
-      </Card>
+      <ChartWrapper
+        title={`${type === 'INCOME' ? 'Income' : 'Expense'} Categories`}
+        description={`Category breakdown for ${selectedPeriod}`}
+        isLoading={false}
+      >
+        <div className="text-center text-muted-foreground py-8">
+          <PieChartIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No {type.toLowerCase()} transactions found</p>
+        </div>
+      </ChartWrapper>
     );
   }
 
+  const headerActions = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
+          {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}
+          <MoreHorizontal className="h-3 w-3" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setSelectedPeriod('month')}>This Month</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setSelectedPeriod('quarter')}>
+          Last 3 Months
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setSelectedPeriod('year')}>Last Year</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <PieChartIcon className="h-5 w-5" />
-            {type === 'INCOME' ? 'Income' : 'Expense'} Categories
-          </CardTitle>
-          <CardDescription>Top categories for this {selectedPeriod}</CardDescription>
-        </div>
-
-        {/* Period Selector */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}
-              <MoreHorizontal className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSelectedPeriod('month')}>
-              This Month
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedPeriod('quarter')}>
-              Last 3 Months
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedPeriod('year')}>Last Year</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardHeader>
-
-      <CardContent>
+    <ChartWrapper
+      title={`${type === 'INCOME' ? 'Income' : 'Expense'} Categories`}
+      description={`Top categories for this ${selectedPeriod}`}
+      isLoading={isLoading}
+    >
+      <div className="space-y-4">
+        <div className="flex justify-end">{headerActions}</div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Pie Chart */}
           <div className="h-[300px]">
@@ -295,7 +284,7 @@ export function CategorySpendingChart({
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </ChartWrapper>
   );
 }

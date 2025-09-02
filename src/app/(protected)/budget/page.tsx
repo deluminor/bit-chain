@@ -134,7 +134,7 @@ export default function BudgetPage() {
       {/* Budget Overview Stats */}
       <div className="px-4 lg:px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="p-2 md:p-6">
+          <Card className="p-2 md:p-6 shadow-md rounded-lg hover:shadow-lg transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-green-500/10 rounded-lg">
                 <DollarSign className="h-5 w-5 text-green-500" />
@@ -145,7 +145,7 @@ export default function BudgetPage() {
             <p className="text-sm text-muted-foreground">Total planned</p>
           </Card>
 
-          <Card className="p-2 md:p-6">
+          <Card className="p-2 md:p-6 shadow-md rounded-lg hover:shadow-lg transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <TrendingUp className="h-5 w-5 text-blue-500" />
@@ -161,7 +161,7 @@ export default function BudgetPage() {
             </p>
           </Card>
 
-          <Card className="p-2 md:p-6">
+          <Card className="p-2 md:p-6 shadow-md rounded-lg hover:shadow-lg transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-purple-500/10 rounded-lg">
                 <Target className="h-5 w-5 text-purple-500" />
@@ -185,7 +185,7 @@ export default function BudgetPage() {
 
       {/* Budget Performance Chart */}
       <div className="px-4 lg:px-6 space-y-6">
-        <Card>
+        <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <PieChart className="h-5 w-5" />
@@ -199,7 +199,7 @@ export default function BudgetPage() {
         </Card>
 
         {/* Budget List */}
-        <Card>
+        <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
@@ -288,7 +288,7 @@ export default function BudgetPage() {
         </Card>
 
         {/* Budget Templates */}
-        <Card>
+        <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />

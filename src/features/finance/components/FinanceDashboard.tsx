@@ -63,7 +63,7 @@ function QuickStatCard({ title, value, change, changeType, icon, href }: QuickSt
 
   if (href) {
     return (
-      <Card className="hover:shadow-md transition-shadow cursor-pointer">
+      <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow cursor-pointer">
         <Link href={href}>{content}</Link>
       </Card>
     );
@@ -356,7 +356,7 @@ export function FinanceDashboard() {
         {/* Financial Analytics Charts */}
         <AnimatedDiv variant="slideUp" delay={0.3} className="space-y-8">
           {/* Category Analysis and Account Trends */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-85">
             <div className="w-full">
               <ResponsiveChart height={{ mobile: 300, desktop: 400 }} className="animate-fade-in">
                 <IncomeExpenseChart />

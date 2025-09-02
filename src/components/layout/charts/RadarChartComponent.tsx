@@ -2,14 +2,7 @@
 
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from 'recharts';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { ChartWrapper } from './ChartWrapper';
 import {
   ChartConfig,
   ChartContainer,
@@ -59,89 +52,84 @@ export function RadarChartComponent({
   } satisfies ChartConfig;
 
   return (
-    <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="pt-0 max-h-260 overflow-hidden">
-        <ChartContainer config={chartConfig} className="aspect-square max-h-260 h-auto w-full">
-          <RadarChart data={data} margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
-            <defs>
-              <linearGradient id="radarFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={primaryColor} stopOpacity={0.55} />
-                <stop offset="15%" stopColor={primaryColor} stopOpacity={0.48} />
-                <stop offset="30%" stopColor={primaryColor} stopOpacity={0.38} />
-                <stop offset="50%" stopColor={primaryColor} stopOpacity={0.25} />
-                <stop offset="70%" stopColor={primaryColor} stopOpacity={0.15} />
-                <stop offset="85%" stopColor={primaryColor} stopOpacity={0.08} />
-                <stop offset="100%" stopColor={primaryColor} stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <PolarGrid
-              stroke={isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'}
-              strokeWidth={0.5}
-              strokeDasharray="1 2"
-              radialLines={false}
-              gridType="polygon"
-              className="hidden md:block" // Hide grid on mobile for simplicity
-            />
-            <PolarAngleAxis
-              dataKey="name"
-              axisLine={false}
-              tickLine={false}
-              tick={{
-                fontSize: 12,
-                fill: isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-                fontWeight: 400,
-              }}
-              tickSize={8}
-            />
-            <Radar
-              name="Value"
-              dataKey="value"
-              stroke={primaryColor}
-              strokeWidth={0.7}
-              fill="url(#radarFill)"
-              fillOpacity={1}
-              dot={false}
-              activeDot={{
-                r: 4,
-                strokeWidth: 2,
-                stroke: primaryColor,
-                fill: isDark ? '#000000' : '#ffffff',
-                opacity: 1,
-              }}
-              isAnimationActive={true}
-              animationDuration={800}
-              animationBegin={150}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={value => value}
-                  formatter={(value, name, props) => {
-                    const percentage = typeof value === 'number' ? value.toFixed(1) : value;
-                    const amount = props?.payload?.amount;
-                    if (amount !== undefined) {
-                      return [`${formatSummaryAmount(amount)} (${percentage}%)`, name];
-                    }
-                    return [`${percentage}%`, name];
-                  }}
-                  indicator="dot"
-                  className="rounded-lg border-0 bg-background/95 backdrop-blur-sm shadow-lg"
-                />
-              }
-            />
-          </RadarChart>
-        </ChartContainer>
-      </CardContent>
-      {footer && (
-        <CardFooter className="pt-4 border-t border-border/50">
-          <div className="text-sm text-muted-foreground">{footer}</div>
-        </CardFooter>
-      )}
-    </Card>
+    <ChartWrapper
+      title={title}
+      description={description}
+      footer={footer}
+      isLoading={isLoading}
+      contentClassName="max-h-260 overflow-hidden"
+    >
+      <ChartContainer config={chartConfig} className="aspect-square max-h-260 h-auto w-full">
+        <RadarChart data={data} margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
+          <defs>
+            <linearGradient id="radarFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={primaryColor} stopOpacity={0.55} />
+              <stop offset="15%" stopColor={primaryColor} stopOpacity={0.48} />
+              <stop offset="30%" stopColor={primaryColor} stopOpacity={0.38} />
+              <stop offset="50%" stopColor={primaryColor} stopOpacity={0.25} />
+              <stop offset="70%" stopColor={primaryColor} stopOpacity={0.15} />
+              <stop offset="85%" stopColor={primaryColor} stopOpacity={0.08} />
+              <stop offset="100%" stopColor={primaryColor} stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <PolarGrid
+            stroke={isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'}
+            strokeWidth={0.5}
+            strokeDasharray="1 2"
+            radialLines={false}
+            gridType="polygon"
+            className="hidden md:block" // Hide grid on mobile for simplicity
+          />
+          <PolarAngleAxis
+            dataKey="name"
+            axisLine={false}
+            tickLine={false}
+            tick={{
+              fontSize: 12,
+              fill: isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+              fontWeight: 400,
+            }}
+            tickSize={8}
+          />
+          <Radar
+            name="Value"
+            dataKey="value"
+            stroke={primaryColor}
+            strokeWidth={0.7}
+            fill="url(#radarFill)"
+            fillOpacity={1}
+            dot={false}
+            activeDot={{
+              r: 4,
+              strokeWidth: 2,
+              stroke: primaryColor,
+              fill: isDark ? '#000000' : '#ffffff',
+              opacity: 1,
+            }}
+            isAnimationActive={true}
+            animationDuration={800}
+            animationBegin={150}
+          />
+          <ChartTooltip
+            cursor={false}
+            content={
+              <ChartTooltipContent
+                labelFormatter={value => value}
+                formatter={(value, name, props) => {
+                  const percentage = typeof value === 'number' ? value.toFixed(1) : value;
+                  const amount = props?.payload?.amount;
+                  if (amount !== undefined) {
+                    return [`${formatSummaryAmount(amount)} (${percentage}%)`, name];
+                  }
+                  return [`${percentage}%`, name];
+                }}
+                indicator="dot"
+                className="rounded-lg border-0 bg-background/95 backdrop-blur-sm shadow-lg"
+              />
+            }
+          />
+        </RadarChart>
+      </ChartContainer>
+    </ChartWrapper>
   );
 }

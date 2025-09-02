@@ -2,7 +2,6 @@
 
 import { Area, AreaChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
@@ -16,7 +15,8 @@ import { THEME, useStore } from '@/store';
 import { endOfDay, startOfDay, subDays } from 'date-fns';
 import { useEffect, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
-import { ChartSkeleton } from './ChartSkeleton';
+import { ChartWrapper } from './ChartWrapper';
+import { TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile();
@@ -164,140 +164,198 @@ export function ChartAreaInteractive() {
     setDateRange(range);
   };
 
-  if (isLoading) return <ChartSkeleton />;
+  // Calculate trend for footer
+  const firstValue = filteredData.length > 0 ? filteredData[0]?.pnl || 0 : 0;
+  const lastValue = filteredData.length > 0 ? filteredData[filteredData.length - 1]?.pnl || 0 : 0;
+  const trend = lastValue - firstValue;
+  const isPositiveTrend = trend >= 0;
+
+  const footer = (
+    <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center gap-1">
+        {isPositiveTrend ? (
+          <TrendingUp className="h-4 w-4 text-green-600" />
+        ) : (
+          <TrendingDown className="h-4 w-4 text-red-600" />
+        )}
+        <span className="text-muted-foreground">Trend:</span>
+        <span className={`font-medium ${isPositiveTrend ? 'text-green-600' : 'text-red-600'}`}>
+          {isPositiveTrend ? '+' : ''}
+          {trend.toFixed(2)}
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        <Calendar className="h-4 w-4 text-muted-foreground" />
+        <span className="text-muted-foreground">Data Points:</span>
+        <span className="font-medium">{filteredData.length}</span>
+      </div>
+    </div>
+  );
+
+  if (isLoading) {
+    return (
+      <ChartWrapper
+        title="Cumulative PnL"
+        description="Total profit/loss over time"
+        isLoading={true}
+      >
+        <div />
+      </ChartWrapper>
+    );
+  }
+
+  if (!filteredData || filteredData.length === 0) {
+    return (
+      <ChartWrapper title="Cumulative PnL" description="Total profit/loss over time">
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <DatePicker
+              dateRange={dateRange}
+              onDateRangeChange={handleDateRangeChange}
+              mode="range"
+              showPresets
+              placeholder="All time"
+              className="w-full max-w-xs"
+            />
+          </div>
+          <div className="h-[350px] w-full flex items-center justify-center">
+            <div className="text-muted-foreground">No data available for the selected period</div>
+          </div>
+        </div>
+      </ChartWrapper>
+    );
+  }
 
   return (
-    <Card className="@container/card">
-      <CardHeader className="flex items-center justify-between">
-        <div>
-          <CardTitle>Cumulative PnL</CardTitle>
-          <CardDescription>
-            <span className="@[540px]/card:block hidden">Total profit/loss over time</span>
-            <span className="@[540px]/card:hidden">PnL over time</span>
-          </CardDescription>
-        </div>
-        <div>
+    <ChartWrapper
+      title="Cumulative PnL"
+      description="Total profit/loss over time"
+      footer={footer}
+      className="@container/card"
+    >
+      <div className="space-y-4">
+        <div className="flex justify-end">
           <DatePicker
             dateRange={dateRange}
             onDateRangeChange={handleDateRangeChange}
             mode="range"
             showPresets
             placeholder="All time"
-            className="w-full"
+            className="w-full max-w-xs"
           />
         </div>
-      </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[350px] w-full">
-          <AreaChart data={filteredData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
-            <defs>
-              <linearGradient id="fillPnl" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-pnl)" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="var(--color-pnl)" stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              vertical={false}
-              horizontal={true}
-              stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'}
-              strokeDasharray="3 4"
-              strokeWidth={0.8}
-            />
-            {/* Add a special zero line if data crosses zero */}
-            {yAxisDomain[0] < 0 && yAxisDomain[1] > 0 && (
-              <ReferenceLine
-                y={0}
+        <div className="px-2 sm:px-6">
+          <ChartContainer config={chartConfig} className="aspect-auto h-[350px] w-full">
+            <AreaChart data={filteredData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
+              <defs>
+                <linearGradient id="fillPnl" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-pnl)" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="var(--color-pnl)" stopOpacity={0.1} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                vertical={false}
+                horizontal={true}
                 stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'}
-                strokeWidth={0.8}
                 strokeDasharray="3 4"
-                ifOverflow="extendDomain"
+                strokeWidth={0.8}
               />
-            )}
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tick={{
-                fill: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-                fontSize: 12,
-              }}
-              tickMargin={10}
-              minTickGap={40}
-              tickFormatter={value => {
-                const date = new Date(value);
-                return date.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                });
-              }}
-              padding={{ left: 0, right: 0 }}
-            />
-            <YAxis
-              domain={yAxisDomain}
-              ticks={yAxisTicks}
-              tickCount={yAxisTicks.length}
-              interval="preserveEnd"
-              tickFormatter={value => {
-                // Use abbreviated currency format for tick values
-                if (Math.abs(value) < 0.01) return '$0';
-
-                // Format with abbreviations
-                const absValue = Math.abs(value);
-                let formattedValue;
-
-                if (absValue >= 1000000) {
-                  formattedValue = `$${(value / 1000000).toFixed(1)}M`;
-                } else if (absValue >= 1000) {
-                  formattedValue = `$${(value / 1000).toFixed(1)}k`;
-                } else {
-                  // Don't add decimals for values under 1000
-                  formattedValue = `$${value.toFixed(2)}`;
-                }
-
-                return formattedValue;
-              }}
-              tickLine={false}
-              axisLine={false}
-              tick={{
-                fill: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-                fontSize: 12,
-              }}
-              tickMargin={10}
-              allowDataOverflow={false}
-              hide={false}
-              padding={{ top: 0, bottom: 0 }}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={value => {
-                    return new Date(value).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    });
-                  }}
-                  indicator="dot"
+              {/* Add a special zero line if data crosses zero */}
+              {yAxisDomain[0] < 0 && yAxisDomain[1] > 0 && (
+                <ReferenceLine
+                  y={0}
+                  stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'}
+                  strokeWidth={0.8}
+                  strokeDasharray="3 4"
+                  ifOverflow="extendDomain"
                 />
-              }
-            />
-            <Area
-              dataKey="pnl"
-              type="monotone"
-              fill="url(#fillPnl)"
-              stroke="var(--color-pnl)"
-              strokeWidth={theme === THEME.DARK ? 2 : 1.5}
-              connectNulls
-              dot={false}
-              activeDot={{ r: 6, strokeWidth: 0 }}
-              isAnimationActive={true}
-              animationDuration={1200}
-              animationBegin={0}
-              animationEasing="ease-out"
-            />
-          </AreaChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
+              )}
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tick={{
+                  fill: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                  fontSize: 12,
+                }}
+                tickMargin={10}
+                minTickGap={40}
+                tickFormatter={value => {
+                  const date = new Date(value);
+                  return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  });
+                }}
+                padding={{ left: 0, right: 0 }}
+              />
+              <YAxis
+                domain={yAxisDomain}
+                ticks={yAxisTicks}
+                tickCount={yAxisTicks.length}
+                interval="preserveEnd"
+                tickFormatter={value => {
+                  // Use abbreviated currency format for tick values
+                  if (Math.abs(value) < 0.01) return '$0';
+
+                  // Format with abbreviations
+                  const absValue = Math.abs(value);
+                  let formattedValue;
+
+                  if (absValue >= 1000000) {
+                    formattedValue = `$${(value / 1000000).toFixed(1)}M`;
+                  } else if (absValue >= 1000) {
+                    formattedValue = `$${(value / 1000).toFixed(1)}k`;
+                  } else {
+                    // Don't add decimals for values under 1000
+                    formattedValue = `$${value.toFixed(2)}`;
+                  }
+
+                  return formattedValue;
+                }}
+                tickLine={false}
+                axisLine={false}
+                tick={{
+                  fill: theme === THEME.DARK ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                  fontSize: 12,
+                }}
+                tickMargin={10}
+                allowDataOverflow={false}
+                hide={false}
+                padding={{ top: 0, bottom: 0 }}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={value => {
+                      return new Date(value).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      });
+                    }}
+                    indicator="dot"
+                  />
+                }
+              />
+              <Area
+                dataKey="pnl"
+                type="monotone"
+                fill="url(#fillPnl)"
+                stroke="var(--color-pnl)"
+                strokeWidth={theme === THEME.DARK ? 2 : 1.5}
+                connectNulls
+                dot={false}
+                activeDot={{ r: 6, strokeWidth: 0 }}
+                isAnimationActive={true}
+                animationDuration={1200}
+                animationBegin={0}
+                animationEasing="ease-out"
+              />
+            </AreaChart>
+          </ChartContainer>
+        </div>
+      </div>
+    </ChartWrapper>
   );
 }

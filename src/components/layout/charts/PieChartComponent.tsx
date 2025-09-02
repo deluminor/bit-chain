@@ -2,14 +2,7 @@
 
 import { Pie, PieChart, Cell, ResponsiveContainer } from 'recharts';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { ChartWrapper } from './ChartWrapper';
 import {
   ChartConfig,
   ChartContainer,
@@ -66,68 +59,53 @@ export function PieChartComponent({
   } satisfies ChartConfig;
 
   return (
-    <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <ChartContainer config={chartConfig} className="aspect-square h-[300px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                outerRadius={110}
-                innerRadius={55}
-                paddingAngle={data.length > 1 ? 0.5 : 0}
-                dataKey="value"
-                stroke={isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'}
-                strokeWidth={0.3}
-                animationBegin={150}
-                animationDuration={1000}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={
-                      data.length > 0
-                        ? colors[index % colors.length]
-                        : isDark
-                          ? '#333333'
-                          : '#cccccc'
-                    }
-                    style={{
-                      filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))',
-                      transition: 'all 0.2s ease-in-out',
-                    }}
-                  />
-                ))}
-              </Pie>
-              <ChartTooltip
-                cursor={false}
-                content={
-                  <ChartTooltipContent
-                    labelFormatter={value => value}
-                    formatter={(value, name) => [
-                      `${typeof value === 'number' ? value.toFixed(1) : value}%`,
-                      name,
-                    ]}
-                    indicator="dot"
-                    className="rounded-lg border-0 bg-background/95 backdrop-blur-sm shadow-lg"
-                  />
-                }
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </CardContent>
-      {footer && (
-        <CardFooter className="pt-4 border-t border-border/50">
-          <div className="text-sm text-muted-foreground">{footer}</div>
-        </CardFooter>
-      )}
-    </Card>
+    <ChartWrapper title={title} description={description} footer={footer} isLoading={isLoading}>
+      <ChartContainer config={chartConfig} className="aspect-square h-[300px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              outerRadius={110}
+              innerRadius={55}
+              paddingAngle={data.length > 1 ? 0.5 : 0}
+              dataKey="value"
+              stroke={isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'}
+              strokeWidth={0.3}
+              animationBegin={150}
+              animationDuration={1000}
+            >
+              {chartData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={
+                    data.length > 0 ? colors[index % colors.length] : isDark ? '#333333' : '#cccccc'
+                  }
+                  style={{
+                    filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.1))',
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                />
+              ))}
+            </Pie>
+            <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  labelFormatter={value => value}
+                  formatter={(value, name) => [
+                    `${typeof value === 'number' ? value.toFixed(1) : value}%`,
+                    name,
+                  ]}
+                  indicator="dot"
+                  className="rounded-lg border-0 bg-background/95 backdrop-blur-sm shadow-lg"
+                />
+              }
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </ChartContainer>
+    </ChartWrapper>
   );
 }

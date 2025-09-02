@@ -1,7 +1,7 @@
 'use client';
 
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, ReferenceLine } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import { Badge } from '@/components/ui/badge';
 import {
   ChartConfig,
@@ -17,7 +17,7 @@ import { DateRange } from 'react-day-picker';
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { useTransactions } from '../queries/transactions';
 import { useAccounts, FinanceAccount } from '../queries/accounts';
-import { TrendingUp, Wallet } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   formatCurrency,
@@ -219,91 +219,78 @@ export function AccountBalanceTrendsChart() {
 
   if (!accountsToShow.length) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Account Balance Trends
-          </CardTitle>
-          <CardDescription>Track balance changes over time</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-muted-foreground py-8">
-            <Wallet className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No accounts to display</p>
-          </div>
-        </CardContent>
-      </Card>
+      <ChartWrapper
+        title="Account Balance Trends"
+        description="Track balance changes over time"
+        isLoading={false}
+      >
+        <div className="text-center text-muted-foreground py-8">
+          <Wallet className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No accounts to display</p>
+        </div>
+      </ChartWrapper>
     );
   }
 
+  const headerActions = (
+    <div className="flex gap-2">
+      {/* Account Selector */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Wallet className="h-4 w-4" />
+            Accounts ({accountsToShow.length})
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <div className="p-2">
+            <div className="text-sm font-medium mb-2">Select Accounts</div>
+            {accounts.map((account: FinanceAccount) => (
+              <DropdownMenuCheckboxItem
+                key={account.id}
+                checked={
+                  selectedAccounts.includes(account.id) ||
+                  (selectedAccounts.length === 0 &&
+                    accountsToShow.some((a: FinanceAccount) => a.id === account.id))
+                }
+                onCheckedChange={() => handleAccountToggle(account.id)}
+                className="flex items-center gap-2"
+              >
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: account.color }} />
+                <span className="flex-1">{account.name}</span>
+                <Badge variant="secondary" className="text-xs">
+                  {formatCurrency(account.balance, account.currency, {
+                    useLargeNumberFormat: false,
+                  })}
+                </Badge>
+              </DropdownMenuCheckboxItem>
+            ))}
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Date Picker */}
+      <DatePicker
+        dateRange={dateRange}
+        onDateRangeChange={handleDateRangeChange}
+        mode="range"
+        showPresets
+        placeholder="Last 3 months"
+        className="w-full"
+      />
+    </div>
+  );
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Account Balance Trends (EUR)
-          </CardTitle>
-          <CardDescription>
-            Balance changes over time for selected accounts (converted to EUR)
-          </CardDescription>
-        </div>
-
-        <div className="flex gap-2">
-          {/* Account Selector */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Wallet className="h-4 w-4" />
-                Accounts ({accountsToShow.length})
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="p-2">
-                <div className="text-sm font-medium mb-2">Select Accounts</div>
-                {accounts.map((account: FinanceAccount) => (
-                  <DropdownMenuCheckboxItem
-                    key={account.id}
-                    checked={
-                      selectedAccounts.includes(account.id) ||
-                      (selectedAccounts.length === 0 &&
-                        accountsToShow.some((a: FinanceAccount) => a.id === account.id))
-                    }
-                    onCheckedChange={() => handleAccountToggle(account.id)}
-                    className="flex items-center gap-2"
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: account.color }}
-                    />
-                    <span className="flex-1">{account.name}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {formatCurrency(account.balance, account.currency, {
-                        useLargeNumberFormat: false,
-                      })}
-                    </Badge>
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Date Picker */}
-          <DatePicker
-            dateRange={dateRange}
-            onDateRangeChange={handleDateRangeChange}
-            mode="range"
-            showPresets
-            placeholder="Last 3 months"
-            className="w-full"
-          />
-        </div>
-      </CardHeader>
-
-      <CardContent>
+    <ChartWrapper
+      title="Account Balance Trends (EUR)"
+      description="Balance changes over time for selected accounts (converted to EUR)"
+      isLoading={accountsLoading || transactionsLoading || isConverting}
+    >
+      <div className="space-y-6">
+        <div className="flex justify-end">{headerActions}</div>
         {/* Account Legend */}
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex flex-wrap gap-3">
           {accountsToShow.map((account: FinanceAccount) => (
             <div key={account.id} className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: account.color }} />
@@ -403,7 +390,7 @@ export function AccountBalanceTrendsChart() {
             ))}
           </LineChart>
         </ChartContainer>
-      </CardContent>
-    </Card>
+      </div>
+    </ChartWrapper>
   );
 }

@@ -9,9 +9,11 @@ import {
 } from '@/components/ui/chart';
 import { useTheme } from '@/providers/ThemeProvider';
 import { THEME } from '@/store';
-import { useAccountBalanceTrends } from '@/features/finance/hooks/useAccountBalanceTrends';
+import { useNetWorth } from '@/features/finance/hooks/useNetWorth';
 import { useIsClient } from '@/hooks/useIsClient';
 import { formatSummaryAmount } from '@/lib/currency';
+import { ChartWrapper } from './ChartWrapper';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const chartConfig = {
   netWorth: {
@@ -23,77 +25,80 @@ const chartConfig = {
 export function NetWorthChart() {
   const { theme } = useTheme();
   const isClient = useIsClient();
-  const { data: balanceTrends, isLoading, error } = useAccountBalanceTrends();
+  const { data: netWorthData, isLoading, error } = useNetWorth();
   const isDark = theme === THEME.DARK;
   const primaryColor = isDark ? '#ffffff' : '#6b7280';
 
-  if (!isClient || isLoading) {
+  if (!isClient) {
     return (
-      <div className="h-[400px] w-full flex items-center justify-center">
-        <div className="animate-pulse bg-muted/40 rounded-lg h-full w-full"></div>
-      </div>
+      <ChartWrapper title="Net Worth" description="Track your total net worth over time">
+        <div className="h-[300px] flex items-center justify-center">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      </ChartWrapper>
     );
   }
 
-  if (error || !balanceTrends?.length) {
+  if (isLoading) {
     return (
-      <div className="h-[400px] w-full flex items-center justify-center">
-        <div className="text-muted-foreground">Failed to load chart data</div>
-      </div>
+      <ChartWrapper title="Net Worth" description="Track your total net worth over time">
+        <div className="h-[300px] flex items-center justify-center">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      </ChartWrapper>
     );
   }
 
-  // Calculate net worth for each month by summing all account balances
-  const chartData = balanceTrends.map(dataPoint => {
-    const accountNames = Object.keys(dataPoint).filter(key => key !== 'date');
-    const totalNetWorth = accountNames.reduce((sum, accountName) => {
-      return sum + (Number(dataPoint[accountName]) || 0);
-    }, 0);
-
-    return {
-      date: dataPoint.date,
-      netWorth: totalNetWorth,
-    };
-  });
+  if (error || !netWorthData || netWorthData.length === 0) {
+    return (
+      <ChartWrapper title="Net Worth" description="Track your total net worth over time">
+        <div className="h-[300px] flex items-center justify-center">
+          <div className="text-muted-foreground">No data available</div>
+        </div>
+      </ChartWrapper>
+    );
+  }
 
   // Calculate growth metrics
-  const startValue = chartData[0]?.netWorth || 0;
-  const endValue = chartData[chartData.length - 1]?.netWorth || 0;
-  const totalGrowth = endValue - startValue;
-  const growthPercentage = startValue > 0.01 ? ((totalGrowth / startValue) * 100).toFixed(1) : '0';
+  const currentNetWorth = netWorthData[netWorthData.length - 1]?.netWorth || 0;
+  const totalGrowth = currentNetWorth - (netWorthData[0]?.netWorth || 0);
+  const growthPercentage = netWorthData[0]?.netWorth
+    ? ((totalGrowth / Math.abs(netWorthData[0].netWorth)) * 100).toFixed(1)
+    : '0';
+  const isPositive = totalGrowth >= 0;
+
+  const footer = (
+    <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center gap-1">
+        {isPositive ? (
+          <TrendingUp className="h-4 w-4 text-green-600" />
+        ) : (
+          <TrendingDown className="h-4 w-4 text-red-600" />
+        )}
+        <span className="text-muted-foreground">Change:</span>
+        <span className={`font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          {isPositive ? '+' : ''}
+          {growthPercentage}%
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-muted-foreground">Current:</span>
+        <span className="font-medium">{formatSummaryAmount(currentNetWorth)}</span>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="space-y-4">
-      {/* Growth Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="text-center p-3 bg-muted/50 rounded-lg">
-          <div className="text-lg font-semibold text-foreground">
-            {formatSummaryAmount(totalGrowth)}
-          </div>
-          <div className="text-xs text-muted-foreground">Total Growth</div>
-        </div>
-        <div className="text-center p-3 bg-muted/50 rounded-lg">
-          <div
-            className={`text-lg font-semibold ${totalGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}
-          >
-            {totalGrowth >= 0 ? '+' : ''}
-            {growthPercentage}%
-          </div>
-          <div className="text-xs text-muted-foreground">Growth Rate</div>
-        </div>
-        <div className="text-center p-3 bg-muted/50 rounded-lg">
-          <div className="text-lg font-semibold text-foreground">
-            {formatSummaryAmount(endValue)}
-          </div>
-          <div className="text-xs text-muted-foreground">Current Worth</div>
-        </div>
-      </div>
-
-      {/* Chart */}
-      <div className="h-[300px] w-full pt-4">
+    <ChartWrapper
+      title="Net Worth"
+      description="Track your total net worth over time"
+      footer={footer}
+      isLoading={isLoading}
+    >
+      <div className="h-[300px] w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 20, bottom: 10 }}>
+            <AreaChart data={netWorthData} margin={{ top: 10, right: 30, left: 20, bottom: 10 }}>
               <defs>
                 <linearGradient id="netWorthGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={primaryColor} stopOpacity={0.55} />
@@ -160,6 +165,6 @@ export function NetWorthChart() {
           </ResponsiveContainer>
         </ChartContainer>
       </div>
-    </div>
+    </ChartWrapper>
   );
 }

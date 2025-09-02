@@ -1,7 +1,7 @@
 'use client';
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -104,46 +104,32 @@ export function BudgetPerformanceChart({ period = 'This Month' }: BudgetPerforma
 
   if (!budgetData.length) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Budget Performance
-          </CardTitle>
-          <CardDescription>Track spending against planned budgets</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-muted-foreground py-8">
-            <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No budget data available</p>
-            <p className="text-xs mt-1">Set up budgets to track your spending</p>
-          </div>
-        </CardContent>
-      </Card>
+      <ChartWrapper title="Budget Performance" description="Track spending against planned budgets">
+        <div className="text-center text-muted-foreground py-8">
+          <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No budget data available</p>
+          <p className="text-xs mt-1">Set up budgets to track your spending</p>
+        </div>
+      </ChartWrapper>
     );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Budget Performance
-            </CardTitle>
-            <CardDescription>{period} spending vs planned budget</CardDescription>
-          </div>
-          <Badge
-            variant={performance.overallPercentage <= 100 ? 'default' : 'destructive'}
-            className="text-sm"
-          >
-            {performance.overallPercentage.toFixed(1)}% of budget
-          </Badge>
-        </div>
-      </CardHeader>
+  const headerActions = (
+    <Badge
+      variant={performance.overallPercentage <= 100 ? 'default' : 'destructive'}
+      className="text-sm"
+    >
+      {performance.overallPercentage.toFixed(1)}% of budget
+    </Badge>
+  );
 
-      <CardContent className="space-y-6">
+  return (
+    <ChartWrapper
+      title="Budget Performance"
+      description={`${period} spending vs planned budget`}
+      headerActions={headerActions}
+    >
+      <div className="space-y-6">
         {/* Overall Performance Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg bg-muted/50">
           <div className="text-center">
@@ -287,7 +273,7 @@ export function BudgetPerformanceChart({ period = 'This Month' }: BudgetPerforma
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </ChartWrapper>
   );
 }

@@ -46,7 +46,7 @@ export default function AnalyticsPage() {
         {/* Trading Categories and Distribution */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <ChartLoader>
-            <Card>
+            <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
@@ -61,7 +61,7 @@ export default function AnalyticsPage() {
           </ChartLoader>
 
           <ChartLoader>
-            <Card>
+            <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <PieChart className="h-5 w-5" />
@@ -78,7 +78,7 @@ export default function AnalyticsPage() {
 
         {/* Additional Analytics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="p-6">
+          <Card className="p-6 shadow-md rounded-lg hover:shadow-lg transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-green-500/10 rounded-lg">
                 <TrendingUp className="h-5 w-5 text-green-500" />
@@ -89,7 +89,7 @@ export default function AnalyticsPage() {
             <p className="text-sm text-muted-foreground">+2.3% from last month</p>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 shadow-md rounded-lg hover:shadow-lg transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <BarChart3 className="h-5 w-5 text-blue-500" />
@@ -100,7 +100,7 @@ export default function AnalyticsPage() {
             <p className="text-sm text-muted-foreground">-5.1% from last month</p>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 shadow-md rounded-lg hover:shadow-lg transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-purple-500/10 rounded-lg">
                 <Activity className="h-5 w-5 text-purple-500" />

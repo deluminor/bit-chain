@@ -77,7 +77,7 @@ async function fetchCategorySpending(): Promise<CategorySpendingData[]> {
 
       const existing = categorySpending.get(category.name) || { amount: 0, color: category.color };
       categorySpending.set(category.name, {
-        amount: existing.amount + convertedAmount,
+        amount: existing.amount + Math.abs(convertedAmount),
         color: category.color,
       });
     }

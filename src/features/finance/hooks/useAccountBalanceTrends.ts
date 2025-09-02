@@ -19,8 +19,8 @@ interface AccountBalanceTrend {
 }
 
 async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
-  // Get accounts data
-  const accountsResponse = await fetch('/api/finance/accounts');
+  // Get accounts data (including inactive to ensure we get all accounts)
+  const accountsResponse = await fetch('/api/finance/accounts?includeInactive=true');
   if (!accountsResponse.ok) {
     throw new Error('Failed to fetch accounts');
   }
@@ -58,6 +58,9 @@ async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
     JPY: 0.0062, // 1 JPY ≈ 0.0062 EUR
   };
 
+  // Filter only active accounts
+  const activeAccounts = accounts.filter((account: any) => account.isActive);
+
   // Calculate balance trends with currency conversion
   const trendsPromises = months.map(async month => {
     const monthName = format(month, 'MMM yyyy');
@@ -66,8 +69,8 @@ async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
       date: monthName,
     };
 
-    // For each account, calculate the balance at the end of this month
-    for (const account of accounts) {
+    // For each active account, calculate the balance at the end of this month
+    for (const account of activeAccounts) {
       const monthEndDate = new Date(month.getFullYear(), month.getMonth() + 1, 0);
 
       // Get all transactions for this account up to the end of this month

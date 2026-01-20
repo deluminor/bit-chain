@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { subMonths, format, eachMonthOfInterval } from 'date-fns';
-import { currencyService, BASE_CURRENCY } from '@/lib/currency';
+import { convertToBaseCurrencySafe } from '@/lib/currency';
 
 interface MonthlyStats {
   month: string;
@@ -35,7 +35,7 @@ async function fetchFinanceStats(): Promise<FinanceStatsResponse> {
   }
 
   const transactionsData = await transactionsResponse.json();
-  const { transactions, summary } = transactionsData;
+  const { transactions } = transactionsData;
 
   // Get accounts for net worth calculation
   const accountsResponse = await fetch('/api/finance/accounts');
@@ -54,34 +54,20 @@ async function fetchFinanceStats(): Promise<FinanceStatsResponse> {
   // Calculate current net worth (converted to EUR)
   let currentNetWorth = 0;
   for (const acc of accounts.filter((acc: Account) => acc.isActive)) {
-    let balanceInEur = acc.balance;
-    if (acc.currency !== BASE_CURRENCY) {
-      try {
-        balanceInEur = await currencyService.convertToBaseCurrency(acc.balance, acc.currency);
-      } catch {
-        // Use fallback rates
-        const fallbackRates: Record<string, number> = {
-          USD: 0.9,
-          UAH: 0.025,
-          GBP: 1.15,
-          PLN: 0.23,
-          CZK: 0.04,
-          CHF: 1.05,
-          CAD: 0.68,
-          JPY: 0.0062,
-        };
-        balanceInEur = acc.balance * (fallbackRates[acc.currency] || 1);
-      }
-    }
-    currentNetWorth += balanceInEur;
+    currentNetWorth += await convertToBaseCurrencySafe(acc.balance, acc.currency);
   }
 
   // Generate monthly stats with currency conversion
   const months = eachMonthOfInterval({ start: startDate, end: endDate });
   const monthlyStats: MonthlyStats[] = [];
 
-  for (let i = 0; i < months.length; i++) {
-    const month = months[i];
+  const monthSnapshots: Array<{ month: string; income: number; expenses: number }> = [];
+
+  for (const month of months) {
+    if (!month) {
+      continue;
+    }
+
     const monthKey = format(month, 'yyyy-MM');
     const monthName = format(month, 'MMM yyyy');
 
@@ -102,27 +88,7 @@ async function fetchFinanceStats(): Promise<FinanceStatsResponse> {
     let monthlyExpenses = 0;
 
     for (const transaction of monthTransactions as Transaction[]) {
-      let amountInEur = transaction.amount;
-      if (transaction.currency && transaction.currency !== BASE_CURRENCY) {
-        try {
-          amountInEur = await currencyService.convertToBaseCurrency(
-            transaction.amount,
-            transaction.currency,
-          );
-        } catch {
-          const fallbackRates: Record<string, number> = {
-            USD: 0.9,
-            UAH: 0.025,
-            GBP: 1.15,
-            PLN: 0.23,
-            CZK: 0.04,
-            CHF: 1.05,
-            CAD: 0.68,
-            JPY: 0.0062,
-          };
-          amountInEur = transaction.amount * (fallbackRates[transaction.currency] || 1);
-        }
-      }
+      const amountInEur = await convertToBaseCurrencySafe(transaction.amount, transaction.currency);
 
       if (transaction.type === 'INCOME') {
         monthlyIncome += amountInEur;
@@ -131,25 +97,36 @@ async function fetchFinanceStats(): Promise<FinanceStatsResponse> {
       }
     }
 
-    // Estimate net worth progression (simplified calculation)
-    const netIncomeThisMonth = monthlyIncome - monthlyExpenses;
-    const monthsFromEnd = months.length - 1 - i;
-    const avgMonthlyChange = netIncomeThisMonth > 0 ? netIncomeThisMonth * 0.8 : netIncomeThisMonth;
-    const estimatedNetWorth = currentNetWorth - monthsFromEnd * (avgMonthlyChange / 12);
+    monthSnapshots.push({ month: monthName, income: monthlyIncome, expenses: monthlyExpenses });
+  }
 
-    monthlyStats.push({
-      month: monthName,
-      income: monthlyIncome,
-      expenses: monthlyExpenses,
-      netWorth: Math.max(0, estimatedNetWorth), // Ensure non-negative
-    });
+  let runningNetWorth = currentNetWorth;
+  let totalIncome = 0;
+  let totalExpenses = 0;
+
+  for (let i = monthSnapshots.length - 1; i >= 0; i -= 1) {
+    const snapshot = monthSnapshots[i];
+    const netIncomeThisMonth = snapshot ? snapshot.income - snapshot.expenses : 0;
+
+    if (snapshot) {
+      totalIncome += snapshot.income;
+      totalExpenses += snapshot.expenses;
+      monthlyStats.unshift({
+        month: snapshot.month,
+        income: snapshot.income,
+        expenses: snapshot.expenses,
+        netWorth: Math.max(0, runningNetWorth),
+      });
+    }
+
+    runningNetWorth -= netIncomeThisMonth;
   }
 
   return {
     monthlyStats,
     totalStats: {
-      totalIncome: summary.income || 0,
-      totalExpenses: summary.expenses || 0,
+      totalIncome,
+      totalExpenses,
       currentNetWorth,
     },
   };

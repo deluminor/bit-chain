@@ -3,24 +3,32 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-import { TrendingUp, TrendingDown, Wallet, Target, BarChart3, RefreshCw } from 'lucide-react';
+import {
+  Activity,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  Target,
+  BarChart3,
+  RefreshCw,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useAccounts } from '@/features/finance/queries/accounts';
 import { useTransactions } from '@/features/finance/queries/transactions';
 import { useGoals, calculateGoalProgress } from '@/features/finance/queries/goals';
 import { IncomeExpenseChart } from '@/components/layout/charts/IncomeExpenseChart';
-import { CategorySpendingChart } from '@/components/layout/charts/CategorySpendingChart';
+import { CategorySpendingChart } from '@/features/finance/components/CategorySpendingChart';
 import { AccountBalanceTrendsChart } from '@/components/layout/charts/AccountBalanceTrendsChart';
-import { NetWorthChart } from '@/components/layout/charts/NetWorthChart';
+import { NetWorthChart } from '@/features/finance/components/NetWorthChart';
 import { BudgetPerformanceChart } from '@/components/layout/charts/BudgetPerformanceChart';
+import { CashFlowSankeyChart } from '@/features/finance/components/CashFlowSankeyChart';
 import { AnimatedDiv } from '@/components/ui/animations';
-import { ResponsiveGrid, ResponsiveChart } from '@/components/ui/responsive-helpers';
+import { ResponsiveGrid } from '@/components/ui/responsive-helpers';
 
 import {
-  currencyService,
+  convertToBaseCurrencySafe,
   formatSummaryAmount,
   formatDisplayAmount,
-  BASE_CURRENCY,
 } from '@/lib/currency';
 import { useState, useEffect } from 'react';
 
@@ -86,6 +94,12 @@ export function FinanceDashboard() {
   const [monthlyIncomeEUR, setMonthlyIncomeEUR] = useState(0);
   const [monthlyExpensesEUR, setMonthlyExpensesEUR] = useState(0);
   const [isConverting, setIsConverting] = useState(false);
+  const [largestIncome, setLargestIncome] = useState(0);
+  const [largestExpense, setLargestExpense] = useState(0);
+  const [incomeFrequency, setIncomeFrequency] = useState(0);
+  const [expenseFrequency, setExpenseFrequency] = useState(0);
+  const [savingsRate, setSavingsRate] = useState(0);
+  const [netFlow, setNetFlow] = useState(0);
 
   const accounts = accountsData?.accounts || [];
   const summary = accountsData?.summary;
@@ -103,35 +117,10 @@ export function FinanceDashboard() {
       try {
         let totalInEUR = 0;
 
-        // Fallback conversion rates
-        const fallbackRates: Record<string, number> = {
-          USD: 0.9, // 1 USD ≈ 0.9 EUR
-          UAH: 0.025, // 1 UAH ≈ 0.025 EUR
-          GBP: 1.15, // 1 GBP ≈ 1.15 EUR
-          PLN: 0.23, // 1 PLN ≈ 0.23 EUR
-          CZK: 0.04, // 1 CZK ≈ 0.04 EUR
-          CHF: 1.05, // 1 CHF ≈ 1.05 EUR
-          CAD: 0.68, // 1 CAD ≈ 0.68 EUR
-          JPY: 0.0062, // 1 JPY ≈ 0.0062 EUR
-        };
-
         for (const account of accounts) {
           if (!account.isActive) continue;
 
-          let convertedAmount = account.balance;
-
-          if (account.currency !== BASE_CURRENCY) {
-            try {
-              convertedAmount = await currencyService.convertToBaseCurrency(
-                account.balance,
-                account.currency,
-              );
-            } catch {
-              convertedAmount = account.balance * (fallbackRates[account.currency] || 1);
-            }
-          }
-
-          totalInEUR += convertedAmount;
+          totalInEUR += await convertToBaseCurrencySafe(account.balance, account.currency);
         }
 
         setTotalBalanceEUR(totalInEUR);
@@ -146,41 +135,37 @@ export function FinanceDashboard() {
         // Convert individual transactions to EUR for accurate calculation
         let totalIncomeEUR = 0;
         let totalExpensesEUR = 0;
+        let peakIncome = 0;
+        let peakExpense = 0;
+        let incomeCount = 0;
+        let expenseCount = 0;
 
         for (const transaction of transactions) {
-          let convertedAmount = transaction.amount;
+          const convertedAmount = await convertToBaseCurrencySafe(
+            transaction.amount,
+            transaction.currency,
+          );
 
-          // Convert to EUR if not already in EUR
-          if (transaction.currency !== BASE_CURRENCY) {
-            try {
-              convertedAmount = await currencyService.convertCurrency(
-                transaction.amount,
-                transaction.currency,
-                BASE_CURRENCY,
-              );
-            } catch {
-              // Use fallback rate if conversion fails
-              convertedAmount = transaction.amount * (fallbackRates[transaction.currency] || 1);
-            }
-          }
-
-          // Categorize as income or expense based on transaction type
           if (transaction.type === 'INCOME') {
             totalIncomeEUR += convertedAmount;
+            incomeCount += 1;
+            peakIncome = Math.max(peakIncome, convertedAmount);
           } else if (transaction.type === 'EXPENSE') {
             totalExpensesEUR += convertedAmount;
+            expenseCount += 1;
+            peakExpense = Math.max(peakExpense, convertedAmount);
           }
-          // Note: TRANSFER transactions are not included in income/expense calculations
         }
 
         setMonthlyIncomeEUR(totalIncomeEUR);
         setMonthlyExpensesEUR(totalExpensesEUR);
-
-        if (transactions.length > 0) {
-          console.info(
-            `Converted ${transactions.length} transactions to EUR: Income=${totalIncomeEUR.toFixed(2)}, Expenses=${totalExpensesEUR.toFixed(2)}`,
-          );
-        }
+        setLargestIncome(peakIncome);
+        setLargestExpense(peakExpense);
+        setIncomeFrequency(incomeCount);
+        setExpenseFrequency(expenseCount);
+        const net = totalIncomeEUR - totalExpensesEUR;
+        setNetFlow(net);
+        setSavingsRate(totalIncomeEUR > 0 ? Math.round((net / totalIncomeEUR) * 100) : 0);
       } catch (error) {
         console.error('Failed to convert balances:', error);
       } finally {
@@ -194,9 +179,9 @@ export function FinanceDashboard() {
 
   return (
     <AnimatedDiv variant="slideUp" className="space-y-4">
-      <div className="container">
+      <div className="container space-y-4">
         {/* Quick Stats Grid */}
-        <ResponsiveGrid cols={{ mobile: 1, tablet: 2, desktop: 4 }} className="mb-6">
+        <ResponsiveGrid cols={{ mobile: 1, tablet: 2, desktop: 4 }} gap={3}>
           <QuickStatCard
             title="Total Balance"
             value={isConverting ? 'Converting...' : formatSummaryAmount(totalBalanceEUR)}
@@ -214,7 +199,7 @@ export function FinanceDashboard() {
             title="This Month Income"
             value={isConverting ? 'Converting...' : formatSummaryAmount(monthlyIncomeEUR)}
             changeType="positive"
-            change={`${transactions.filter(t => t.amount > 0).length} transactions`}
+            change={`${transactions.filter(t => t.type === 'INCOME').length} transactions`}
             icon={<TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
             href="/transactions"
           />
@@ -223,7 +208,7 @@ export function FinanceDashboard() {
             title="This Month Expenses"
             value={isConverting ? 'Converting...' : formatSummaryAmount(monthlyExpensesEUR)}
             changeType="negative"
-            change={`${transactions.filter(t => t.amount < 0).length} transactions`}
+            change={`${transactions.filter(t => t.type === 'EXPENSE').length} transactions`}
             icon={<TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
             href="/transactions"
           />
@@ -237,50 +222,62 @@ export function FinanceDashboard() {
           />
         </ResponsiveGrid>
 
-        {/* Additional Widgets */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
-          {/* Monthly Summary */}
+        {/* Cashflow Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle className="text-lg">This Month</CardTitle>
+              <CardTitle className="text-lg">Monthly Pulse</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              {transactions.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-green-600">Income:</span>
-                    <span className="font-semibold text-green-600">
-                      +{formatSummaryAmount(monthlyIncomeEUR)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-red-600">Expenses:</span>
-                    <span className="font-semibold text-red-600">
-                      -{formatSummaryAmount(monthlyExpensesEUR)}
-                    </span>
-                  </div>
-                  <div className="border-t pt-2">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Net:</span>
-                      <span
-                        className={`font-bold ${
-                          monthlyIncomeEUR - monthlyExpensesEUR >= 0
-                            ? 'text-green-600'
-                            : 'text-red-600'
-                        }`}
-                      >
-                        {monthlyIncomeEUR - monthlyExpensesEUR >= 0 ? '+' : ''}
-                        {formatSummaryAmount(monthlyIncomeEUR - monthlyExpensesEUR)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+            <CardContent className="p-4 md:p-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Net Flow</span>
+                <span
+                  className={`font-semibold ${netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                >
+                  {netFlow >= 0 ? '+' : ''}
+                  {formatSummaryAmount(netFlow)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Savings Rate</span>
+                <span className="font-semibold text-emerald-500">{savingsRate}%</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Income Count</span>
+                <span className="font-semibold">{incomeFrequency}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Expense Count</span>
+                <span className="font-semibold">{expenseFrequency}</span>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Goals Preview - займає 2 колонки */}
-          <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow lg:col-span-2">
+          <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="text-lg">Largest Moves</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Largest Income</span>
+                <span className="font-semibold text-emerald-500">
+                  {formatSummaryAmount(largestIncome)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Largest Expense</span>
+                <span className="font-semibold text-rose-500">
+                  {formatSummaryAmount(largestExpense)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Activity className="h-4 w-4" />
+                Based on current month activity
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex flex-col md:flex-row items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -354,44 +351,31 @@ export function FinanceDashboard() {
         </div>
 
         {/* Financial Analytics Charts */}
-        <AnimatedDiv variant="slideUp" delay={0.3} className="space-y-8">
-          {/* Category Analysis and Account Trends */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-85">
-            <div className="w-full">
-              <ResponsiveChart height={{ mobile: 300, desktop: 400 }} className="animate-fade-in">
-                <IncomeExpenseChart />
-              </ResponsiveChart>
+        <AnimatedDiv variant="slideUp" delay={0.3} className="space-y-4">
+          <div className="w-full animate-fade-in">
+            <CashFlowSankeyChart />
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+            <div className="xl:col-span-2 animate-fade-in">
+              <IncomeExpenseChart />
             </div>
-            <div className="w-full">
-              <ResponsiveChart height={{ mobile: 300, desktop: 400 }} className="animate-fade-in">
-                <AccountBalanceTrendsChart />
-              </ResponsiveChart>
+            <div className="xl:col-span-1 animate-fade-in">
+              <AccountBalanceTrendsChart />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="w-full">
-              <ResponsiveChart
-                height={{ mobile: 240, desktop: 240 }}
-                className="animate-fade-in h-full"
-              >
-                <CategorySpendingChart />
-              </ResponsiveChart>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="animate-fade-in">
+              <CategorySpendingChart />
             </div>
-            <div className="w-full">
-              <ResponsiveChart height={{ mobile: 350, desktop: 450 }} className="animate-fade-in">
-                <BudgetPerformanceChart />
-              </ResponsiveChart>
+            <div className="animate-fade-in">
+              <BudgetPerformanceChart />
             </div>
           </div>
 
-          <div className="w-full">
-            <ResponsiveChart
-              // height={{ mobile: 300, desktop: 400 }}
-              className="animate-fade-in h-full"
-            >
-              <NetWorthChart />
-            </ResponsiveChart>
+          <div className="w-full animate-fade-in">
+            <NetWorthChart />
           </div>
         </AnimatedDiv>
       </div>

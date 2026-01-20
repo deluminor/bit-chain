@@ -59,8 +59,8 @@ export function RadarChartComponent({
       isLoading={isLoading}
       contentClassName="max-h-260 overflow-hidden"
     >
-      <ChartContainer config={chartConfig} className="aspect-square max-h-260 h-auto w-full">
-        <RadarChart data={data} margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
+      <ChartContainer config={chartConfig} className="aspect-square max-h-260 h-full w-full">
+        <RadarChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
           <defs>
             <linearGradient id="radarFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={primaryColor} stopOpacity={0.55} />

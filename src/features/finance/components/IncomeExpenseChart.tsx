@@ -17,7 +17,7 @@ import { DateRange } from 'react-day-picker';
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { useTransactions } from '../queries/transactions';
 
-import { formatSummaryAmount } from '@/lib/currency';
+import { convertToBaseCurrencySafe, formatSummaryAmount } from '@/lib/currency';
 
 export function IncomeExpenseChart() {
   const isMobile = useIsMobile();
@@ -54,69 +54,82 @@ export function IncomeExpenseChart() {
   }, [isMobile]);
 
   // Process transaction data into daily/weekly chart data
-  const chartData = useMemo(() => {
-    if (!transactionsData?.transactions) return [];
+  const [processedData, setProcessedData] = useState<
+    Array<{ date: string; income: number; expenses: number }>
+  >([]);
 
-    const transactions = transactionsData.transactions;
-    const dataMap = new Map<string, { date: string; income: number; expenses: number }>();
-
-    transactions.forEach(transaction => {
-      const date = format(new Date(transaction.date), 'yyyy-MM-dd');
-
-      if (!dataMap.has(date)) {
-        dataMap.set(date, { date, income: 0, expenses: 0 });
+  useEffect(() => {
+    const buildData = async () => {
+      if (!transactionsData?.transactions) {
+        setProcessedData([]);
+        return;
       }
 
-      const dayData = dataMap.get(date)!;
+      const dataMap = new Map<string, { date: string; income: number; expenses: number }>();
 
-      if (transaction.type === 'INCOME') {
-        dayData.income += transaction.amount;
-      } else if (transaction.type === 'EXPENSE') {
-        dayData.expenses += transaction.amount;
-      }
-    });
+      for (const transaction of transactionsData.transactions) {
+        const date = format(new Date(transaction.date), 'yyyy-MM-dd');
 
-    // Convert map to array and sort by date
-    const sortedData = Array.from(dataMap.values()).sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-    );
-
-    // If we have more than 60 days, group by week for better readability
-    if (sortedData.length > 60) {
-      const weeklyData = new Map<string, { date: string; income: number; expenses: number }>();
-
-      sortedData.forEach(day => {
-        const weekStart = format(startOfDay(new Date(day.date)), 'yyyy-MM-dd');
-        const weekKey = `Week of ${format(new Date(weekStart), 'MMM dd')}`;
-
-        if (!weeklyData.has(weekKey)) {
-          weeklyData.set(weekKey, { date: weekKey, income: 0, expenses: 0 });
+        if (!dataMap.has(date)) {
+          dataMap.set(date, { date, income: 0, expenses: 0 });
         }
 
-        const weekData = weeklyData.get(weekKey)!;
-        weekData.income += day.income;
-        weekData.expenses += day.expenses;
-      });
+        const dayData = dataMap.get(date)!;
+        const amountInEur = await convertToBaseCurrencySafe(
+          transaction.amount,
+          transaction.currency,
+        );
 
-      return Array.from(weeklyData.values());
-    }
+        if (transaction.type === 'INCOME') {
+          dayData.income += amountInEur;
+        } else if (transaction.type === 'EXPENSE') {
+          dayData.expenses += amountInEur;
+        }
+      }
 
-    return sortedData;
+      const sortedData = Array.from(dataMap.values()).sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      );
+
+      if (sortedData.length > 60) {
+        const weeklyData = new Map<string, { date: string; income: number; expenses: number }>();
+
+        sortedData.forEach(day => {
+          const weekStart = format(startOfDay(new Date(day.date)), 'yyyy-MM-dd');
+          const weekKey = `Week of ${format(new Date(weekStart), 'MMM dd')}`;
+
+          if (!weeklyData.has(weekKey)) {
+            weeklyData.set(weekKey, { date: weekKey, income: 0, expenses: 0 });
+          }
+
+          const weekData = weeklyData.get(weekKey)!;
+          weekData.income += day.income;
+          weekData.expenses += day.expenses;
+        });
+
+        setProcessedData(Array.from(weeklyData.values()));
+        return;
+      }
+
+      setProcessedData(sortedData);
+    };
+
+    buildData();
   }, [transactionsData]);
 
   // Calculate totals for summary
   const totals = useMemo(() => {
-    if (!chartData.length) return { income: 0, expenses: 0, net: 0 };
+    if (!processedData.length) return { income: 0, expenses: 0, net: 0 };
 
-    const income = chartData.reduce((sum, day) => sum + day.income, 0);
-    const expenses = chartData.reduce((sum, day) => sum + day.expenses, 0);
+    const income = processedData.reduce((sum, day) => sum + day.income, 0);
+    const expenses = processedData.reduce((sum, day) => sum + day.expenses, 0);
 
     return {
       income,
       expenses,
       net: income - expenses,
     };
-  }, [chartData]);
+  }, [processedData]);
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range);
@@ -169,7 +182,7 @@ export function IncomeExpenseChart() {
         </div>
 
         <ChartContainer config={chartConfig} className="aspect-auto h-[400px] w-full">
-          <AreaChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
+          <AreaChart data={processedData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
             <defs>
               <linearGradient id="fillIncome" x1="0" y1="0" x2="0" y2="1">
                 <stop

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAccounts } from '@/features/finance/queries/accounts';
-import { currencyService, formatSummaryAmount, BASE_CURRENCY } from '@/lib/currency';
+import { convertToBaseCurrencySafe, formatSummaryAmount } from '@/lib/currency';
 import { RefreshCw } from 'lucide-react';
 
 interface TotalBalanceDisplayProps {
@@ -39,31 +39,7 @@ export function TotalBalanceDisplay({
         for (const account of accounts) {
           if (!account.isActive) continue;
 
-          let convertedAmount = account.balance;
-
-          if (account.currency !== BASE_CURRENCY) {
-            try {
-              convertedAmount = await currencyService.convertToBaseCurrency(
-                account.balance,
-                account.currency,
-              );
-            } catch {
-              // Use fallback conversion rates
-              const fallbackRates: Record<string, number> = {
-                USD: 0.9, // 1 USD ≈ 0.9 EUR
-                UAH: 0.025, // 1 UAH ≈ 0.025 EUR
-                GBP: 1.15, // 1 GBP ≈ 1.15 EUR
-                PLN: 0.23, // 1 PLN ≈ 0.23 EUR
-                CZK: 0.04, // 1 CZK ≈ 0.04 EUR
-                CHF: 1.05, // 1 CHF ≈ 1.05 EUR
-                CAD: 0.68, // 1 CAD ≈ 0.68 EUR
-                JPY: 0.0062, // 1 JPY ≈ 0.0062 EUR
-              };
-              convertedAmount = account.balance * (fallbackRates[account.currency] || 1);
-            }
-          }
-
-          totalInEUR += convertedAmount;
+          totalInEUR += await convertToBaseCurrencySafe(account.balance, account.currency);
         }
 
         setTotalBalanceEUR(totalInEUR);

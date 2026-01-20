@@ -226,4 +226,5 @@ export const createCustomFilter = (
   type: 'custom',
   render,
   className,
+  onChange: () => undefined,
 });

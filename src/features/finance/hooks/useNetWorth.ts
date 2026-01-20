@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { currencyService } from '@/lib/currency';
+import { convertToBaseCurrencySafe } from '@/lib/currency';
 
 interface NetWorthDataPoint {
   date: string;
@@ -29,34 +29,10 @@ async function fetchNetWorthData(): Promise<NetWorthDataPoint[]> {
   const transactionsData = await transactionsResponse.json();
   const transactions = transactionsData.transactions;
 
-  // Fallback conversion rates
-  const fallbackRates: Record<string, number> = {
-    USD: 0.9,
-    UAH: 0.025,
-    GBP: 1.15,
-    PLN: 0.23,
-    CZK: 0.04,
-    CHF: 1.05,
-    CAD: 0.68,
-    JPY: 0.0062,
-    HUF: 0.0027,
-  };
-
   // Calculate current net worth from active accounts
   let currentNetWorth = 0;
   for (const account of accounts.filter((acc: any) => acc.isActive)) {
-    let convertedBalance = account.balance;
-    if (account.currency !== 'EUR') {
-      try {
-        convertedBalance = await currencyService.convertToBaseCurrency(
-          account.balance,
-          account.currency || 'USD',
-        );
-      } catch {
-        convertedBalance = account.balance * (fallbackRates[account.currency] || 1);
-      }
-    }
-    currentNetWorth += convertedBalance;
+    currentNetWorth += await convertToBaseCurrencySafe(account.balance, account.currency);
   }
 
   // Group transactions by month
@@ -66,17 +42,10 @@ async function fetchNetWorthData(): Promise<NetWorthDataPoint[]> {
     const transactionDate = new Date(transaction.date);
     const monthKey = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}`;
 
-    let convertedAmount = transaction.amount;
-    if (transaction.currency !== 'EUR') {
-      try {
-        convertedAmount = await currencyService.convertToBaseCurrency(
-          transaction.amount,
-          transaction.currency || 'USD',
-        );
-      } catch {
-        convertedAmount = transaction.amount * (fallbackRates[transaction.currency] || 1);
-      }
-    }
+    const convertedAmount = await convertToBaseCurrencySafe(
+      transaction.amount,
+      transaction.currency,
+    );
 
     monthlyTransactions.set(monthKey, (monthlyTransactions.get(monthKey) || 0) + convertedAmount);
   }

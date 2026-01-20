@@ -8,13 +8,13 @@ interface DashboardModeState {
 }
 
 const getSavedMode = (): DashboardMode => {
-  if (typeof window === 'undefined') return 'crypto';
+  if (typeof window === 'undefined') return 'finance';
 
   try {
     const saved = localStorage.getItem('dashboard-mode');
-    return saved === 'finance' || saved === 'crypto' ? saved : 'crypto';
+    return saved === 'finance' || saved === 'crypto' ? saved : 'finance';
   } catch {
-    return 'crypto';
+    return 'finance';
   }
 };
 

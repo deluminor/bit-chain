@@ -2,15 +2,17 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { format, eachMonthOfInterval } from 'date-fns';
-import { currencyService, BASE_CURRENCY } from '@/lib/currency';
+import { convertToBaseCurrencySafe } from '@/lib/currency';
 
 interface Transaction {
   accountId: string;
   date: string;
-  type: string;
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
   amount: number;
+  currency?: string;
   transferToId?: string;
   transferAmount?: number;
+  transferCurrency?: string;
 }
 
 interface AccountBalanceTrend {
@@ -19,7 +21,6 @@ interface AccountBalanceTrend {
 }
 
 async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
-  // Get accounts data (including inactive to ensure we get all accounts)
   const accountsResponse = await fetch('/api/finance/accounts?includeInactive=true');
   if (!accountsResponse.ok) {
     throw new Error('Failed to fetch accounts');
@@ -28,13 +29,12 @@ async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
   const accountsData = await accountsResponse.json();
   const { accounts } = accountsData;
 
-  // Get months from last 12 months (including previous year if needed)
   const endDate = new Date();
   const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - 11); // Go back 11 months to get 12 months total
+  startDate.setMonth(startDate.getMonth() - 11);
   const months = eachMonthOfInterval({ start: startDate, end: endDate });
+  const monthKeys = months.map(month => format(month, 'yyyy-MM'));
 
-  // Get transactions for balance calculations
   const transactionsResponse = await fetch(
     `/api/finance/transactions?dateFrom=${startDate.toISOString()}&dateTo=${endDate.toISOString()}&limit=10000`,
   );
@@ -44,100 +44,82 @@ async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
   }
 
   const transactionsData = await transactionsResponse.json();
-  const { transactions } = transactionsData;
+  const { transactions } = transactionsData as { transactions: Transaction[] };
 
-  // Fallback conversion rates
-  const fallbackRates: Record<string, number> = {
-    USD: 0.9, // 1 USD ≈ 0.9 EUR
-    UAH: 0.025, // 1 UAH ≈ 0.025 EUR
-    GBP: 1.15, // 1 GBP ≈ 1.15 EUR
-    PLN: 0.23, // 1 PLN ≈ 0.23 EUR
-    CZK: 0.04, // 1 CZK ≈ 0.04 EUR
-    CHF: 1.05, // 1 CHF ≈ 1.05 EUR
-    CAD: 0.68, // 1 CAD ≈ 0.68 EUR
-    JPY: 0.0062, // 1 JPY ≈ 0.0062 EUR
-  };
-
-  // Filter only active accounts
   const activeAccounts = accounts.filter((account: any) => account.isActive);
+  const accountBalances = new Map<string, number>();
 
-  // Calculate balance trends with currency conversion
-  const trendsPromises = months.map(async month => {
-    const monthName = format(month, 'MMM yyyy');
+  for (const account of activeAccounts) {
+    accountBalances.set(
+      account.id,
+      await convertToBaseCurrencySafe(account.balance, account.currency),
+    );
+  }
 
-    const result: AccountBalanceTrend = {
-      date: monthName,
-    };
+  const monthlyDeltas = new Map<string, Map<string, number>>();
 
-    // For each active account, calculate the balance at the end of this month
-    for (const account of activeAccounts) {
-      const monthEndDate = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  for (const transaction of transactions) {
+    const monthKey = format(new Date(transaction.date), 'yyyy-MM');
 
-      // Get all transactions for this account up to the end of this month
-      const accountTransactionsUpToMonth = transactions.filter(
-        (t: Transaction) => t.accountId === account.id && new Date(t.date) <= monthEndDate,
-      );
-
-      // Calculate balance by starting from 0 and adding all transactions chronologically
-      let calculatedBalance = 0;
-
-      for (const transaction of accountTransactionsUpToMonth) {
-        const transactionAmount = transaction.amount;
-
-        if (transaction.type === 'INCOME') {
-          calculatedBalance += transactionAmount;
-        } else if (transaction.type === 'EXPENSE') {
-          calculatedBalance -= transactionAmount;
-        } else if (transaction.type === 'TRANSFER') {
-          // For transfers, subtract from source account
-          if (transaction.accountId === account.id) {
-            calculatedBalance -= transactionAmount;
-          }
-        }
-      }
-
-      // Add incoming transfers to this account
-      const incomingTransfers = transactions.filter(
-        (t: Transaction) =>
-          t.transferToId === account.id &&
-          t.type === 'TRANSFER' &&
-          new Date(t.date) <= monthEndDate,
-      );
-
-      for (const transfer of incomingTransfers) {
-        // Use transferAmount if available, otherwise use the original amount
-        const amountReceived = transfer.transferAmount || transfer.amount;
-        calculatedBalance += amountReceived;
-      }
-
-      // Convert to EUR if not already in EUR
-      let convertedBalance = calculatedBalance;
-      if (account.currency !== BASE_CURRENCY) {
-        try {
-          convertedBalance = await currencyService.convertToBaseCurrency(
-            calculatedBalance,
-            account.currency,
-          );
-        } catch {
-          convertedBalance = calculatedBalance * (fallbackRates[account.currency] || 1);
-        }
-      }
-
-      // Ensure non-negative balance
-      result[account.name] = Math.max(0, convertedBalance);
+    if (!monthKeys.includes(monthKey)) {
+      continue;
     }
 
-    return result;
-  });
+    const amountInEur = await convertToBaseCurrencySafe(transaction.amount, transaction.currency);
+    const outgoingDelta = transaction.type === 'INCOME' ? amountInEur : -amountInEur;
 
-  return Promise.all(trendsPromises);
+    if (transaction.type !== 'TRANSFER') {
+      const accountMonthDeltas = monthlyDeltas.get(transaction.accountId) || new Map();
+      accountMonthDeltas.set(monthKey, (accountMonthDeltas.get(monthKey) || 0) + outgoingDelta);
+      monthlyDeltas.set(transaction.accountId, accountMonthDeltas);
+    } else {
+      const fromMonthDeltas = monthlyDeltas.get(transaction.accountId) || new Map();
+      fromMonthDeltas.set(monthKey, (fromMonthDeltas.get(monthKey) || 0) - amountInEur);
+      monthlyDeltas.set(transaction.accountId, fromMonthDeltas);
+
+      if (transaction.transferToId) {
+        const incomingAmount = transaction.transferAmount ?? transaction.amount;
+        const incomingCurrency = transaction.transferCurrency ?? transaction.currency;
+        const incomingInEur = await convertToBaseCurrencySafe(
+          incomingAmount,
+          incomingCurrency || 'EUR',
+        );
+        const toMonthDeltas = monthlyDeltas.get(transaction.transferToId) || new Map();
+        toMonthDeltas.set(monthKey, (toMonthDeltas.get(monthKey) || 0) + incomingInEur);
+        monthlyDeltas.set(transaction.transferToId, toMonthDeltas);
+      }
+    }
+  }
+
+  const results: AccountBalanceTrend[] = months.map(month => ({
+    date: format(month, 'MMM yyyy'),
+  }));
+
+  for (const account of activeAccounts) {
+    let runningBalance = accountBalances.get(account.id) || 0;
+
+    for (let index = monthKeys.length - 1; index >= 0; index -= 1) {
+      const monthKey = monthKeys[index];
+      const safeMonthKey = monthKey || '';
+      const monthDelta = monthlyDeltas.get(account.id)?.get(safeMonthKey) || 0;
+      const monthIndex = index;
+
+      if (results[monthIndex]) {
+        results[monthIndex][account.name] = Math.max(0, runningBalance);
+      }
+
+      runningBalance -= monthDelta;
+    }
+  }
+
+  return results;
 }
 
 export function useAccountBalanceTrends() {
   return useQuery({
     queryKey: ['account-balance-trends'],
     queryFn: fetchAccountBalanceTrends,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }

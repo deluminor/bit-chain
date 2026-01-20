@@ -25,6 +25,18 @@ export const SUPPORTED_CURRENCIES: Record<string, CurrencyInfo> = {
 // Base currency for the application (all balances will be shown in EUR)
 export const BASE_CURRENCY = 'EUR';
 
+export const FALLBACK_RATES: Record<string, number> = {
+  USD: 0.9, // 1 USD ≈ 0.9 EUR
+  UAH: 0.025, // 1 UAH ≈ 0.025 EUR
+  GBP: 1.15, // 1 GBP ≈ 1.15 EUR
+  PLN: 0.23, // 1 PLN ≈ 0.23 EUR
+  CZK: 0.04, // 1 CZK ≈ 0.04 EUR
+  CHF: 1.05, // 1 CHF ≈ 1.05 EUR
+  CAD: 0.68, // 1 CAD ≈ 0.68 EUR
+  JPY: 0.0062, // 1 JPY ≈ 0.0062 EUR
+  HUF: 0.0027, // 1 HUF ≈ 0.0027 EUR
+};
+
 class CurrencyService {
   private exchangeRates: ExchangeRate | null = null;
   private lastFetch: number = 0;
@@ -233,6 +245,21 @@ class CurrencyService {
 }
 
 export const currencyService = new CurrencyService();
+
+export async function convertToBaseCurrencySafe(
+  amount: number,
+  currency: string | undefined,
+): Promise<number> {
+  if (!currency || currency === BASE_CURRENCY) {
+    return amount;
+  }
+
+  try {
+    return await currencyService.convertToBaseCurrency(amount, currency);
+  } catch {
+    return amount * (FALLBACK_RATES[currency] || 1);
+  }
+}
 
 // Enhanced formatting utilities
 export function formatCurrency(

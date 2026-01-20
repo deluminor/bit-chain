@@ -1,6 +1,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Transaction } from '../queries/transactions';
-import { formatCurrency, formatEuroAmount, currencyService, BASE_CURRENCY } from '@/lib/currency';
+import {
+  convertToBaseCurrencySafe,
+  formatCurrency,
+  formatEuroAmount,
+  BASE_CURRENCY,
+} from '@/lib/currency';
 import { useMemo, useState, useEffect } from 'react';
 import { Plus, Minus, ArrowRightLeft, Calendar, Tag } from 'lucide-react';
 
@@ -23,21 +28,10 @@ function AmountCell({ transaction, amountColor, currency }: AmountCellProps) {
 
       setIsConverting(true);
       try {
-        const converted = await currencyService.convertToBaseCurrency(transaction.amount, currency);
+        const converted = await convertToBaseCurrencySafe(transaction.amount, currency);
         setConvertedAmount(converted);
       } catch {
-        // Fallback conversion rates
-        const fallbackRates: Record<string, number> = {
-          USD: 0.9,
-          UAH: 0.025,
-          GBP: 1.15,
-          PLN: 0.23,
-          CZK: 0.04,
-          CHF: 1.05,
-          CAD: 0.68,
-          JPY: 0.0062,
-        };
-        setConvertedAmount(transaction.amount * (fallbackRates[currency] || 1));
+        setConvertedAmount(null);
       } finally {
         setIsConverting(false);
       }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { currencyService, BASE_CURRENCY } from '@/lib/currency';
+import { BASE_CURRENCY, convertToBaseCurrencySafe, FALLBACK_RATES } from '@/lib/currency';
 
 interface _Transaction {
   categoryId: string;
@@ -41,17 +41,7 @@ async function fetchBudgetPerformance(): Promise<BudgetPerformanceData[]> {
     return [];
   }
 
-  // Fallback conversion rates
-  const fallbackRates: Record<string, number> = {
-    USD: 0.9, // 1 USD ≈ 0.9 EUR
-    UAH: 0.025, // 1 UAH ≈ 0.025 EUR
-    GBP: 1.15, // 1 GBP ≈ 1.15 EUR
-    PLN: 0.23, // 1 PLN ≈ 0.23 EUR
-    CZK: 0.04, // 1 CZK ≈ 0.04 EUR
-    CHF: 1.05, // 1 CHF ≈ 1.05 EUR
-    CAD: 0.68, // 1 CAD ≈ 0.68 EUR
-    JPY: 0.0062, // 1 JPY ≈ 0.0062 EUR
-  };
+  const fallbackRates = FALLBACK_RATES;
 
   // Build performance data using API-calculated actual spending
   const performanceData: BudgetPerformanceData[] = [];
@@ -63,14 +53,11 @@ async function fetchBudgetPerformance(): Promise<BudgetPerformanceData[]> {
     // Convert budget amount to EUR if needed
     if (currentBudget.currency && currentBudget.currency !== BASE_CURRENCY) {
       try {
-        budgetedInEUR = await currencyService.convertToBaseCurrency(
+        budgetedInEUR = await convertToBaseCurrencySafe(
           budgetCategory.planned,
           currentBudget.currency,
         );
-        spentInEUR = await currencyService.convertToBaseCurrency(
-          budgetCategory.actual,
-          currentBudget.currency,
-        );
+        spentInEUR = await convertToBaseCurrencySafe(budgetCategory.actual, currentBudget.currency);
       } catch {
         // Use fallback rate if conversion fails
         const rate = fallbackRates[currentBudget.currency] || 1;

@@ -19,7 +19,7 @@ import { useTransactions } from '../queries/transactions';
 import { useAccounts } from '../queries/accounts';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
-import { BASE_CURRENCY, currencyService, formatSummaryAmount } from '@/lib/currency';
+import { convertToBaseCurrencySafe, formatSummaryAmount } from '@/lib/currency';
 
 interface NetWorthDataPoint {
   date: string;
@@ -38,47 +38,30 @@ export function NetWorthChart() {
   const [isConverting, setIsConverting] = useState(false);
 
   const { data: accountsData, isLoading: accountsLoading } = useAccounts();
+  const canFetchTransactions = Boolean(dateRange?.from && dateRange?.to);
   const { data: transactionsData, isLoading: transactionsLoading } = useTransactions({
     dateFrom: dateRange?.from?.toISOString().split('T')[0],
     dateTo: dateRange?.to?.toISOString().split('T')[0],
     limit: 3000,
   });
 
-  const accounts = accountsData?.accounts || [];
-  const transactions = transactionsData?.transactions || [];
+  const accounts = useMemo(() => accountsData?.accounts ?? [], [accountsData?.accounts]);
+  const transactions = useMemo(
+    () => transactionsData?.transactions ?? [],
+    [transactionsData?.transactions],
+  );
 
   // Calculate net worth trends over time with currency conversion
   useEffect(() => {
     const generateChartData = async () => {
-      if (!accounts.length || !transactions.length) {
+      if (!accounts.length || !canFetchTransactions || !transactions.length) {
         // If no transactions, just show current net worth converted to EUR
         setIsConverting(true);
         let currentNetWorthEur = 0;
 
         try {
           for (const acc of accounts) {
-            let balanceInEur = acc.balance;
-            if (acc.currency !== BASE_CURRENCY) {
-              try {
-                balanceInEur = await currencyService.convertToBaseCurrency(
-                  acc.balance,
-                  acc.currency,
-                );
-              } catch {
-                const fallbackRates: Record<string, number> = {
-                  USD: 0.9,
-                  UAH: 0.025,
-                  GBP: 1.15,
-                  PLN: 0.23,
-                  CZK: 0.04,
-                  CHF: 1.05,
-                  CAD: 0.68,
-                  JPY: 0.0062,
-                };
-                balanceInEur = acc.balance * (fallbackRates[acc.currency] || 1);
-              }
-            }
-            currentNetWorthEur += balanceInEur;
+            currentNetWorthEur += await convertToBaseCurrencySafe(acc.balance, acc.currency);
           }
 
           setChartData([
@@ -105,27 +88,7 @@ export function NetWorthChart() {
         // Initialize with current account balances converted to EUR
         const currentBalances = new Map<string, number>();
         for (const account of accounts) {
-          let balanceInEur = account.balance;
-          if (account.currency !== BASE_CURRENCY) {
-            try {
-              balanceInEur = await currencyService.convertToBaseCurrency(
-                account.balance,
-                account.currency,
-              );
-            } catch {
-              const fallbackRates: Record<string, number> = {
-                USD: 0.9,
-                UAH: 0.025,
-                GBP: 1.15,
-                PLN: 0.23,
-                CZK: 0.04,
-                CHF: 1.05,
-                CAD: 0.68,
-                JPY: 0.0062,
-              };
-              balanceInEur = account.balance * (fallbackRates[account.currency] || 1);
-            }
-          }
+          const balanceInEur = await convertToBaseCurrencySafe(account.balance, account.currency);
           currentBalances.set(account.id, balanceInEur);
         }
 
@@ -159,28 +122,10 @@ export function NetWorthChart() {
           }
 
           // Convert transaction amount to EUR
-          let transactionAmountEur = transaction.amount;
-          if (transaction.currency && transaction.currency !== BASE_CURRENCY) {
-            try {
-              transactionAmountEur = await currencyService.convertToBaseCurrency(
-                transaction.amount,
-                transaction.currency,
-              );
-            } catch {
-              const fallbackRates: Record<string, number> = {
-                USD: 0.9,
-                UAH: 0.025,
-                GBP: 1.15,
-                PLN: 0.23,
-                CZK: 0.04,
-                CHF: 1.05,
-                CAD: 0.68,
-                JPY: 0.0062,
-              };
-              transactionAmountEur =
-                transaction.amount * (fallbackRates[transaction.currency] || 1);
-            }
-          }
+          const transactionAmountEur = await convertToBaseCurrencySafe(
+            transaction.amount,
+            transaction.currency,
+          );
 
           // Update balances for previous day (working backwards)
           if (transaction.type === 'INCOME') {
@@ -223,7 +168,7 @@ export function NetWorthChart() {
     };
 
     generateChartData();
-  }, [accounts, transactions]);
+  }, [accounts, transactions, canFetchTransactions]);
 
   // Calculate performance metrics
   const performance = useMemo(() => {

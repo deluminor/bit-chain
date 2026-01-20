@@ -32,7 +32,9 @@ export function ChartWrapper({
   headerActions,
 }: ChartWrapperProps) {
   return (
-    <Card className={cn('shadow-md rounded-lg hover:shadow-lg transition-shadow', className)}>
+    <Card
+      className={cn('min-w-0 shadow-md rounded-lg hover:shadow-lg transition-shadow', className)}
+    >
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div>

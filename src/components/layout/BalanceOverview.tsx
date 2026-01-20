@@ -7,12 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, RefreshCw, Euro, Eye, EyeOff, Info } from 'lucide-react';
-import {
-  currencyService,
-  formatCurrency,
-  formatSummaryAmount,
-  BASE_CURRENCY,
-} from '@/lib/currency';
+import { convertToBaseCurrencySafe, formatCurrency, formatSummaryAmount } from '@/lib/currency';
 import { useAccounts } from '@/features/finance/queries/accounts';
 
 interface AccountBalance {
@@ -60,31 +55,7 @@ export function BalanceOverview({
       for (const account of accountsData.accounts) {
         let convertedAmount = account.balance;
 
-        // Convert to EUR if not already in EUR
-        if (account.currency !== BASE_CURRENCY) {
-          try {
-            convertedAmount = await currencyService.convertToBaseCurrency(
-              account.balance,
-              account.currency,
-            );
-          } catch {
-            console.warn(
-              `Failed to convert ${account.currency} to ${BASE_CURRENCY} for account ${account.name}`,
-            );
-            // Use fallback conversion rate
-            const fallbackRates: Record<string, number> = {
-              USD: 0.9, // 1 USD ≈ 0.9 EUR
-              UAH: 0.025, // 1 UAH ≈ 0.025 EUR
-              GBP: 1.15, // 1 GBP ≈ 1.15 EUR
-              PLN: 0.23, // 1 PLN ≈ 0.23 EUR
-              CZK: 0.04, // 1 CZK ≈ 0.04 EUR
-              CHF: 1.05, // 1 CHF ≈ 1.05 EUR
-              CAD: 0.68, // 1 CAD ≈ 0.68 EUR
-              JPY: 0.0062, // 1 JPY ≈ 0.0062 EUR
-            };
-            convertedAmount = account.balance * (fallbackRates[account.currency] || 1);
-          }
-        }
+        convertedAmount = await convertToBaseCurrencySafe(account.balance, account.currency);
 
         convertedBalances.push({
           accountId: account.id,
@@ -253,7 +224,7 @@ export function BalanceOverview({
                     <div className={`font-medium ${getBalanceColor(balance.convertedAmount)}`}>
                       {showBalance ? formatSummaryAmount(balance.convertedAmount) : '••••'}
                     </div>
-                    {balance.originalCurrency !== BASE_CURRENCY && (
+                    {balance.originalCurrency !== 'EUR' && (
                       <Badge variant="outline" className="text-xs">
                         {balance.originalCurrency} → EUR
                       </Badge>

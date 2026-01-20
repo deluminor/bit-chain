@@ -22,8 +22,8 @@ export default function Dashboard() {
   // Show loading state until hydrated
   if (!isClient) {
     return (
-      <div className="flex flex-col gap-6 py-6 min-h-screen">
-        <div className="px-4 lg:px-6 space-y-6">
+      <div className="flex flex-col gap-3 py-4 min-h-screen">
+        <div className="px-4 lg:px-6 space-y-3">
           <div className="animate-pulse space-y-4">
             <div className="h-12 bg-muted/40 rounded-lg"></div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -39,9 +39,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-6 py-6 min-h-screen">
+    <div className="flex flex-col gap-3 py-4 min-h-screen">
       {mode === 'crypto' ? (
-        <AnimatedDiv variant="slideUp" className="space-y-6">
+        <AnimatedDiv variant="slideUp" className="space-y-3">
           {/* Crypto Trading Dashboard */}
           <SectionCards />
 
@@ -56,7 +56,7 @@ export default function Dashboard() {
           </div>
 
           {/* Trading Categories and Win/Loss Stats */}
-          <div className="px-4 lg:px-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="px-4 lg:px-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <ChartLoader>
               <CategoryChart />
             </ChartLoader>

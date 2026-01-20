@@ -52,9 +52,8 @@ import {
   FinanceAccount,
 } from '@/features/finance/queries/accounts';
 import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
-import { formatCurrency, formatSummaryAmount } from '@/lib/currency';
+import { convertToBaseCurrencySafe, formatCurrency, formatSummaryAmount } from '@/lib/currency';
 import { AnimatedDiv } from '@/components/ui/animations';
-import { currencyService } from '@/lib/currency';
 
 const accountTypeIcons = {
   CASH: Wallet,
@@ -125,11 +124,7 @@ export function AccountList() {
         const activeAccounts = accounts.filter((account: FinanceAccount) => account.isActive);
 
         for (const account of activeAccounts) {
-          const convertedBalance = await currencyService.convertToBaseCurrency(
-            account.balance,
-            account.currency,
-          );
-          totalEUR += convertedBalance;
+          totalEUR += await convertToBaseCurrencySafe(account.balance, account.currency);
         }
 
         setTotalBalanceEUR(totalEUR);

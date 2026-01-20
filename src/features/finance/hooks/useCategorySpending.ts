@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { currencyService } from '@/lib/currency';
+import { convertToBaseCurrencySafe } from '@/lib/currency';
 
 interface Category {
   id: string;
@@ -41,40 +41,16 @@ async function fetchCategorySpending(): Promise<CategorySpendingData[]> {
   const categoriesData = await categoriesResponse.json();
   const { categories } = categoriesData;
 
-  // Fallback conversion rates
-  const fallbackRates: Record<string, number> = {
-    USD: 0.9, // 1 USD ≈ 0.9 EUR
-    UAH: 0.025, // 1 UAH ≈ 0.025 EUR
-    GBP: 1.15, // 1 GBP ≈ 1.15 EUR
-    PLN: 0.23, // 1 PLN ≈ 0.23 EUR
-    CZK: 0.04, // 1 CZK ≈ 0.04 EUR
-    CHF: 1.05, // 1 CHF ≈ 1.05 EUR
-    CAD: 0.68, // 1 CAD ≈ 0.68 EUR
-    JPY: 0.0062, // 1 JPY ≈ 0.0062 EUR
-    HUF: 0.0027, // 1 HUF ≈ 0.0027 EUR
-  };
-
   // Calculate spending by category with improved currency conversion
   const categorySpending = new Map<string, { amount: number; color: string }>();
 
   for (const transaction of transactions) {
     const category = categories.find((cat: Category) => cat.id === transaction.categoryId);
     if (category) {
-      let convertedAmount = transaction.amount;
-
-      // Convert to EUR if not already in EUR
-      if (transaction.currency !== 'EUR') {
-        try {
-          convertedAmount = await currencyService.convertToBaseCurrency(
-            transaction.amount,
-            transaction.currency || 'USD',
-          );
-        } catch {
-          // Use fallback rate if conversion fails
-          convertedAmount = transaction.amount * (fallbackRates[transaction.currency] || 1);
-        }
-      }
-
+      const convertedAmount = await convertToBaseCurrencySafe(
+        transaction.amount,
+        transaction.currency,
+      );
       const existing = categorySpending.get(category.name) || { amount: 0, color: category.color };
       categorySpending.set(category.name, {
         amount: existing.amount + Math.abs(convertedAmount),

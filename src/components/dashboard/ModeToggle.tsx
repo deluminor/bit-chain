@@ -51,29 +51,14 @@ export function ModeToggle() {
         {/* Sliding background indicator */}
         <div
           className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-background rounded-lg shadow-sm border border-border/10 transition-all duration-300 ease-out ${
-            mode === 'crypto' ? 'left-1' : 'left-[calc(50%+2px)]'
+            mode === 'finance' ? 'left-1' : 'left-[calc(50%+2px)]'
           }`}
         />
 
         <button
-          onClick={() => handleModeSwitch('crypto')}
-          disabled={isTransitioning}
-          className={`relative z-10 flex items-center gap-2 px-1 py-1 rounded-lg text-sm font-medium transition-all duration-200 ease-out flex-1 justify-center ${
-            mode === 'crypto' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
-          } ${isTransitioning ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-        >
-          <Bitcoin
-            className={`h-5 w-5 transition-all duration-200 ease-out ${
-              mode === 'crypto' ? 'text-orange-500' : 'text-muted-foreground'
-            }`}
-          />
-          <span className="truncate">Crypto</span>
-        </button>
-
-        <button
           onClick={() => handleModeSwitch('finance')}
           disabled={isTransitioning}
-          className={`relative z-10 flex items-center gap-2 px-1 py-3 rounded-lg text-sm font-medium transition-all duration-200 ease-out flex-1 justify-center ${
+          className={`relative z-10 flex items-center gap-2 px-1 py-1 rounded-lg text-sm font-medium transition-all duration-200 ease-out flex-1 justify-center ${
             mode === 'finance'
               ? 'text-foreground'
               : 'text-muted-foreground hover:text-foreground/80'
@@ -85,6 +70,21 @@ export function ModeToggle() {
             }`}
           />
           <span className="truncate">Finance</span>
+        </button>
+
+        <button
+          onClick={() => handleModeSwitch('crypto')}
+          disabled={isTransitioning}
+          className={`relative z-10 flex items-center gap-2 px-1 py-3 rounded-lg text-sm font-medium transition-all duration-200 ease-out flex-1 justify-center ${
+            mode === 'crypto' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+          } ${isTransitioning ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+        >
+          <Bitcoin
+            className={`h-5 w-5 transition-all duration-200 ease-out ${
+              mode === 'crypto' ? 'text-orange-500' : 'text-muted-foreground'
+            }`}
+          />
+          <span className="truncate">Crypto</span>
         </button>
       </div>
     </div>

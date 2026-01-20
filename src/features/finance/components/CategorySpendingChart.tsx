@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { subDays, startOfMonth } from 'date-fns';
-import { currencyService, formatCurrency, BASE_CURRENCY } from '@/lib/currency';
+import { convertToBaseCurrencySafe, formatCurrency, BASE_CURRENCY } from '@/lib/currency';
 import { useTheme } from '@/providers/ThemeProvider';
 import { THEME } from '@/store';
 import {
@@ -113,9 +113,9 @@ export function CategorySpendingChart({
 
         const categoryData = categoryTotals.get(categoryId)!;
         // Convert transaction amount to EUR
-        const amountInEur = await currencyService.convertToBaseCurrency(
+        const amountInEur = await convertToBaseCurrencySafe(
           transaction.amount,
-          transaction.currency || 'USD',
+          transaction.currency,
         );
         categoryData.amount += amountInEur;
         categoryData.count += 1;

@@ -43,9 +43,9 @@ import {
 } from '@/features/finance/queries/transactions';
 import { useAccounts } from '@/features/finance/queries/accounts';
 import {
+  convertToBaseCurrencySafe,
   formatCurrency,
   formatSummaryAmount,
-  currencyService,
   BASE_CURRENCY,
 } from '@/lib/currency';
 import { AnimatedDiv } from '@/components/ui/animations';
@@ -134,7 +134,7 @@ export function TransactionList() {
     ...filters,
     search: searchTerm || undefined,
     limit: pageSize,
-    offset: (currentPage - 1) * pageSize,
+    page: currentPage,
   });
 
   const transactions = useMemo(
@@ -164,35 +164,13 @@ export function TransactionList() {
 
       setIsConverting(true);
       try {
-        const fallbackRates: Record<string, number> = {
-          USD: 0.9,
-          UAH: 0.025,
-          GBP: 1.15,
-          PLN: 0.23,
-          CZK: 0.04,
-          CHF: 1.05,
-          CAD: 0.68,
-          JPY: 0.0062,
-        };
-
         let convertedIncome = 0;
         let convertedExpenses = 0;
         let convertedTransfers = 0;
 
         for (const transaction of transactions) {
           const currency = transaction.currency || transaction.account.currency;
-          let amountInEUR = transaction.amount;
-
-          if (currency !== BASE_CURRENCY) {
-            try {
-              amountInEUR = await currencyService.convertToBaseCurrency(
-                transaction.amount,
-                currency,
-              );
-            } catch {
-              amountInEUR = transaction.amount * (fallbackRates[currency] || 1);
-            }
-          }
+          const amountInEUR = await convertToBaseCurrencySafe(transaction.amount, currency);
 
           if (transaction.type === 'INCOME') {
             convertedIncome += amountInEUR;
@@ -291,7 +269,9 @@ export function TransactionList() {
     onPageChange(1);
   };
 
-  const hasActiveFilters = filters.type || filters.accountId || filters.categoryId || searchTerm;
+  const hasActiveFilters = Boolean(
+    filters.type || filters.accountId || filters.categoryId || searchTerm,
+  );
 
   // Define table columns
   const columns: DataTableColumn<Transaction>[] = [
@@ -434,7 +414,10 @@ export function TransactionList() {
       'account',
       filters.accountId,
       value => setFilters(prev => ({ ...prev, accountId: value === 'all' ? undefined : value })),
-      accounts.map(account => ({ value: account.id, label: account.name })),
+      accounts.map((account: { id: string; name: string }) => ({
+        value: account.id,
+        label: account.name,
+      })),
       'accounts',
     ),
   ];

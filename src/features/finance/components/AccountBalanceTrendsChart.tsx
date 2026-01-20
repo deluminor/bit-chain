@@ -19,12 +19,7 @@ import { useTransactions } from '../queries/transactions';
 import { useAccounts, FinanceAccount } from '../queries/accounts';
 import { Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  formatCurrency,
-  currencyService,
-  formatSummaryAmount,
-  BASE_CURRENCY,
-} from '@/lib/currency';
+import { convertToBaseCurrencySafe, formatCurrency, formatSummaryAmount } from '@/lib/currency';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,6 +49,8 @@ export function AccountBalanceTrendsChart() {
     limit: 2000,
   });
 
+  const canFetchTransactions = Boolean(dateRange?.from && dateRange?.to);
+
   const accounts = accountsData?.accounts || [];
   const transactions = transactionsData?.transactions || [];
 
@@ -72,7 +69,7 @@ export function AccountBalanceTrendsChart() {
   // Generate chart data with balance trends converted to EUR
   useEffect(() => {
     const generateChartData = async () => {
-      if (!accounts.length || !transactions.length) {
+      if (!accounts.length || !canFetchTransactions || !transactions.length) {
         setChartData([]);
         return;
       }
@@ -85,28 +82,7 @@ export function AccountBalanceTrendsChart() {
         const accountBalances = new Map<string, number>();
 
         for (const account of accounts) {
-          let balanceInEur = account.balance;
-          if (account.currency !== BASE_CURRENCY) {
-            try {
-              balanceInEur = await currencyService.convertToBaseCurrency(
-                account.balance,
-                account.currency,
-              );
-            } catch {
-              // Use fallback rates
-              const fallbackRates: Record<string, number> = {
-                USD: 0.9,
-                UAH: 0.025,
-                GBP: 1.15,
-                PLN: 0.23,
-                CZK: 0.04,
-                CHF: 1.05,
-                CAD: 0.68,
-                JPY: 0.0062,
-              };
-              balanceInEur = account.balance * (fallbackRates[account.currency] || 1);
-            }
-          }
+          const balanceInEur = await convertToBaseCurrencySafe(account.balance, account.currency);
           accountBalances.set(account.id, balanceInEur);
         }
 
@@ -130,28 +106,10 @@ export function AccountBalanceTrendsChart() {
           const dayData = dataMap.get(date)!;
 
           // Convert transaction amount to EUR
-          let transactionAmountEur = transaction.amount;
-          if (transaction.currency && transaction.currency !== BASE_CURRENCY) {
-            try {
-              transactionAmountEur = await currencyService.convertToBaseCurrency(
-                transaction.amount,
-                transaction.currency,
-              );
-            } catch {
-              const fallbackRates: Record<string, number> = {
-                USD: 0.9,
-                UAH: 0.025,
-                GBP: 1.15,
-                PLN: 0.23,
-                CZK: 0.04,
-                CHF: 1.05,
-                CAD: 0.68,
-                JPY: 0.0062,
-              };
-              transactionAmountEur =
-                transaction.amount * (fallbackRates[transaction.currency] || 1);
-            }
-          }
+          const transactionAmountEur = await convertToBaseCurrencySafe(
+            transaction.amount,
+            transaction.currency,
+          );
 
           // Adjust balance for this transaction (working backwards)
           if (transaction.type === 'INCOME') {
@@ -191,7 +149,7 @@ export function AccountBalanceTrendsChart() {
     };
 
     generateChartData();
-  }, [accounts, transactions, accountsToShow]);
+  }, [accounts, transactions, accountsToShow, canFetchTransactions]);
 
   // Generate chart config dynamically based on selected accounts
   const chartConfig = useMemo(() => {

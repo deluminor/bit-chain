@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,12 +42,7 @@ import {
   TransactionFilters,
 } from '@/features/finance/queries/transactions';
 import { useAccounts } from '@/features/finance/queries/accounts';
-import {
-  convertToBaseCurrencySafe,
-  formatCurrency,
-  formatSummaryAmount,
-  BASE_CURRENCY,
-} from '@/lib/currency';
+import { formatCurrency, formatSummaryAmount, BASE_CURRENCY } from '@/lib/currency';
 import { AnimatedDiv } from '@/components/ui/animations';
 import {
   DataTable,
@@ -116,13 +111,6 @@ export function TransactionList() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Currency conversion states
-  const [incomeEUR, setIncomeEUR] = useState(0);
-  const [expensesEUR, setExpensesEUR] = useState(0);
-  const [transfersEUR, setTransfersEUR] = useState(0);
-  const [netIncomeEUR, setNetIncomeEUR] = useState(0);
-  const [isConverting, setIsConverting] = useState(false);
-
   // Get transactions with current filters
   const {
     data: transactionsData,
@@ -151,53 +139,18 @@ export function TransactionList() {
         incomeCount: 0,
         expenseCount: 0,
         transferCount: 0,
+        maxIncome: 0,
+        maxExpense: 0,
       },
     [transactionsData?.summary],
   );
 
   const accounts = accountsData?.accounts || [];
 
-  // Convert transaction amounts to EUR
-  useEffect(() => {
-    const convertAmounts = async () => {
-      if (!summary) return;
-
-      setIsConverting(true);
-      try {
-        let convertedIncome = 0;
-        let convertedExpenses = 0;
-        let convertedTransfers = 0;
-
-        for (const transaction of transactions) {
-          const currency = transaction.currency || transaction.account.currency;
-          const amountInEUR = await convertToBaseCurrencySafe(transaction.amount, currency);
-
-          if (transaction.type === 'INCOME') {
-            convertedIncome += amountInEUR;
-          } else if (transaction.type === 'EXPENSE') {
-            convertedExpenses += amountInEUR;
-          } else if (transaction.type === 'TRANSFER') {
-            convertedTransfers += amountInEUR;
-          }
-        }
-
-        setIncomeEUR(convertedIncome);
-        setExpensesEUR(convertedExpenses);
-        setTransfersEUR(convertedTransfers);
-        setNetIncomeEUR(convertedIncome - convertedExpenses);
-      } catch (error) {
-        console.error('Failed to convert transaction amounts:', error);
-        setIncomeEUR(summary.income);
-        setExpensesEUR(summary.expenses);
-        setTransfersEUR(summary.transfers);
-        setNetIncomeEUR(summary.income - summary.expenses);
-      } finally {
-        setIsConverting(false);
-      }
-    };
-
-    convertAmounts();
-  }, [summary, transactions]);
+  const incomeEUR = summary.income;
+  const expensesEUR = summary.expenses;
+  const transfersEUR = summary.transfers;
+  const netIncomeEUR = summary.income - summary.expenses;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -474,7 +427,7 @@ export function TransactionList() {
               netIncomeEUR >= 0 ? 'text-green-600' : 'text-red-600'
             }`}
           >
-            {isConverting ? 'Converting...' : formatSummaryAmount(netIncomeEUR)}
+            {formatSummaryAmount(netIncomeEUR)}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">This period</p>
         </Card>
@@ -487,7 +440,7 @@ export function TransactionList() {
             <h3 className="font-medium sm:font-semibold text-sm sm:text-base">Income</h3>
           </div>
           <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 text-green-600">
-            {isConverting ? 'Converting...' : formatSummaryAmount(incomeEUR)}
+            {formatSummaryAmount(incomeEUR)}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
             {summary.incomeCount} transactions
@@ -502,7 +455,7 @@ export function TransactionList() {
             <h3 className="font-medium sm:font-semibold text-sm sm:text-base">Expenses</h3>
           </div>
           <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 text-red-600">
-            {isConverting ? 'Converting...' : formatSummaryAmount(expensesEUR)}
+            {formatSummaryAmount(expensesEUR)}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
             {summary.expenseCount} transactions
@@ -517,7 +470,7 @@ export function TransactionList() {
             <h3 className="font-medium sm:font-semibold text-sm sm:text-base">Transfers</h3>
           </div>
           <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 text-blue-600">
-            {isConverting ? 'Converting...' : formatSummaryAmount(transfersEUR)}
+            {formatSummaryAmount(transfersEUR)}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
             {summary.transferCount} transactions

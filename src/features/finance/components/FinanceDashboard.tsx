@@ -30,7 +30,7 @@ import {
   formatSummaryAmount,
   formatDisplayAmount,
 } from '@/lib/currency';
-import { useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 
 interface QuickStatsProps {
   title: string;
@@ -82,38 +82,58 @@ function QuickStatCard({ title, value, change, changeType, icon, href }: QuickSt
 
 export function FinanceDashboard() {
   const { data: accountsData, isLoading: accountsLoading } = useAccounts();
-  const { data: transactionsData, isLoading: transactionsLoading } = useTransactions({
-    dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-      .toISOString()
-      .split('T')[0],
-    dateTo: new Date().toISOString().split('T')[0],
+  const dateFrom = useMemo(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+  }, []);
+
+  const dateTo = useMemo(() => {
+    const today = new Date();
+    return new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      23,
+      59,
+      59,
+      999,
+    ).toISOString();
+  }, []);
+
+  const { data: transactionsData } = useTransactions({
+    dateFrom,
+    dateTo,
+    limit: 1,
   });
   const { data: goalsData, isLoading: goalsLoading } = useGoals();
 
   const [totalBalanceEUR, setTotalBalanceEUR] = useState(0);
-  const [monthlyIncomeEUR, setMonthlyIncomeEUR] = useState(0);
-  const [monthlyExpensesEUR, setMonthlyExpensesEUR] = useState(0);
-  const [isConverting, setIsConverting] = useState(false);
-  const [largestIncome, setLargestIncome] = useState(0);
-  const [largestExpense, setLargestExpense] = useState(0);
-  const [incomeFrequency, setIncomeFrequency] = useState(0);
-  const [expenseFrequency, setExpenseFrequency] = useState(0);
-  const [savingsRate, setSavingsRate] = useState(0);
-  const [netFlow, setNetFlow] = useState(0);
+  const [isConvertingBalances, setIsConvertingBalances] = useState(false);
+  const isConvertingBalancesRef = useRef(false);
 
   const accounts = accountsData?.accounts || [];
   const summary = accountsData?.summary;
-  const transactions = transactionsData?.transactions || [];
+  const transactionSummary = transactionsData?.summary;
   const goals = goalsData?.goals || [];
+
+  const monthlyIncomeEUR = transactionSummary?.income ?? 0;
+  const monthlyExpensesEUR = transactionSummary?.expenses ?? 0;
+  const incomeFrequency = transactionSummary?.incomeCount ?? 0;
+  const expenseFrequency = transactionSummary?.expenseCount ?? 0;
+  const largestIncome = transactionSummary?.maxIncome ?? 0;
+  const largestExpense = transactionSummary?.maxExpense ?? 0;
+  const netFlow = monthlyIncomeEUR - monthlyExpensesEUR;
+  const savingsRate = monthlyIncomeEUR > 0 ? Math.round((netFlow / monthlyIncomeEUR) * 100) : 0;
 
   // Convert all account balances and transactions to EUR
   useEffect(() => {
     const convertBalances = async () => {
-      if (!accounts.length || isConverting) return;
+      if (!accounts.length || isConvertingBalancesRef.current) return;
 
-      if (accountsLoading || transactionsLoading) return;
+      if (accountsLoading) return;
 
-      setIsConverting(true);
+      isConvertingBalancesRef.current = true;
+      setIsConvertingBalances(true);
       try {
         let totalInEUR = 0;
 
@@ -124,58 +144,16 @@ export function FinanceDashboard() {
         }
 
         setTotalBalanceEUR(totalInEUR);
-
-        // Skip if no transactions
-        if (transactions.length === 0) {
-          setMonthlyIncomeEUR(0);
-          setMonthlyExpensesEUR(0);
-          return;
-        }
-
-        // Convert individual transactions to EUR for accurate calculation
-        let totalIncomeEUR = 0;
-        let totalExpensesEUR = 0;
-        let peakIncome = 0;
-        let peakExpense = 0;
-        let incomeCount = 0;
-        let expenseCount = 0;
-
-        for (const transaction of transactions) {
-          const convertedAmount = await convertToBaseCurrencySafe(
-            transaction.amount,
-            transaction.currency,
-          );
-
-          if (transaction.type === 'INCOME') {
-            totalIncomeEUR += convertedAmount;
-            incomeCount += 1;
-            peakIncome = Math.max(peakIncome, convertedAmount);
-          } else if (transaction.type === 'EXPENSE') {
-            totalExpensesEUR += convertedAmount;
-            expenseCount += 1;
-            peakExpense = Math.max(peakExpense, convertedAmount);
-          }
-        }
-
-        setMonthlyIncomeEUR(totalIncomeEUR);
-        setMonthlyExpensesEUR(totalExpensesEUR);
-        setLargestIncome(peakIncome);
-        setLargestExpense(peakExpense);
-        setIncomeFrequency(incomeCount);
-        setExpenseFrequency(expenseCount);
-        const net = totalIncomeEUR - totalExpensesEUR;
-        setNetFlow(net);
-        setSavingsRate(totalIncomeEUR > 0 ? Math.round((net / totalIncomeEUR) * 100) : 0);
       } catch (error) {
         console.error('Failed to convert balances:', error);
       } finally {
-        setIsConverting(false);
+        setIsConvertingBalances(false);
+        isConvertingBalancesRef.current = false;
       }
     };
 
     convertBalances();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts.length, transactions.length, accountsLoading, transactionsLoading]);
+  }, [accounts, accountsLoading]);
 
   return (
     <AnimatedDiv variant="slideUp" className="space-y-4">
@@ -184,9 +162,9 @@ export function FinanceDashboard() {
         <ResponsiveGrid cols={{ mobile: 1, tablet: 2, desktop: 4 }} gap={3}>
           <QuickStatCard
             title="Total Balance"
-            value={isConverting ? 'Converting...' : formatSummaryAmount(totalBalanceEUR)}
+            value={isConvertingBalances ? 'Converting...' : formatSummaryAmount(totalBalanceEUR)}
             icon={
-              isConverting ? (
+              isConvertingBalances ? (
                 <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 animate-spin" />
               ) : (
                 <Wallet className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
@@ -197,18 +175,18 @@ export function FinanceDashboard() {
 
           <QuickStatCard
             title="This Month Income"
-            value={isConverting ? 'Converting...' : formatSummaryAmount(monthlyIncomeEUR)}
+            value={formatSummaryAmount(monthlyIncomeEUR)}
             changeType="positive"
-            change={`${transactions.filter(t => t.type === 'INCOME').length} transactions`}
+            change={`${incomeFrequency} transactions`}
             icon={<TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
             href="/transactions"
           />
 
           <QuickStatCard
             title="This Month Expenses"
-            value={isConverting ? 'Converting...' : formatSummaryAmount(monthlyExpensesEUR)}
+            value={formatSummaryAmount(monthlyExpensesEUR)}
             changeType="negative"
-            change={`${transactions.filter(t => t.type === 'EXPENSE').length} transactions`}
+            change={`${expenseFrequency} transactions`}
             icon={<TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
             href="/transactions"
           />

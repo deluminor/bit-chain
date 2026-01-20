@@ -104,6 +104,8 @@ export interface TransactionResponse {
     incomeCount: number;
     expenseCount: number;
     transferCount: number;
+    maxIncome: number;
+    maxExpense: number;
   };
   pagination: {
     page: number;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { PrismaClient } from '@/generated/prisma';
+import { convertToBaseCurrencySafe } from '@/lib/currency';
 import { z } from 'zod';
 
 const prisma = new PrismaClient();
@@ -45,6 +46,74 @@ async function getUserFromSession() {
   });
 }
 
+interface SummaryTransaction {
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
+  amount: number;
+  currency: string | null;
+  account: {
+    currency: string;
+  } | null;
+}
+
+async function calculateSummary(transactions: SummaryTransaction[]) {
+  let income = 0;
+  let expenses = 0;
+  let transfers = 0;
+  let incomeCount = 0;
+  let expenseCount = 0;
+  let transferCount = 0;
+  let maxIncome = 0;
+  let maxExpense = 0;
+
+  for (const transaction of transactions) {
+    const currency = transaction.currency || transaction.account?.currency;
+    const amountInBase = await convertToBaseCurrencySafe(transaction.amount, currency ?? undefined);
+
+    if (transaction.type === 'INCOME') {
+      income += amountInBase;
+      incomeCount += 1;
+      maxIncome = Math.max(maxIncome, amountInBase);
+    } else if (transaction.type === 'EXPENSE') {
+      expenses += amountInBase;
+      expenseCount += 1;
+      maxExpense = Math.max(maxExpense, amountInBase);
+    } else if (transaction.type === 'TRANSFER') {
+      transfers += amountInBase;
+      transferCount += 1;
+    }
+  }
+
+  return {
+    income,
+    expenses,
+    transfers,
+    incomeCount,
+    expenseCount,
+    transferCount,
+    maxIncome,
+    maxExpense,
+  };
+}
+
+function normalizeDate(value: string, boundary: 'start' | 'end') {
+  const hasTime = value.includes('T');
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  if (!hasTime) {
+    if (boundary === 'end') {
+      date.setHours(23, 59, 59, 999);
+    } else {
+      date.setHours(0, 0, 0, 0);
+    }
+  }
+
+  return date;
+}
+
 // Helper function to update account balances
 async function _updateAccountBalance(
   accountId: string,
@@ -85,6 +154,9 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build where clause
+    const dateFromValue = dateFrom ? normalizeDate(dateFrom, 'start') : null;
+    const dateToValue = dateTo ? normalizeDate(dateTo, 'end') : null;
+
     const where: any = {
       userId: user.id,
       ...(type && { type }),
@@ -92,8 +164,8 @@ export async function GET(request: NextRequest) {
       ...(categoryId && { categoryId }),
       ...((dateFrom || dateTo) && {
         date: {
-          ...(dateFrom && { gte: new Date(dateFrom) }),
-          ...(dateTo && { lte: new Date(dateTo) }),
+          ...(dateFromValue && { gte: dateFromValue }),
+          ...(dateToValue && { lte: dateToValue }),
         },
       }),
       ...(search && {
@@ -105,7 +177,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Get transactions with pagination
-    const [transactions, totalCount] = await Promise.all([
+    const [transactions, totalCount, summaryTransactions] = await Promise.all([
       prisma.transaction.findMany({
         where,
         select: {
@@ -158,36 +230,27 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.transaction.count({ where }),
+      prisma.transaction.findMany({
+        where,
+        select: {
+          type: true,
+          amount: true,
+          currency: true,
+          account: {
+            select: {
+              currency: true,
+            },
+          },
+        },
+      }),
     ]);
 
-    // Calculate summary statistics
-    const summaryStats = await prisma.transaction.groupBy({
-      by: ['type'],
-      where: {
-        userId: user.id,
-        ...((dateFrom || dateTo) && {
-          date: {
-            ...(dateFrom && { gte: new Date(dateFrom) }),
-            ...(dateTo && { lte: new Date(dateTo) }),
-          },
-        }),
-      },
-      _sum: {
-        amount: true,
-      },
-      _count: {
-        id: true,
-      },
-    });
+    // Calculate summary statistics in base currency (all filters applied)
+    const summaryTotals = await calculateSummary(summaryTransactions);
 
     const summary = {
-      income: summaryStats.find(s => s.type === 'INCOME')?._sum.amount || 0,
-      expenses: summaryStats.find(s => s.type === 'EXPENSE')?._sum.amount || 0,
-      transfers: summaryStats.find(s => s.type === 'TRANSFER')?._sum.amount || 0,
+      ...summaryTotals,
       totalTransactions: totalCount,
-      incomeCount: summaryStats.find(s => s.type === 'INCOME')?._count.id || 0,
-      expenseCount: summaryStats.find(s => s.type === 'EXPENSE')?._count.id || 0,
-      transferCount: summaryStats.find(s => s.type === 'TRANSFER')?._count.id || 0,
     };
 
     const pagination = {

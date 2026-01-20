@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { subMonths } from 'date-fns';
-import { convertToBaseCurrencySafe } from '@/lib/currency';
 
 interface ReportStats {
   totalIncome: number;
@@ -16,34 +15,27 @@ interface ReportStats {
 }
 
 async function fetchReportStats(): Promise<ReportStats> {
-  interface ReportTransaction {
-    amount: number;
-    currency?: string;
-    type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
-    account?: {
-      currency?: string;
-    };
+  interface ReportSummary {
+    income: number;
+    expenses: number;
+    transfers: number;
+    totalTransactions: number;
+    incomeCount: number;
+    expenseCount: number;
+    transferCount: number;
   }
 
-  const summarizeTransactions = async (transactions: ReportTransaction[]) => {
-    let income = 0;
-    let expenses = 0;
-    let transfers = 0;
+  const fetchSummary = async (startDate: Date, endDate: Date): Promise<ReportSummary> => {
+    const response = await fetch(
+      `/api/finance/transactions?dateFrom=${startDate.toISOString()}&dateTo=${endDate.toISOString()}&limit=1`,
+    );
 
-    for (const transaction of transactions) {
-      const currency = transaction.currency || transaction.account?.currency;
-      const amountInEur = await convertToBaseCurrencySafe(transaction.amount, currency);
-
-      if (transaction.type === 'INCOME') {
-        income += amountInEur;
-      } else if (transaction.type === 'EXPENSE') {
-        expenses += amountInEur;
-      } else if (transaction.type === 'TRANSFER') {
-        transfers += amountInEur;
-      }
+    if (!response.ok) {
+      throw new Error('Failed to fetch transactions summary');
     }
 
-    return { income, expenses, transfers };
+    const data = await response.json();
+    return data.summary as ReportSummary;
   };
 
   const now = new Date();
@@ -51,29 +43,13 @@ async function fetchReportStats(): Promise<ReportStats> {
   const lastMonthStart = subMonths(currentMonthStart, 1);
   const lastMonthEnd = new Date(currentMonthStart.getTime() - 1);
 
-  // Get current month transactions
-  const currentMonthResponse = await fetch(
-    `/api/finance/transactions?dateFrom=${currentMonthStart.toISOString()}&dateTo=${now.toISOString()}&limit=1000`,
-  );
-
-  if (!currentMonthResponse.ok) {
-    throw new Error('Failed to fetch current month transactions');
-  }
-
-  const currentMonthData = await currentMonthResponse.json();
-  const currentTransactions = (currentMonthData.transactions || []) as ReportTransaction[];
-  const currentSummary = await summarizeTransactions(currentTransactions);
-
-  // Get last month transactions for comparison
-  const lastMonthResponse = await fetch(
-    `/api/finance/transactions?dateFrom=${lastMonthStart.toISOString()}&dateTo=${lastMonthEnd.toISOString()}&limit=1000`,
-  );
+  const currentSummary = await fetchSummary(currentMonthStart, now);
 
   let lastMonthSummary = { income: 0, expenses: 0, transfers: 0 };
-  if (lastMonthResponse.ok) {
-    const lastMonthData = await lastMonthResponse.json();
-    const lastMonthTransactions = (lastMonthData.transactions || []) as ReportTransaction[];
-    lastMonthSummary = await summarizeTransactions(lastMonthTransactions);
+  try {
+    lastMonthSummary = await fetchSummary(lastMonthStart, lastMonthEnd);
+  } catch {
+    lastMonthSummary = { income: 0, expenses: 0, transfers: 0 };
   }
 
   // Get current budgets

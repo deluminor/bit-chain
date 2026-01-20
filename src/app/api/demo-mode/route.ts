@@ -395,70 +395,67 @@ async function generateDemoFinanceData(userId: string) {
 
     const allCategories = [...incomeCategories, ...expenseCategories];
 
-    // Check for existing demo categories to avoid duplicates
-    console.log(`[generateDemoFinanceData] Checking for existing demo categories`);
-    const existingDemoCategories = await prisma.transactionCategory.findMany({
+    // Check for existing categories to avoid unique constraint conflicts
+    console.log(`[generateDemoFinanceData] Checking for existing transaction categories`);
+    const existingCategories = await prisma.transactionCategory.findMany({
       where: {
         userId,
-        isDemo: true,
         name: {
           in: allCategories.map(cat => cat.name),
         },
       },
     });
     console.log(
-      `[generateDemoFinanceData] Found ${existingDemoCategories.length} existing demo categories`,
+      `[generateDemoFinanceData] Found ${existingCategories.length} existing categories (demo and non-demo)`,
     );
 
-    // Get names of existing categories
-    const existingCategoryNames = existingDemoCategories.map(cat => cat.name);
+    const existingCategoryKeys = new Set(existingCategories.map(cat => `${cat.name}:${cat.type}`));
 
-    // Filter out categories that already exist
     const categoriesToCreate = allCategories.filter(
-      cat => !existingCategoryNames.includes(cat.name),
+      cat => !existingCategoryKeys.has(`${cat.name}:${cat.type}`),
     );
 
     console.log(
       `[generateDemoFinanceData] Creating ${categoriesToCreate.length} new transaction categories`,
     );
 
-    let createdCategories = existingDemoCategories;
-
     if (categoriesToCreate.length > 0) {
-      const newlyCreatedCategories = await Promise.all(
-        categoriesToCreate.map(async (category, index) => {
-          try {
-            const result = await prisma.transactionCategory.create({
-              data: {
-                ...category,
-                userId,
-                isDemo: true,
-              },
-            });
-            console.log(
-              `[generateDemoFinanceData] Created category ${index + 1}/${categoriesToCreate.length}: ${category.name}`,
-            );
-            return result;
-          } catch (error) {
-            console.error(`[generateDemoFinanceData] Failed to create category ${category.name}:`, {
-              error: error instanceof Error ? error.message : 'Unknown error',
-              categoryData: category,
-              userId,
-            });
-            throw error;
-          }
-        }),
-      );
-
-      // Combine existing and newly created categories
-      createdCategories = [...existingDemoCategories, ...newlyCreatedCategories];
+      try {
+        await prisma.transactionCategory.createMany({
+          data: categoriesToCreate.map(category => ({
+            ...category,
+            userId,
+            isDemo: true,
+          })),
+          skipDuplicates: true,
+        });
+        console.log(
+          `[generateDemoFinanceData] Created ${categoriesToCreate.length} transaction categories`,
+        );
+      } catch (error) {
+        console.error(`[generateDemoFinanceData] Failed to create demo categories:`, {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          categoriesToCreateCount: categoriesToCreate.length,
+          userId,
+        });
+        throw error;
+      }
     } else {
       console.log(
-        `[generateDemoFinanceData] All demo categories already exist, using existing ${existingDemoCategories.length} categories`,
+        `[generateDemoFinanceData] All demo categories already exist, using existing ${existingCategories.length} categories`,
       );
     }
+
+    const createdCategories = await prisma.transactionCategory.findMany({
+      where: {
+        userId,
+        name: {
+          in: allCategories.map(cat => cat.name),
+        },
+      },
+    });
     console.log(
-      `[generateDemoFinanceData] Successfully created ${createdCategories.length} categories`,
+      `[generateDemoFinanceData] Successfully loaded ${createdCategories.length} categories`,
     );
 
     // Generate demo transactions
@@ -761,30 +758,29 @@ async function generateDemoFinanceData(userId: string) {
       },
     ];
 
-    // Check for existing demo financial goals to avoid duplicates
-    console.log(`[generateDemoFinanceData] Checking for existing demo financial goals`);
+    // Check for existing financial goals to avoid duplicates
+    console.log(`[generateDemoFinanceData] Checking for existing financial goals`);
     const existingGoalNames = allDemoGoals.map(goal => goal.name);
-    const existingDemoGoals = await prisma.financialGoal.findMany({
+    const existingGoals = await prisma.financialGoal.findMany({
       where: {
         userId,
-        isDemo: true,
         name: {
           in: existingGoalNames,
         },
       },
     });
-    console.log(
-      `[generateDemoFinanceData] Found ${existingDemoGoals.length} existing demo financial goals`,
-    );
+    console.log(`[generateDemoFinanceData] Found ${existingGoals.length} existing financial goals`);
 
-    // Filter out goals that already exist
-    const existingGoalNamesSet = new Set(existingDemoGoals.map(goal => goal.name));
+    const existingGoalNamesSet = new Set(existingGoals.map(goal => goal.name));
     const goalsToCreate = allDemoGoals.filter(goal => !existingGoalNamesSet.has(goal.name));
 
     if (goalsToCreate.length > 0) {
       console.log(`[generateDemoFinanceData] Creating ${goalsToCreate.length} new financial goals`);
       try {
-        await prisma.financialGoal.createMany({ data: goalsToCreate });
+        await prisma.financialGoal.createMany({
+          data: goalsToCreate,
+          skipDuplicates: true,
+        });
         console.log(
           `[generateDemoFinanceData] Successfully created ${goalsToCreate.length} financial goals`,
         );
@@ -801,11 +797,11 @@ async function generateDemoFinanceData(userId: string) {
       }
     } else {
       console.log(
-        `[generateDemoFinanceData] All demo financial goals already exist, using existing ${existingDemoGoals.length} goals`,
+        `[generateDemoFinanceData] All demo financial goals already exist, using existing ${existingGoals.length} goals`,
       );
     }
 
-    const totalGoals = existingDemoGoals.length + goalsToCreate.length;
+    const totalGoals = existingGoals.length + goalsToCreate.length;
 
     const result = {
       accounts: createdAccounts.length,

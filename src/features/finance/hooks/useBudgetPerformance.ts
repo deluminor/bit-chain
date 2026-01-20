@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { BASE_CURRENCY, convertToBaseCurrencySafe, FALLBACK_RATES } from '@/lib/currency';
+import { convertToBaseCurrencySafe } from '@/lib/currency';
 
 interface _Transaction {
   categoryId: string;
@@ -41,29 +41,22 @@ async function fetchBudgetPerformance(): Promise<BudgetPerformanceData[]> {
     return [];
   }
 
-  const fallbackRates = FALLBACK_RATES;
-
   // Build performance data using API-calculated actual spending
   const performanceData: BudgetPerformanceData[] = [];
 
   for (const budgetCategory of currentBudget.categories) {
-    let budgetedInEUR = budgetCategory.planned;
-    let spentInEUR = budgetCategory.actual;
+    let budgetedInEUR = budgetCategory.plannedBase ?? budgetCategory.planned;
+    let spentInEUR = budgetCategory.actualBase ?? budgetCategory.actual;
 
-    // Convert budget amount to EUR if needed
-    if (currentBudget.currency && currentBudget.currency !== BASE_CURRENCY) {
-      try {
-        budgetedInEUR = await convertToBaseCurrencySafe(
-          budgetCategory.planned,
-          currentBudget.currency,
-        );
-        spentInEUR = await convertToBaseCurrencySafe(budgetCategory.actual, currentBudget.currency);
-      } catch {
-        // Use fallback rate if conversion fails
-        const rate = fallbackRates[currentBudget.currency] || 1;
-        budgetedInEUR = budgetCategory.planned * rate;
-        spentInEUR = budgetCategory.actual * rate;
-      }
+    if (budgetCategory.plannedBase === undefined && currentBudget.currency) {
+      budgetedInEUR = await convertToBaseCurrencySafe(
+        budgetCategory.planned,
+        currentBudget.currency,
+      );
+    }
+
+    if (budgetCategory.actualBase === undefined && currentBudget.currency) {
+      spentInEUR = await convertToBaseCurrencySafe(budgetCategory.actual, currentBudget.currency);
     }
 
     const remaining = Math.max(0, budgetedInEUR - spentInEUR);

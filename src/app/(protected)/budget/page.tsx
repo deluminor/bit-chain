@@ -57,9 +57,13 @@ export default function BudgetPage() {
     active: 0,
     totalPlanned: 0,
     totalActual: 0,
+    totalPlannedBase: 0,
+    totalActualBase: 0,
   };
 
   const activeBudget = budgets.find(b => b.isActive) || budgets[0];
+  const totalPlannedBase = summary.totalPlannedBase ?? summary.totalPlanned;
+  const totalActualBase = summary.totalActualBase ?? summary.totalActual;
 
   const handleFormSuccess = () => {
     refetch();
@@ -141,7 +145,7 @@ export default function BudgetPage() {
               </div>
               <h3 className="font-semibold">Total Budgeted</h3>
             </div>
-            <div className="text-2xl font-bold mb-1">{formatEuroAmount(summary.totalPlanned)}</div>
+            <div className="text-2xl font-bold mb-1">{formatEuroAmount(totalPlannedBase)}</div>
             <p className="text-sm text-muted-foreground">Total planned</p>
           </Card>
 
@@ -152,12 +156,10 @@ export default function BudgetPage() {
               </div>
               <h3 className="font-semibold">Total Spent</h3>
             </div>
-            <div className="text-2xl font-bold mb-1">{formatEuroAmount(summary.totalActual)}</div>
+            <div className="text-2xl font-bold mb-1">{formatEuroAmount(totalActualBase)}</div>
             <p className="text-sm text-muted-foreground">
-              {summary.totalPlanned > 0
-                ? Math.round((summary.totalActual / summary.totalPlanned) * 100)
-                : 0}
-              % of budget
+              {totalPlannedBase > 0 ? Math.round((totalActualBase / totalPlannedBase) * 100) : 0}%
+              of budget
             </p>
           </Card>
 
@@ -169,13 +171,11 @@ export default function BudgetPage() {
               <h3 className="font-semibold">Remaining</h3>
             </div>
             <div className="text-2xl font-bold mb-1">
-              {formatEuroAmount(Math.max(summary.totalPlanned - summary.totalActual, 0))}
+              {formatEuroAmount(Math.max(totalPlannedBase - totalActualBase, 0))}
             </div>
             <p className="text-sm text-muted-foreground">
-              {summary.totalPlanned > 0
-                ? Math.round(
-                    ((summary.totalPlanned - summary.totalActual) / summary.totalPlanned) * 100,
-                  )
+              {totalPlannedBase > 0
+                ? Math.round(((totalPlannedBase - totalActualBase) / totalPlannedBase) * 100)
                 : 0}
               % remaining
             </p>
@@ -239,12 +239,16 @@ export default function BudgetPage() {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <div className="font-medium">
-                          {formatEuroAmount(budget.totalActual)} /{' '}
-                          {formatEuroAmount(budget.totalPlanned)}
+                          {formatEuroAmount(budget.totalActualBase ?? budget.totalActual)} /{' '}
+                          {formatEuroAmount(budget.totalPlannedBase ?? budget.totalPlanned)}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {budget.totalPlanned > 0
-                            ? Math.round((budget.totalActual / budget.totalPlanned) * 100)
+                          {(budget.totalPlannedBase ?? budget.totalPlanned) > 0
+                            ? Math.round(
+                                ((budget.totalActualBase ?? budget.totalActual) /
+                                  (budget.totalPlannedBase ?? budget.totalPlanned)) *
+                                  100,
+                              )
                             : 0}
                           % used
                         </div>
@@ -311,7 +315,8 @@ export default function BudgetPage() {
                           <h4 className="font-medium">{template.templateName || template.name}</h4>
                           <div className="text-sm text-muted-foreground">
                             {template.categories.length} categories •{' '}
-                            {formatEuroAmount(template.totalPlanned)} total
+                            {formatEuroAmount(template.totalPlannedBase ?? template.totalPlanned)}{' '}
+                            total
                           </div>
                         </div>
                       </div>
@@ -385,10 +390,10 @@ export default function BudgetPage() {
               {activeBudget ? (
                 activeBudget.categories.length > 0 ? (
                   activeBudget.categories.map(budgetCategory => {
+                    const plannedBase = budgetCategory.plannedBase ?? budgetCategory.planned;
+                    const actualBase = budgetCategory.actualBase ?? budgetCategory.actual;
                     const usagePercentage =
-                      budgetCategory.planned > 0
-                        ? Math.round((budgetCategory.actual / budgetCategory.planned) * 100)
-                        : 0;
+                      plannedBase > 0 ? Math.round((actualBase / plannedBase) * 100) : 0;
 
                     return (
                       <div key={budgetCategory.id} className="flex justify-between items-center">
@@ -401,8 +406,7 @@ export default function BudgetPage() {
                         </div>
                         <div className="text-right">
                           <div className="font-medium">
-                            {formatEuroAmount(budgetCategory.actual)} /{' '}
-                            {formatEuroAmount(budgetCategory.planned)}
+                            {formatEuroAmount(actualBase)} / {formatEuroAmount(plannedBase)}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {usagePercentage}% used
@@ -425,11 +429,11 @@ export default function BudgetPage() {
             <div className="space-y-3">
               {activeBudget && activeBudget.categories.length > 0 ? (
                 activeBudget.categories
-                  .filter(cat => cat.planned > 0)
+                  .filter(cat => (cat.plannedBase ?? cat.planned) > 0)
                   .map(budgetCategory => {
-                    const usagePercentage = Math.round(
-                      (budgetCategory.actual / budgetCategory.planned) * 100,
-                    );
+                    const plannedBase = budgetCategory.plannedBase ?? budgetCategory.planned;
+                    const actualBase = budgetCategory.actualBase ?? budgetCategory.actual;
+                    const usagePercentage = Math.round((actualBase / plannedBase) * 100);
                     let alertType = 'green';
                     let alertMessage = 'On Track';
                     let alertDescription = `You're staying within your ${budgetCategory.category.name.toLowerCase()} budget`;

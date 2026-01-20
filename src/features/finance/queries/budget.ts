@@ -5,7 +5,9 @@ export interface BudgetCategory {
   budgetId: string;
   categoryId: string;
   planned: number;
+  plannedBase?: number;
   actual: number;
+  actualBase?: number;
   category: {
     id: string;
     name: string;
@@ -24,7 +26,9 @@ export interface Budget {
   endDate: string;
   currency: string;
   totalPlanned: number;
+  totalPlannedBase?: number;
   totalActual: number;
+  totalActualBase?: number;
   isActive: boolean;
   isDemo: boolean;
 
@@ -44,6 +48,8 @@ export interface BudgetSummary {
   active: number;
   totalPlanned: number;
   totalActual: number;
+  totalPlannedBase?: number;
+  totalActualBase?: number;
 }
 
 export interface CreateBudgetData {

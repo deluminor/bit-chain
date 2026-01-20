@@ -1,4 +1,5 @@
 import { authOptions } from '@/features/auth/libs/auth';
+import { convertToBaseCurrencySafe } from '@/lib/currency';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
@@ -61,7 +62,29 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json({ templates });
+    const templatesWithBase = await Promise.all(
+      templates.map(async template => {
+        const categoriesWithBase = await Promise.all(
+          template.categories.map(async category => ({
+            ...category,
+            plannedBase: await convertToBaseCurrencySafe(category.planned, template.currency),
+          })),
+        );
+
+        const totalPlannedBase = await convertToBaseCurrencySafe(
+          template.totalPlanned,
+          template.currency,
+        );
+
+        return {
+          ...template,
+          totalPlannedBase,
+          categories: categoriesWithBase,
+        };
+      }),
+    );
+
+    return NextResponse.json({ templates: templatesWithBase });
   } catch (error) {
     console.error('Error fetching budget templates:', error);
     return NextResponse.json({ error: 'Failed to fetch budget templates' }, { status: 500 });

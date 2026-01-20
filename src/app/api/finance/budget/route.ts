@@ -1,4 +1,5 @@
 import { authOptions } from '@/features/auth/libs/auth';
+import { convertToBaseCurrencySafe } from '@/lib/currency';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
@@ -82,35 +83,75 @@ export async function GET() {
               },
             });
 
-            // Calculate total actual spending
             const actualSpending = transactions.reduce((sum, transaction) => {
               return sum + transaction.amount;
             }, 0);
 
+            const convertedTransactions = await Promise.all(
+              transactions.map(transaction =>
+                convertToBaseCurrencySafe(transaction.amount, transaction.currency),
+              ),
+            );
+
+            const actualSpendingBase = convertedTransactions.reduce(
+              (sum, amount) => sum + amount,
+              0,
+            );
+
+            const plannedBase = await convertToBaseCurrencySafe(
+              budgetCategory.planned,
+              budget.currency,
+            );
+
             return {
               ...budgetCategory,
               actual: actualSpending,
+              actualBase: actualSpendingBase,
+              plannedBase,
             };
           }),
         );
 
-        // Calculate total actual for budget
         const totalActual = categoriesWithActual.reduce((sum, cat) => sum + cat.actual, 0);
+
+        const totalActualBase = categoriesWithActual.reduce(
+          (sum, cat) => sum + (cat.actualBase ?? 0),
+          0,
+        );
+
+        const totalPlannedBase = await convertToBaseCurrencySafe(
+          budget.totalPlanned,
+          budget.currency,
+        );
 
         return {
           ...budget,
           totalActual,
+          totalActualBase,
+          totalPlannedBase,
           categories: categoriesWithActual,
         };
       }),
     );
 
     // Calculate summary
+    const totalPlannedBase = budgetsWithActual.reduce(
+      (sum, budget) => sum + (budget.totalPlannedBase ?? 0),
+      0,
+    );
+
+    const totalActualBase = budgetsWithActual.reduce(
+      (sum, budget) => sum + (budget.totalActualBase ?? 0),
+      0,
+    );
+
     const summary = {
       total: budgetsWithActual.length,
       active: budgetsWithActual.filter(b => b.isActive).length,
-      totalPlanned: budgetsWithActual.reduce((sum, b) => sum + b.totalPlanned, 0),
-      totalActual: budgetsWithActual.reduce((sum, b) => sum + b.totalActual, 0),
+      totalPlanned: totalPlannedBase,
+      totalActual: totalActualBase,
+      totalPlannedBase,
+      totalActualBase,
     };
 
     return NextResponse.json({ budgets: budgetsWithActual, summary });

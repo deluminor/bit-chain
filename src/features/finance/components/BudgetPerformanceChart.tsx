@@ -14,7 +14,7 @@ import { THEME, useStore } from '@/store';
 import { useMemo, useState, useEffect } from 'react';
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { Target, AlertTriangle, CheckCircle } from 'lucide-react';
-import { formatSummaryAmount, useCurrencyConverter } from '@/lib/currency';
+import { formatSummaryAmount } from '@/lib/currency';
 import { useBudgets, BudgetCategory as ApiBudgetCategory } from '@/features/finance/queries/budget';
 
 interface BudgetCategory {
@@ -31,7 +31,6 @@ interface BudgetPerformanceChartProps {
 
 export function BudgetPerformanceChart({ period = 'This Month' }: BudgetPerformanceChartProps) {
   const { theme } = useStore();
-  const { convertToBase } = useCurrencyConverter();
   const { data: budgetsResponse, isLoading } = useBudgets();
 
   const [budgetData, setBudgetData] = useState<BudgetCategory[]>([]);
@@ -46,21 +45,24 @@ export function BudgetPerformanceChart({ period = 'This Month' }: BudgetPerforma
         return;
       }
 
-      const processed = await Promise.all(
-        currentBudget.categories.map(async (category: ApiBudgetCategory) => ({
+      const processed = currentBudget.categories.map((category: ApiBudgetCategory) => {
+        const planned = category.plannedBase ?? category.planned;
+        const actual = category.actualBase ?? category.actual;
+
+        return {
           id: category.id,
           name: category.category.name,
-          planned: await convertToBase(category.planned, currentBudget?.currency || 'EUR'),
-          actual: await convertToBase(category.actual, currentBudget?.currency || 'EUR'),
+          planned,
+          actual,
           color: category.category.color,
-        })),
-      );
+        };
+      });
 
       setBudgetData(processed);
     };
 
     processBudgets();
-  }, [budgetsResponse, convertToBase]);
+  }, [budgetsResponse]);
 
   const chartData = useMemo(() => {
     return budgetData.map(category => ({

@@ -19,13 +19,12 @@ export function TotalBalanceDisplay({
   fallbackText = '€0',
 }: TotalBalanceDisplayProps) {
   const { data: accountsData, isLoading: accountsLoading } = useAccounts();
+  const accounts = accountsData?.accounts || [];
   const [totalBalanceEUR, setTotalBalanceEUR] = useState(0);
   const [isConverting, setIsConverting] = useState(false);
 
   // Convert all account balances to EUR
   useEffect(() => {
-    const accounts = accountsData?.accounts || [];
-
     const convertBalances = async () => {
       if (!accounts.length) {
         setTotalBalanceEUR(0);
@@ -52,7 +51,7 @@ export function TotalBalanceDisplay({
     };
 
     convertBalances();
-  }, [accountsData]);
+  }, [accounts]);
 
   // Size classes
   const sizeClasses = {
@@ -72,8 +71,7 @@ export function TotalBalanceDisplay({
   }
 
   // Format the balance
-  const formattedBalance =
-    totalBalanceEUR > 0 ? formatSummaryAmount(totalBalanceEUR) : fallbackText;
+  const formattedBalance = accounts.length ? formatSummaryAmount(totalBalanceEUR) : fallbackText;
 
   return <span className={`${sizeClasses[size]} ${className}`}>{formattedBalance}</span>;
 }

@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { subMonths } from 'date-fns';
+import { convertToBaseCurrencySafe } from '@/lib/currency';
 
 interface ReportStats {
   totalIncome: number;
@@ -15,6 +16,36 @@ interface ReportStats {
 }
 
 async function fetchReportStats(): Promise<ReportStats> {
+  interface ReportTransaction {
+    amount: number;
+    currency?: string;
+    type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
+    account?: {
+      currency?: string;
+    };
+  }
+
+  const summarizeTransactions = async (transactions: ReportTransaction[]) => {
+    let income = 0;
+    let expenses = 0;
+    let transfers = 0;
+
+    for (const transaction of transactions) {
+      const currency = transaction.currency || transaction.account?.currency;
+      const amountInEur = await convertToBaseCurrencySafe(transaction.amount, currency);
+
+      if (transaction.type === 'INCOME') {
+        income += amountInEur;
+      } else if (transaction.type === 'EXPENSE') {
+        expenses += amountInEur;
+      } else if (transaction.type === 'TRANSFER') {
+        transfers += amountInEur;
+      }
+    }
+
+    return { income, expenses, transfers };
+  };
+
   const now = new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = subMonths(currentMonthStart, 1);
@@ -30,17 +61,19 @@ async function fetchReportStats(): Promise<ReportStats> {
   }
 
   const currentMonthData = await currentMonthResponse.json();
-  const { summary: currentSummary } = currentMonthData;
+  const currentTransactions = (currentMonthData.transactions || []) as ReportTransaction[];
+  const currentSummary = await summarizeTransactions(currentTransactions);
 
   // Get last month transactions for comparison
   const lastMonthResponse = await fetch(
     `/api/finance/transactions?dateFrom=${lastMonthStart.toISOString()}&dateTo=${lastMonthEnd.toISOString()}&limit=1000`,
   );
 
-  let lastMonthSummary = { income: 0, expenses: 0 };
+  let lastMonthSummary = { income: 0, expenses: 0, transfers: 0 };
   if (lastMonthResponse.ok) {
     const lastMonthData = await lastMonthResponse.json();
-    lastMonthSummary = lastMonthData.summary;
+    const lastMonthTransactions = (lastMonthData.transactions || []) as ReportTransaction[];
+    lastMonthSummary = await summarizeTransactions(lastMonthTransactions);
   }
 
   // Get current budgets
@@ -56,6 +89,7 @@ async function fetchReportStats(): Promise<ReportStats> {
       startDate: string;
       endDate: string;
       totalPlanned: number;
+      totalPlannedBase?: number;
     }
     const currentBudgets = budgets.filter((budget: Budget) => {
       const budgetStart = new Date(budget.startDate);
@@ -65,7 +99,7 @@ async function fetchReportStats(): Promise<ReportStats> {
 
     if (currentBudgets.length > 0) {
       const totalPlanned = currentBudgets.reduce(
-        (sum: number, b: Budget) => sum + b.totalPlanned,
+        (sum: number, b: Budget) => sum + (b.totalPlannedBase ?? b.totalPlanned),
         0,
       );
       const actualSpent = currentSummary.expenses || 0;

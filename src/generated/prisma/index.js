@@ -317,7 +317,7 @@ const config = {
     },
     output: {
       value:
-        '/Volumes/DX Flash 500/developing/personal/projects/react/bit-chain/src/generated/prisma',
+        '/Volumes/DX_flash_500/developing/personal/projects/react/bit-chain/src/generated/prisma',
       fromEnvVar: null,
     },
     config: {
@@ -332,7 +332,7 @@ const config = {
     ],
     previewFeatures: [],
     sourceFilePath:
-      '/Volumes/DX Flash 500/developing/personal/projects/react/bit-chain/prisma/schema.prisma',
+      '/Volumes/DX_flash_500/developing/personal/projects/react/bit-chain/prisma/schema.prisma',
     isCustomOutput: true,
   },
   relativeEnvPaths: {
@@ -344,6 +344,7 @@ const config = {
   engineVersion: '361e86d0ea4987e9f53a565309b3eed797a6bcbd',
   datasourceNames: ['db'],
   activeProvider: 'postgresql',
+  postinstall: false,
   inlineDatasources: {
     db: {
       url: {

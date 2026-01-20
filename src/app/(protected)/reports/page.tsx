@@ -61,21 +61,21 @@ export default function ReportsPage() {
     ? [
         {
           title: 'Total Income',
-          value: formatSummaryAmount(reportsStats.totalIncome * 0.025),
+          value: formatSummaryAmount(reportsStats.totalIncome),
           change: `${reportsStats.incomeChange >= 0 ? '+' : ''}${reportsStats.incomeChange.toFixed(1)}%`,
           trend: reportsStats.incomeChange >= 0 ? 'up' : 'down',
           period: 'This month',
         },
         {
           title: 'Total Expenses',
-          value: formatSummaryAmount(reportsStats.totalExpenses * 0.025),
+          value: formatSummaryAmount(reportsStats.totalExpenses),
           change: `${reportsStats.expenseChange >= 0 ? '+' : ''}${reportsStats.expenseChange.toFixed(1)}%`,
           trend: reportsStats.expenseChange <= 0 ? 'up' : 'down', // Lower expenses = good
           period: 'This month',
         },
         {
           title: 'Net Savings',
-          value: formatSummaryAmount(reportsStats.netSavings * 0.025),
+          value: formatSummaryAmount(reportsStats.netSavings),
           change: `${reportsStats.savingsChange >= 0 ? '+' : ''}${reportsStats.savingsChange.toFixed(1)}%`,
           trend: reportsStats.savingsChange >= 0 ? 'up' : 'down',
           period: 'This month',

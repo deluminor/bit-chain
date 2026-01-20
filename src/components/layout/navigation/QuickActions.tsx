@@ -16,6 +16,7 @@ import {
   Wallet,
   PieChart,
   Target,
+  Landmark,
   TrendingUp,
   FileText,
   Database,
@@ -85,6 +86,7 @@ const additionalCryptoActions = [
 const additionalFinanceActions = [
   { label: 'Budget Planning', href: '/budget', icon: PieChart },
   { label: 'Financial Goals', href: '/goals', icon: Target },
+  { label: 'Loans & Debts', href: '/loans', icon: Landmark },
   { label: 'Reports', href: '/reports', icon: TrendingUp },
   { label: 'Export Data', href: '/backup', icon: Database },
 ];

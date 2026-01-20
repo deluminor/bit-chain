@@ -1,36 +1,36 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import {
-  Activity,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  Target,
-  BarChart3,
-  RefreshCw,
-} from 'lucide-react';
-import Link from 'next/link';
-import { useAccounts } from '@/features/finance/queries/accounts';
-import { useTransactions } from '@/features/finance/queries/transactions';
-import { useGoals, calculateGoalProgress } from '@/features/finance/queries/goals';
-import { IncomeExpenseChart } from '@/components/layout/charts/IncomeExpenseChart';
-import { CategorySpendingChart } from '@/features/finance/components/CategorySpendingChart';
 import { AccountBalanceTrendsChart } from '@/components/layout/charts/AccountBalanceTrendsChart';
-import { NetWorthChart } from '@/features/finance/components/NetWorthChart';
 import { BudgetPerformanceChart } from '@/components/layout/charts/BudgetPerformanceChart';
-import { CashFlowSankeyChart } from '@/features/finance/components/CashFlowSankeyChart';
+import { IncomeExpenseChart } from '@/components/layout/charts/IncomeExpenseChart';
 import { AnimatedDiv } from '@/components/ui/animations';
 import { ResponsiveGrid } from '@/components/ui/responsive-helpers';
+import { CashFlowSankeyChart } from '@/features/finance/components/CashFlowSankeyChart';
+import { CategorySpendingChart } from '@/features/finance/components/CategorySpendingChart';
+import { NetWorthChart } from '@/features/finance/components/NetWorthChart';
+import { useAccounts } from '@/features/finance/queries/accounts';
+import { calculateGoalProgress, useGoals } from '@/features/finance/queries/goals';
+import { useTransactions } from '@/features/finance/queries/transactions';
+import {
+  Activity,
+  BarChart3,
+  RefreshCw,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react';
+import Link from 'next/link';
 
 import {
   convertToBaseCurrencySafe,
-  formatSummaryAmount,
   formatDisplayAmount,
+  formatSummaryAmount,
 } from '@/lib/currency';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface QuickStatsProps {
   title: string;
@@ -264,9 +264,9 @@ export function FinanceDashboard() {
                   </div>
                   Financial Goals
                 </CardTitle>
-                <Button size="sm" className="mt-2 md:mt-0">
+                {/*<Button size="sm" className="mt-2 md:mt-0">
                   + New Goal
-                </Button>
+                </Button>*/}
               </div>
             </CardHeader>
             <CardContent className="p-4 md:p-6">

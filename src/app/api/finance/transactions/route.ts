@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { PrismaClient } from '@/generated/prisma';
+import type { Prisma } from '@/generated/prisma';
 import { convertToBaseCurrencySafe } from '@/lib/currency';
 import { z } from 'zod';
 
@@ -12,7 +13,7 @@ const createTransactionSchema = z.object({
   categoryId: z.string().cuid('Invalid category ID'),
   type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']),
   amount: z.number().positive('Amount must be positive'),
-  currency: z.string().min(3).max(3).default('UAH'),
+  currency: z.string().min(3).max(3).optional(),
   description: z.string().max(200).optional(),
   date: z
     .string()
@@ -44,6 +45,55 @@ async function getUserFromSession() {
   return await prisma.user.findUnique({
     where: { email: session.user.email },
   });
+}
+
+const getExpectedTransactionType = (loanType: 'LOAN' | 'DEBT') =>
+  loanType === 'LOAN' ? 'EXPENSE' : 'INCOME';
+
+const createLoanValidationError = (message: string) => {
+  const error = new Error(message) as Error & { status?: number };
+  error.status = 400;
+  return error;
+};
+
+async function adjustLoanBalance(
+  tx: Prisma.TransactionClient,
+  loanId: string,
+  amount: number,
+  direction: 'increase' | 'decrease',
+) {
+  const loan = await tx.loan.findFirst({
+    where: { id: loanId },
+  });
+
+  if (!loan) {
+    throw createLoanValidationError('Loan not found or access denied');
+  }
+
+  const nextBalance =
+    direction === 'decrease' ? loan.currentBalance - amount : loan.currentBalance + amount;
+
+  if (nextBalance < 0) {
+    throw createLoanValidationError('Payment exceeds remaining loan balance');
+  }
+
+  const normalizedBalance = Math.max(nextBalance, 0);
+  const isActive = loan.isActive ? normalizedBalance > 0 : false;
+
+  const updatedLoan = await tx.loan.update({
+    where: { id: loanId },
+    data: {
+      currentBalance: normalizedBalance,
+      isActive,
+    },
+  });
+
+  await tx.transactionCategory.updateMany({
+    where: { loanId },
+    data: { isActive },
+  });
+
+  return updatedLoan;
 }
 
 interface SummaryTransaction {
@@ -302,6 +352,11 @@ export async function POST(request: NextRequest) {
         type: validatedData.type, // Now TRANSFER type is supported
         isActive: true,
       },
+      select: {
+        id: true,
+        type: true,
+        loanId: true,
+      },
     });
 
     if (!category) {
@@ -334,6 +389,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const transactionCurrency = validatedData.currency ?? account.currency;
+
+    if (category.loanId) {
+      const loan = await prisma.loan.findFirst({
+        where: {
+          id: category.loanId,
+          userId: user.id,
+        },
+      });
+
+      if (!loan) {
+        return NextResponse.json({ error: 'Loan not found or access denied' }, { status: 404 });
+      }
+
+      const expectedType = getExpectedTransactionType(loan.type);
+      if (validatedData.type !== expectedType) {
+        return NextResponse.json(
+          { error: `Loan payments must be ${expectedType.toLowerCase()} transactions` },
+          { status: 400 },
+        );
+      }
+
+      if (transactionCurrency !== loan.currency) {
+        return NextResponse.json(
+          { error: `Loan currency must be ${loan.currency}` },
+          { status: 400 },
+        );
+      }
+    }
+
     // Create transaction and update balances in a database transaction
     const result = await prisma.$transaction(async tx => {
       // Create the transaction
@@ -342,6 +427,7 @@ export async function POST(request: NextRequest) {
           ...validatedData,
           userId: user.id,
           date: validatedData.date || new Date(),
+          currency: transactionCurrency,
         },
         select: {
           id: true,
@@ -422,6 +508,10 @@ export async function POST(request: NextRequest) {
           break;
       }
 
+      if (category.loanId) {
+        await adjustLoanBalance(tx, category.loanId, validatedData.amount, 'decrease');
+      }
+
       return transaction;
     });
 
@@ -438,6 +528,10 @@ export async function POST(request: NextRequest) {
         { error: 'Validation error', details: error.errors },
         { status: 400 },
       );
+    }
+
+    if (error instanceof Error && 'status' in error && error.status === 400) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     console.error('Error creating transaction:', error);
@@ -462,11 +556,21 @@ export async function PUT(request: NextRequest) {
         id,
         userId: user.id,
       },
+      include: {
+        category: {
+          select: {
+            loanId: true,
+          },
+        },
+      },
     });
 
     if (!existingTransaction) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
+
+    const newCategoryId = updateData.categoryId || existingTransaction.categoryId;
+    const newCurrency = updateData.currency ?? existingTransaction.currency;
 
     // Update transaction and balances in a database transaction
     const result = await prisma.$transaction(async tx => {
@@ -498,6 +602,15 @@ export async function PUT(request: NextRequest) {
             });
           }
           break;
+      }
+
+      if (existingTransaction.category.loanId) {
+        await adjustLoanBalance(
+          tx,
+          existingTransaction.category.loanId,
+          existingTransaction.amount,
+          'increase',
+        );
       }
 
       // Update the transaction
@@ -585,6 +698,42 @@ export async function PUT(request: NextRequest) {
           break;
       }
 
+      const newCategory = await tx.transactionCategory.findFirst({
+        where: {
+          id: newCategoryId,
+          userId: user.id,
+        },
+        select: {
+          loanId: true,
+        },
+      });
+
+      if (newCategory?.loanId) {
+        const loan = await tx.loan.findFirst({
+          where: {
+            id: newCategory.loanId,
+            userId: user.id,
+          },
+        });
+
+        if (!loan) {
+          throw createLoanValidationError('Loan not found or access denied');
+        }
+
+        const expectedType = getExpectedTransactionType(loan.type);
+        if (newType !== expectedType) {
+          throw createLoanValidationError(
+            `Loan payments must be ${expectedType.toLowerCase()} transactions`,
+          );
+        }
+
+        if (newCurrency !== loan.currency) {
+          throw createLoanValidationError(`Loan currency must be ${loan.currency}`);
+        }
+
+        await adjustLoanBalance(tx, loan.id, newAmount, 'decrease');
+      }
+
       return updatedTransaction;
     });
 
@@ -598,6 +747,10 @@ export async function PUT(request: NextRequest) {
         { error: 'Validation error', details: error.errors },
         { status: 400 },
       );
+    }
+
+    if (error instanceof Error && 'status' in error && error.status === 400) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     console.error('Error updating transaction:', error);
@@ -624,6 +777,13 @@ export async function DELETE(request: NextRequest) {
       where: {
         id: transactionId,
         userId: user.id,
+      },
+      include: {
+        category: {
+          select: {
+            loanId: true,
+          },
+        },
       },
     });
 
@@ -661,6 +821,15 @@ export async function DELETE(request: NextRequest) {
             });
           }
           break;
+      }
+
+      if (existingTransaction.category.loanId) {
+        await adjustLoanBalance(
+          tx,
+          existingTransaction.category.loanId,
+          existingTransaction.amount,
+          'increase',
+        );
       }
 
       // Delete the transaction

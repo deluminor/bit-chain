@@ -30,6 +30,7 @@ import {
   Transaction,
 } from '@/features/finance/queries/transactions';
 import { useAccounts } from '@/features/finance/queries/accounts';
+import type { FinanceAccount } from '@/features/finance/queries/accounts';
 import { formatCurrency, useCurrencyConverter, BASE_CURRENCY } from '@/lib/currency';
 import { DatePicker } from '@/components/ui/date-picker';
 
@@ -39,7 +40,7 @@ const transactionFormSchema = z
     categoryId: z.string().min(1, 'Category is required'),
     type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']),
     amount: z.number().positive('Amount must be positive').min(0.01, 'Minimum amount is 0.01'),
-    currency: z.string().min(3).max(3).default('EUR'),
+    currency: z.string().min(3).max(3).default(BASE_CURRENCY),
     description: z.string().max(200).optional(),
     date: z.date(),
     tags: z.array(z.string()).default([]),
@@ -207,7 +208,7 @@ export function AddTransactionForm({
   const { data: accountsData } = useAccounts();
   const { data: categoriesData } = useTransactionCategories(watchedType);
 
-  const accounts = accountsData?.accounts || [];
+  const accounts = (accountsData?.accounts || []) as FinanceAccount[];
   const categories = categoriesData?.categories || [];
 
   // Auto-update currency when account changes
@@ -679,8 +680,13 @@ export function AddTransactionForm({
             <div className="space-y-2">
               <Label>Recurring Pattern</Label>
               <Select
-                value={form.watch('recurringPattern')}
-                onValueChange={(value: any) => form.setValue('recurringPattern', value)}
+                value={form.watch('recurringPattern') ?? ''}
+                onValueChange={value =>
+                  form.setValue(
+                    'recurringPattern',
+                    value as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY',
+                  )
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select pattern" />

@@ -79,6 +79,11 @@ export function CategorySpendingChart({
     }>
   >([]);
 
+  const summaryTotal = useMemo(() => {
+    if (!transactionsData?.summary) return 0;
+    return type === 'INCOME' ? transactionsData.summary.income : transactionsData.summary.expenses;
+  }, [transactionsData?.summary, type]);
+
   // Process data for pie chart with currency conversion
   useEffect(() => {
     const processData = async () => {
@@ -98,6 +103,8 @@ export function CategorySpendingChart({
       >();
 
       // Process transactions with currency conversion
+      let totalAmount = 0;
+      let totalCount = 0;
       for (const transaction of transactionsData.transactions) {
         const categoryId = transaction.category.id;
         const categoryName = transaction.category.name;
@@ -119,12 +126,29 @@ export function CategorySpendingChart({
         );
         categoryData.amount += amountInEur;
         categoryData.count += 1;
+        totalAmount += amountInEur;
+        totalCount += 1;
       }
 
       // Convert to array and sort by amount (descending)
       const processedData = Array.from(categoryTotals.values())
         .sort((a, b) => b.amount - a.amount)
         .slice(0, 8); // Show top 8 categories
+
+      const topTotal = processedData.reduce((sum, item) => sum + item.amount, 0);
+      const topCount = processedData.reduce((sum, item) => sum + item.count, 0);
+      const totalForOther = summaryTotal > 0 ? summaryTotal : totalAmount;
+      const otherAmount = Math.max(totalForOther - topTotal, 0);
+      const otherCount = Math.max(totalCount - topCount, 0);
+
+      if (otherAmount > 0 && processedData.length > 0) {
+        processedData.push({
+          name: 'Other',
+          amount: otherAmount,
+          color: '',
+          count: otherCount,
+        });
+      }
 
       // Apply minimalist colors based on theme
       const colors = theme === THEME.DARK ? MINIMALIST_PIE_COLORS_DARK : MINIMALIST_PIE_COLORS;
@@ -140,8 +164,9 @@ export function CategorySpendingChart({
 
   // Calculate total for percentage calculations
   const total = useMemo(() => {
+    if (summaryTotal > 0) return summaryTotal;
     return chartData.reduce((sum, item) => sum + item.amount, 0);
-  }, [chartData]);
+  }, [chartData, summaryTotal]);
 
   const chartConfig = useMemo(() => {
     const config: ChartConfig = {};

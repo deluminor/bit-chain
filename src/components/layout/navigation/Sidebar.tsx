@@ -8,6 +8,7 @@ import {
   ArrowRightLeftIcon,
   PieChartIcon,
   Target,
+  Landmark,
   TrendingUpIcon,
   Tag,
 } from 'lucide-react';
@@ -82,6 +83,11 @@ const getFinanceNavigation = () => [
     title: 'Goals',
     url: '/goals',
     icon: Target,
+  },
+  {
+    title: 'Loans',
+    url: '/loans',
+    icon: Landmark,
   },
   {
     title: 'Reports',

@@ -44,6 +44,7 @@ export interface TransactionCategory {
   name: string;
   type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
   parentId?: string;
+  loanId?: string | null;
   color: string;
   icon: string;
   isDefault: boolean;

@@ -210,7 +210,6 @@ export async function GET(request: NextRequest) {
     const where: any = {
       userId: user.id,
       ...(type && { type }),
-      ...(accountId && { accountId }),
       ...(categoryId && { categoryId }),
       ...((dateFrom || dateTo) && {
         date: {
@@ -225,6 +224,10 @@ export async function GET(request: NextRequest) {
         ],
       }),
     };
+
+    if (accountId) {
+      where.OR = [{ accountId }, { transferToId: accountId }];
+    }
 
     // Get transactions with pagination
     const [transactions, totalCount, summaryTransactions] = await Promise.all([

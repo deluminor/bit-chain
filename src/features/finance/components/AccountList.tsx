@@ -54,6 +54,7 @@ import {
 import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
 import { convertToBaseCurrencySafe, formatCurrency, formatSummaryAmount } from '@/lib/currency';
 import { AnimatedDiv } from '@/components/ui/animations';
+import { useMonobankAutoSync } from '@/features/integrations/hooks/useMonobankAutoSync';
 
 const accountTypeIcons = {
   CASH: Wallet,
@@ -88,6 +89,8 @@ export function AccountList() {
   const accountAction = useAccountAction();
   const deleteAccount = useDeleteAccount();
   const { toast } = useToast();
+
+  useMonobankAutoSync('accounts_page');
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);

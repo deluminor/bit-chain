@@ -33,6 +33,7 @@ import {
   DollarSign,
   Calendar,
   Tag,
+  Upload,
 } from 'lucide-react';
 import { AddTransactionForm } from '@/components/forms/AddTransactionForm';
 import {
@@ -42,7 +43,7 @@ import {
   TransactionFilters,
 } from '@/features/finance/queries/transactions';
 import { useAccounts } from '@/features/finance/queries/accounts';
-import { formatCurrency, formatSummaryAmount, BASE_CURRENCY } from '@/lib/currency';
+import { formatCurrency, formatSummaryAmount } from '@/lib/currency';
 import { AnimatedDiv } from '@/components/ui/animations';
 import {
   DataTable,
@@ -53,6 +54,8 @@ import {
   createSelectFilter,
 } from '@/components/ui/data-table';
 import { useDataTable } from '@/hooks/useDataTable';
+import { useMonobankAutoSync } from '@/features/integrations/hooks/useMonobankAutoSync';
+import { TransactionImportDialog } from '@/features/finance/components/TransactionImportDialog';
 
 const transactionTypeIcons = {
   INCOME: Plus,
@@ -90,6 +93,7 @@ export function TransactionList() {
   const { toast } = useToast();
   const { data: accountsData } = useAccounts();
   const deleteTransaction = useDeleteTransaction();
+  useMonobankAutoSync('transactions_page');
 
   // Data table hooks
   const { currentPage, pageSize, onPageChange, onPageSizeChange, totalPages } = useDataTable({
@@ -108,6 +112,7 @@ export function TransactionList() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -305,37 +310,66 @@ export function TransactionList() {
       cell: transaction => {
         const amountColor = getAmountColor(transaction.type);
 
-        // For transfers, show both amounts if transferAmount exists
-        if (transaction.type === 'TRANSFER' && transaction.transferAmount != null) {
+        // For transfers, handle display based on filter context
+        if (transaction.type === 'TRANSFER') {
+          // Case 1: Viewing a specific account
+          if (filters.accountId) {
+            const isReceived = transaction.transferToId === filters.accountId;
+
+            return (
+              <div
+                className={`font-semibold ${isReceived ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}
+              >
+                {isReceived ? '+' : '-'}
+                {formatCurrency(
+                  isReceived
+                    ? transaction.transferAmount || transaction.amount
+                    : transaction.amount,
+                  isReceived
+                    ? transaction.transferCurrency ||
+                        transaction.transferTo?.currency ||
+                        transaction.currency
+                    : transaction.currency || transaction.account.currency,
+                  { useLargeNumberFormat: false },
+                )}
+              </div>
+            );
+          }
+
+          // Case 2: Viewing all transactions (Global view)
+          // Show as "Amount -> Amount" if currencies differ, or just "Amount" if same
+          const sourceCurrency = transaction.currency || transaction.account.currency;
+          const targetCurrency =
+            transaction.transferCurrency || transaction.transferTo?.currency || sourceCurrency;
+          const isMultiCurrency = sourceCurrency !== targetCurrency;
+
           return (
-            <div className={`font-semibold ${amountColor}`}>
-              <div>
-                -
-                {formatCurrency(
-                  transaction.amount,
-                  transaction.currency || transaction.account.currency,
-                  { useLargeNumberFormat: false },
-                )}
+            <div className="flex flex-col items-end">
+              <div className="font-semibold text-blue-600 dark:text-blue-400">
+                {formatCurrency(transaction.amount, sourceCurrency, {
+                  useLargeNumberFormat: false,
+                })}
+                {isMultiCurrency && <span className="text-muted-foreground ml-1">→</span>}
               </div>
-              <div className="text-xs text-muted-foreground">
-                +
-                {formatCurrency(
-                  transaction.transferAmount,
-                  transaction.transferCurrency || transaction.transferTo?.currency || BASE_CURRENCY,
-                  { useLargeNumberFormat: false },
-                )}
-              </div>
+              {isMultiCurrency && (
+                <div className="text-xs text-green-600 dark:text-green-400">
+                  {formatCurrency(
+                    transaction.transferAmount || transaction.amount,
+                    targetCurrency,
+                    { useLargeNumberFormat: false },
+                  )}
+                </div>
+              )}
             </div>
           );
         }
 
         return (
           <div className={`font-semibold ${amountColor}`}>
-            {transaction.type === 'EXPENSE' && '-'}
-            {transaction.type === 'INCOME' && '+'}
-            {transaction.type === 'TRANSFER' && '-'}
+            {transaction.amount < 0 && '-'}
+            {transaction.amount > 0 && '+'}
             {formatCurrency(
-              transaction.amount,
+              Math.abs(transaction.amount),
               transaction.currency || transaction.account.currency,
               { useLargeNumberFormat: false },
             )}
@@ -407,10 +441,16 @@ export function TransactionList() {
             </p>
           </div>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Transaction
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import CSV
+          </Button>
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Transaction
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -566,6 +606,12 @@ export function TransactionList() {
           />
         </DialogContent>
       </Dialog>
+
+      <TransactionImportDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onSuccess={handleFormSuccess}
+      />
 
       {/* Edit Transaction Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>

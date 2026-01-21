@@ -71,6 +71,11 @@ async function fetchCashFlowSankey(): Promise<CashFlowSankeyData> {
       continue;
     }
 
+    // Skip transfers for cashflow chart
+    if (transaction.type === 'TRANSFER') {
+      continue;
+    }
+
     const amountInEur = await convertToBaseCurrencySafe(transaction.amount, transaction.currency);
 
     const category = transaction.category;

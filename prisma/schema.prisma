@@ -32,6 +32,7 @@ model User {
   budgets             Budget[]
   financialGoals      FinancialGoal[]
   loans               Loan[]
+  integrations        Integration[]
 }
 
 model Category {
@@ -121,6 +122,7 @@ model FinanceAccount {
   // Relations
   transactions Transaction[]
   transfersTo  Transaction[] @relation("TransferTo")
+  integrationAccounts IntegrationAccount[]
   
   @@unique([userId, name])
 }
@@ -151,6 +153,12 @@ model Transaction {
   isRecurring     Boolean          @default(false)
   recurringPattern RecurringPattern?
   parentTransactionId String?      // Reference to parent if this is a recurring transaction
+
+  // Integration metadata
+  source          IntegrationProvider?
+  externalId      String?
+  integrationAccountId String?
+  integrationAccount IntegrationAccount? @relation(fields: [integrationAccountId], references: [id], onDelete: SetNull)
   
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -158,6 +166,47 @@ model Transaction {
   @@index([userId, date])
   @@index([accountId, date])
   @@index([categoryId])
+  @@unique([source, externalId])
+}
+
+model Integration {
+  id           String               @id @default(cuid())
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     IntegrationProvider
+  status       IntegrationStatus    @default(CONNECTED)
+  lastSyncedAt DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  accounts     IntegrationAccount[]
+
+  @@unique([userId, provider])
+}
+
+model IntegrationAccount {
+  id               String                   @id @default(cuid())
+  integrationId    String
+  integration      Integration              @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  providerAccountId String
+  ownerType        IntegrationAccountOwner  @default(PERSONAL)
+  ownerName        String?
+  name             String
+  maskedPan        String?
+  iban             String?
+  currency         String
+  balance          Float                    @default(0)
+  accountType      String
+  importEnabled    Boolean                  @default(false)
+  financeAccountId String?
+  financeAccount   FinanceAccount?          @relation(fields: [financeAccountId], references: [id], onDelete: SetNull)
+  lastSyncedAt     DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  transactions     Transaction[]
+
+  @@unique([integrationId, providerAccountId])
 }
 
 model TransactionCategory {
@@ -283,6 +332,21 @@ enum AccountType {
   BANK_CARD  
   SAVINGS
   INVESTMENT
+}
+
+enum IntegrationProvider {
+  MONOBANK
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+}
+
+enum IntegrationAccountOwner {
+  PERSONAL
+  FOP
 }
 
 enum TransactionType {

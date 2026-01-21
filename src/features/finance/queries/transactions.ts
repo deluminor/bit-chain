@@ -29,6 +29,7 @@ export interface Transaction {
     icon: string;
     type: 'INCOME' | 'EXPENSE';
   };
+  transferToId?: string;
   transferTo?: {
     id: string;
     name: string;
@@ -37,6 +38,36 @@ export interface Transaction {
   };
   transferAmount?: number; // Amount received in destination account for transfers
   transferCurrency?: string; // Currency of destination account
+}
+
+export interface TransactionImportPreviewItem {
+  id: string;
+  type: 'INCOME' | 'EXPENSE';
+  amount: number;
+  currency: string;
+  description: string;
+  date: string;
+  categoryId: string;
+  duplicate: boolean;
+}
+
+export interface TransactionImportPreviewResponse {
+  source: 'REVOLUT' | 'MONOBANK';
+  skipped: number;
+  summary: {
+    total: number;
+    duplicates: number;
+  };
+  items: TransactionImportPreviewItem[];
+}
+
+export interface TransactionImportRequestItem {
+  type: 'INCOME' | 'EXPENSE';
+  amount: number;
+  currency: string;
+  description?: string;
+  date: string;
+  categoryId: string;
 }
 
 export interface TransactionCategory {
@@ -210,6 +241,43 @@ export function useDeleteTransaction() {
       const { data } = await axios.delete('/api/finance/transactions', {
         params: { id },
       });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['finance', 'accounts'] });
+    },
+  });
+}
+
+export function usePreviewTransactionImport() {
+  return useMutation({
+    mutationFn: async (payload: {
+      file: File;
+      accountId: string;
+      incomeCategoryId: string;
+      expenseCategoryId: string;
+    }): Promise<TransactionImportPreviewResponse> => {
+      const formData = new FormData();
+      formData.append('file', payload.file);
+      formData.append('accountId', payload.accountId);
+      formData.append('incomeCategoryId', payload.incomeCategoryId);
+      formData.append('expenseCategoryId', payload.expenseCategoryId);
+
+      const { data } = await axios.post('/api/finance/transactions/import/preview', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
+    },
+  });
+}
+
+export function useImportTransactions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { accountId: string; items: TransactionImportRequestItem[] }) => {
+      const { data } = await axios.post('/api/finance/transactions/import', payload);
       return data;
     },
     onSuccess: () => {

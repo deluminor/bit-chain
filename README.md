@@ -28,6 +28,7 @@
 ## 🎯 Key Features
 
 ### 📊 **Trading Management**
+
 - **Detailed trade journal** with Long/Short position support
 - **Trade screenshots** for visual analysis
 - **Trade categorization** (solo, radar, everest, cryptonite, and more)
@@ -35,13 +36,16 @@
 - **Demo and live account support**
 
 ### 💰 **Personal Finance System**
+
 - **Multi-account management** (cash, bank cards, savings, investments)
 - **Income and expense categorization** with hierarchical structure
 - **Budget planning** with templates and automatic creation
 - **Financial goals** with progress tracking
 - **Multi-currency support** with UAH and other currencies
+- **Monobank integration** with opt-in account selection and transaction sync
 
 ### 📈 **Analytics & Visualization**
+
 - **Interactive charts** using Recharts
 - **Net Worth tracking** with growth dynamics
 - **Categorized spending** with color coding
@@ -49,6 +53,7 @@
 - **Budget analytics** with plan vs actual
 
 ### 🔐 **Security & Data Management**
+
 - **Personal backups** with full recovery
 - **Role-based authorization** with JWT tokens
 - **User data isolation**
@@ -57,6 +62,7 @@
 ## 🏗️ Architecture
 
 ### **Frontend Architecture**
+
 ```
 src/
 ├── app/                          # Next.js 14 App Router
@@ -81,6 +87,7 @@ src/
 ```
 
 ### **Backend Architecture**
+
 ```
 Backend (API Routes):
 ├── /api/auth/[...nextauth]     # NextAuth.js endpoints
@@ -95,6 +102,7 @@ Backend (API Routes):
 ```
 
 ### **Database Schema**
+
 ```mermaid
 erDiagram
     User ||--o{ Trade : owns
@@ -103,14 +111,14 @@ erDiagram
     User ||--o{ Transaction : records
     User ||--o{ Budget : plans
     User ||--o{ FinancialGoal : sets
-    
+
     Trade ||--o{ Screenshot : contains
     Trade }o--|| Category : belongs_to
-    
+
     Transaction }o--|| FinanceAccount : from_account
     Transaction }o--|| TransactionCategory : categorized_as
     Transaction }o--|| FinanceAccount : to_account
-    
+
     Budget ||--o{ BudgetCategory : includes
     BudgetCategory }o--|| TransactionCategory : tracks
 ```
@@ -118,32 +126,35 @@ erDiagram
 ## 🛠️ Tech Stack
 
 ### **Frontend**
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Next.js** | 14.x | Full-stack React framework with App Router |
-| **React** | 18.x | UI library with hooks and suspense |
-| **TypeScript** | 5.x | Type safety and better development |
-| **TailwindCSS** | 3.x | Utility-first CSS framework |
-| **Shadcn UI** | Latest | Customizable UI components |
-| **React Hook Form** | 7.x | Efficient form management |
-| **React Query** | 5.x | Server state management |
-| **Recharts** | 2.x | Chart and visualization library |
+
+| Technology          | Version | Purpose                                    |
+| ------------------- | ------- | ------------------------------------------ |
+| **Next.js**         | 14.x    | Full-stack React framework with App Router |
+| **React**           | 18.x    | UI library with hooks and suspense         |
+| **TypeScript**      | 5.x     | Type safety and better development         |
+| **TailwindCSS**     | 3.x     | Utility-first CSS framework                |
+| **Shadcn UI**       | Latest  | Customizable UI components                 |
+| **React Hook Form** | 7.x     | Efficient form management                  |
+| **React Query**     | 5.x     | Server state management                    |
+| **Recharts**        | 2.x     | Chart and visualization library            |
 
 ### **Backend & Database**
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Prisma** | 5.x | Type-safe ORM with migrations |
-| **PostgreSQL** | 14+ | Relational database |
-| **NextAuth.js** | 4.x | Authentication and authorization |
-| **bcryptjs** | 2.x | Password hashing |
-| **Zod** | 3.x | Schema validation |
+
+| Technology      | Version | Purpose                          |
+| --------------- | ------- | -------------------------------- |
+| **Prisma**      | 5.x     | Type-safe ORM with migrations    |
+| **PostgreSQL**  | 14+     | Relational database              |
+| **NextAuth.js** | 4.x     | Authentication and authorization |
+| **bcryptjs**    | 2.x     | Password hashing                 |
+| **Zod**         | 3.x     | Schema validation                |
 
 ### **Deployment & DevOps**
-| Technology | Purpose |
-|------------|---------|
-| **Vercel** | Hosting and auto-deployment |
-| **Neon** | Serverless PostgreSQL |
-| **GitHub Actions** | CI/CD pipeline |
+
+| Technology            | Purpose                     |
+| --------------------- | --------------------------- |
+| **Vercel**            | Hosting and auto-deployment |
+| **Neon**              | Serverless PostgreSQL       |
+| **GitHub Actions**    | CI/CD pipeline              |
 | **ESLint + Prettier** | Code quality and formatting |
 
 ## 📊 Functionality
@@ -151,6 +162,7 @@ erDiagram
 ### **🎯 Trading Module**
 
 **Trade Management:**
+
 - Add trades with complete details (symbol, entry/exit price, leverage, P&L)
 - Support for Long/Short positions
 - Automatic profit/loss calculations
@@ -158,12 +170,14 @@ erDiagram
 - Demo and real accounts
 
 **Visual Analytics:**
+
 - Performance chart over time
 - Win/loss ratio statistics
 - Category distribution
 - Net Worth dynamics
 
 **System Files:**
+
 ```typescript
 // Trade model
 model Trade {
@@ -184,12 +198,14 @@ model Trade {
 ### **💰 Financial System**
 
 **Multi-Account Management:**
+
 - Cash wallets
 - Bank cards and accounts
 - Savings accounts
 - Investment portfolios
 
 **Smart Categorization:**
+
 ```typescript
 // Hierarchical categories
 model TransactionCategory {
@@ -205,22 +221,31 @@ model TransactionCategory {
 ```
 
 **Budget System:**
+
 - Monthly and yearly planning
 - Budget templates for reuse
 - Automatic expense tracking
 - Alerts for limit violations
 
 **Financial Goals:**
+
 - Target savings with deadlines
 - Progress tracker with visualization
 - Multiple currencies
 
+### **🔗 Integrations**
+
+- **Monobank**: connect in Settings, choose accounts to import, sync balances and statements on demand
+- Future integrations (crypto exchanges, additional banks) plug into the same Settings area
+
 ## 🎨 UI/UX
 
 ### **Design System**
+
 The project uses **Shadcn UI** as the foundation for the design system with customization through TailwindCSS:
 
 **Color Palette:**
+
 ```css
 :root {
   --background: 0 0% 100%;
@@ -234,12 +259,14 @@ The project uses **Shadcn UI** as the foundation for the design system with cust
 ```
 
 **Component Architecture:**
+
 - **Atomic Design** principles
 - **Compositional components** with Radix UI
 - **Responsive-first** approach
 - **Dark/Light mode** support
 
 ### **Charts & Visualization**
+
 ```typescript
 // Chart configuration example
 const chartConfig = {
@@ -259,6 +286,7 @@ const chartConfig = {
 ## 🔒 Security
 
 ### **Authentication**
+
 ```typescript
 // NextAuth configuration with JWT
 export const authOptions: NextAuthOptions = {
@@ -267,12 +295,12 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       async authorize(credentials) {
         const user = await prisma.user.findUnique({
-          where: { email: credentials?.email }
+          where: { email: credentials?.email },
         });
         const isValid = await compare(credentials.password, user.password);
         return isValid ? { id: user.id, email: user.email } : null;
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
@@ -282,28 +310,31 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       session.user.id = token.id as string;
       return session;
-    }
-  }
+    },
+  },
 };
 ```
 
 ### **API-Level Authorization**
+
 Each API route validates user session:
+
 ```typescript
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  
+
   // Filter data by userId
   const data = await prisma.transaction.findMany({
-    where: { userId: session.user.id }
+    where: { userId: session.user.id },
   });
 }
 ```
 
 ### **Data Isolation**
+
 - All data tied to `userId`
 - Automatic filtering at Prisma level
 - Middleware for route protection
@@ -311,6 +342,7 @@ export async function GET(request: NextRequest) {
 ## 📈 Analytics & Reporting
 
 ### **Real-time Dashboard**
+
 ```typescript
 // Hook for financial statistics
 export function useFinanceStats() {
@@ -326,12 +358,14 @@ export function useFinanceStats() {
 ```
 
 ### **Graphical Analytics**
+
 - **Net Worth Chart**: Capital growth dynamics
 - **Category Spending**: Expense distribution by categories
 - **Account Balance Trends**: Account balances over time
 - **Budget Performance**: Plan vs actual budget execution
 
 ### **Data Export**
+
 - CSV export of transactions
 - PDF reports with charts
 - JSON backup files
@@ -339,6 +373,7 @@ export function useFinanceStats() {
 ## 💾 Backup System
 
 ### **Personalized Backups**
+
 Each user has their own backup system with complete isolation:
 
 ```typescript
@@ -369,6 +404,7 @@ export class BackupService {
 ```
 
 **Backup Features:**
+
 - ✅ **Create personal backups** with all user data
 - ✅ **JSON export** with download capability
 - ✅ **File restoration** with merge/replace options
@@ -378,11 +414,13 @@ export class BackupService {
 ## 🚀 Quick Start
 
 ### **Prerequisites**
+
 - Node.js 18.17+ and npm/yarn/pnpm
 - PostgreSQL database (local or cloud)
 - Git for repository cloning
 
 ### **1. Clone and Install**
+
 ```bash
 # Clone repository
 git clone https://github.com/erikkopcha/bit-chain.git
@@ -392,12 +430,14 @@ cd bit-chain
 npm install
 # or
 yarn install
-# or  
+# or
 pnpm install
 ```
 
 ### **2. Environment Configuration**
-Create a `.env.local` file:
+
+Copy `.env.example` to `.env.local` and update the values:
+
 ```env
 # Database (Neon example)
 DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
@@ -406,12 +446,16 @@ DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
 NEXTAUTH_SECRET="your-super-secret-jwt-key-here"
 NEXTAUTH_URL="http://localhost:3000"
 
+# Monobank integration
+MONO_API="your_monobank_personal_token"
+
 # Optional API keys for crypto data
 CRYPTOPANIC_API_KEY="your_cryptopanic_api_key"
 COINGECKO_API_KEY="your_coingecko_api_key" # Pro plan
 ```
 
 ### **3. Database Initialization**
+
 ```bash
 # Generate Prisma client
 npx prisma generate
@@ -424,6 +468,7 @@ npx prisma db seed
 ```
 
 ### **4. Development Run**
+
 ```bash
 npm run dev
 # or
@@ -437,6 +482,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## ⚙️ Configuration
 
 ### **Prisma Configuration**
+
 ```prisma
 // prisma/schema.prisma
 generator client {
@@ -451,23 +497,25 @@ datasource db {
 ```
 
 ### **Next.js Configuration**
+
 ```javascript
 // next.config.ts
 const nextConfig = {
   images: {
-    domains: ['assets.coingecko.com', 'crypto.com']
+    domains: ['assets.coingecko.com', 'crypto.com'],
   },
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client']
-  }
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
 };
 ```
 
 ### **TailwindCSS Configuration**
+
 ```javascript
 // tailwind.config.js
 module.exports = {
-  darkMode: ["class"],
+  darkMode: ['class'],
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
@@ -477,18 +525,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        background: "hsl(var(--background))",
+        border: 'hsl(var(--border))',
+        background: 'hsl(var(--background))',
         // ... color system
-      }
-    }
-  }
-}
+      },
+    },
+  },
+};
 ```
 
 ## 🏃‍♂️ Development
 
 ### **Available Commands**
+
 ```bash
 # Development
 npm run dev          # Run dev server
@@ -506,9 +555,14 @@ npx prisma generate  # Generate client
 # Utilities
 npm run format       # Prettier formatting
 npm run analyze      # Bundle analyzer
+
+# sync
+npm run monobank:sync-all -- --email "email@example.com" --from "2026-01-01" --force
+
 ```
 
 ### **Development Structure**
+
 ```
 Development Workflow:
 1. Feature branch creation
@@ -522,6 +576,7 @@ Development Workflow:
 ## 🚀 Deployment
 
 ### **Vercel Deployment (Recommended)**
+
 1. **Connect GitHub repository** to Vercel
 2. **Configure environment variables:**
    ```
@@ -532,6 +587,7 @@ Development Workflow:
 3. **Automatic deployment** on push to main
 
 ### **Railway Deployment**
+
 ```bash
 # Install Railway CLI
 npm install -g @railway/cli
@@ -543,6 +599,7 @@ railway up
 ```
 
 ### **Self-hosted (Docker)**
+
 ```dockerfile
 # Dockerfile
 FROM node:18-alpine AS deps
@@ -570,6 +627,7 @@ CMD ["npm", "start"]
 ## 📱 Responsiveness
 
 ### **Responsive Design**
+
 ```css
 /* Breakpoints system */
 sm: 640px   /* Mobile devices */
@@ -580,6 +638,7 @@ xl: 1280px  /* Large screens */
 ```
 
 **Mobile Optimization:**
+
 - Touch-friendly interfaces
 - Swipe gestures for navigation
 - Optimized forms for mobile keyboards
@@ -588,6 +647,7 @@ xl: 1280px  /* Large screens */
 ## 🔧 Development Guidelines
 
 ### **Code Style**
+
 ```typescript
 // ESLint configuration
 {
@@ -605,6 +665,7 @@ xl: 1280px  /* Large screens */
 ```
 
 ### **Commit Conventions**
+
 ```
 feat: add new functionality
 fix: bug fixes
@@ -616,6 +677,7 @@ chore: technical changes, dependency updates
 ```
 
 ### **Folder Structure Best Practices**
+
 - **Feature-based** organization in `features/`
 - **Shared components** in `components/ui`
 - **Custom hooks** in `hooks/`
@@ -625,6 +687,7 @@ chore: technical changes, dependency updates
 ## 🚀 Performance
 
 ### **Optimization Features**
+
 - **Server-side rendering** with Next.js App Router
 - **Static generation** for public pages
 - **Image optimization** with Next.js Image component
@@ -633,6 +696,7 @@ chore: technical changes, dependency updates
 - **Caching strategies** with React Query
 
 ### **Bundle Analysis**
+
 ```bash
 npm run analyze  # Analyze bundle size
 npm run build    # Check build performance
@@ -641,12 +705,14 @@ npm run build    # Check build performance
 ## 🧪 Testing
 
 ### **Testing Strategy**
+
 - **Unit tests** with Jest and React Testing Library
 - **Integration tests** for API routes
 - **E2E tests** with Playwright
 - **Type checking** with TypeScript
 
 ### **Testing Commands**
+
 ```bash
 npm run test        # Run unit tests
 npm run test:e2e    # Run E2E tests
@@ -657,6 +723,7 @@ npm run coverage    # Coverage report
 ## 🌐 API Documentation
 
 ### **Authentication Endpoints**
+
 ```
 POST /api/auth/register - User registration
 POST /api/auth/signin   - User login
@@ -664,6 +731,7 @@ GET  /api/auth/session  - Get current session
 ```
 
 ### **Trading Endpoints**
+
 ```
 GET    /api/trades         - Get user trades
 POST   /api/trades         - Create new trade
@@ -672,6 +740,7 @@ DELETE /api/trades/:id     - Delete trade
 ```
 
 ### **Finance Endpoints**
+
 ```
 GET    /api/finance/accounts     - Get accounts
 POST   /api/finance/accounts     - Create account
@@ -695,6 +764,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 📞 Support
 
 If you have questions or issues:
+
 - Create an [Issue](https://github.com/erikkopcha/bit-chain/issues)
 - Check [Documentation](https://github.com/erikkopcha/bit-chain/wiki)
 - Contact the developer

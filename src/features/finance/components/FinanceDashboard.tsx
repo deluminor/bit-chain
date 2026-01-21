@@ -117,6 +117,7 @@ export function FinanceDashboard() {
   const goals = goalsData?.goals || [];
 
   const monthlyIncomeEUR = transactionSummary?.income ?? 0;
+  // Use monthlyExpensesEUR which is already calculated correctly in API (excluding transfers)
   const monthlyExpensesEUR = transactionSummary?.expenses ?? 0;
   const incomeFrequency = transactionSummary?.incomeCount ?? 0;
   const expenseFrequency = transactionSummary?.expenseCount ?? 0;

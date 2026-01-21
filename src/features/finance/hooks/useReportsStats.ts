@@ -78,6 +78,7 @@ async function fetchReportStats(): Promise<ReportStats> {
         (sum: number, b: Budget) => sum + (b.totalPlannedBase ?? b.totalPlanned),
         0,
       );
+      // Use expenses from summary which now correctly excludes transfers
       const actualSpent = currentSummary.expenses || 0;
       budgetAdherence =
         totalPlanned > 0 ? Math.min(100, ((totalPlanned - actualSpent) / totalPlanned) * 100) : 0;

@@ -76,7 +76,7 @@ async function fetchFinanceStats(): Promise<FinanceStatsResponse> {
       date: string;
       amount: number;
       currency: string;
-      type: 'INCOME' | 'EXPENSE';
+      type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
     }
     const monthTransactions = transactions.filter((t: Transaction) => {
       const transactionDate = new Date(t.date);
@@ -88,6 +88,11 @@ async function fetchFinanceStats(): Promise<FinanceStatsResponse> {
     let monthlyExpenses = 0;
 
     for (const transaction of monthTransactions as Transaction[]) {
+      // Skip transfers for income/expense calculation
+      if (transaction.type === 'TRANSFER') {
+        continue;
+      }
+
       const amountInEur = await convertToBaseCurrencySafe(transaction.amount, transaction.currency);
 
       if (transaction.type === 'INCOME') {

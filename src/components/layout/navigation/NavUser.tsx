@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOutIcon, MoreVerticalIcon } from 'lucide-react';
+import { LogOutIcon, MoreVerticalIcon, Settings } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ import { ROUTES } from '@/features/auth/constants';
 import { signOut } from 'next-auth/react';
 import { useState } from 'react';
 import { DemoModeButton } from './DemoModeButton';
+import Link from 'next/link';
 
 interface INavUser {
   user: {
@@ -98,6 +99,13 @@ export function NavUser({ user }: INavUser) {
                   </div>
                 </div>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="flex items-center gap-2">
+                  <Settings className="size-4" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               {/* <DropdownMenuGroup>
                 <DropdownMenuItem>

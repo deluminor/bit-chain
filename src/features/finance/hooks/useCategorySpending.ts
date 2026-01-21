@@ -45,6 +45,9 @@ async function fetchCategorySpending(): Promise<CategorySpendingData[]> {
   const categorySpending = new Map<string, { amount: number; color: string }>();
 
   for (const transaction of transactions) {
+    if (transaction.type === 'TRANSFER') {
+      continue;
+    }
     const category = categories.find((cat: Category) => cat.id === transaction.categoryId);
     if (category) {
       const convertedAmount = await convertToBaseCurrencySafe(

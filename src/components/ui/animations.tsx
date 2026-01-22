@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion, AnimatePresence, Variants, HTMLMotionProps } from 'framer-motion';
 import { forwardRef } from 'react';
 
 // Base animation variants
@@ -67,7 +67,7 @@ export const staggerItem: Variants = {
 };
 
 // Component wrappers with animations
-interface AnimatedDivProps extends React.HTMLAttributes<HTMLDivElement> {
+interface AnimatedDivProps extends HTMLMotionProps<'div'> {
   variant?:
     | 'fadeIn'
     | 'slideUp'
@@ -198,7 +198,7 @@ export function AnimatedList({ children, className, itemClassName }: AnimatedLis
 }
 
 // Card hover animations
-export const cardHover = {
+export const cardHover: Variants = {
   rest: { scale: 1, boxShadow: '0 1px 3px rgb(0 0 0 / 0.1)' },
   hover: {
     scale: 1.02,
@@ -207,7 +207,7 @@ export const cardHover = {
   },
 };
 
-interface AnimatedCardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface AnimatedCardProps extends HTMLMotionProps<'div'> {
   children: React.ReactNode;
   enableHover?: boolean;
 }
@@ -238,7 +238,7 @@ export const buttonPress = {
   transition: { type: 'spring', stiffness: 400, damping: 30 },
 };
 
-interface AnimatedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface AnimatedButtonProps extends HTMLMotionProps<'button'> {
   children: React.ReactNode;
 }
 
@@ -287,8 +287,8 @@ export function AnimatedCounter({
     >
       {prefix}
       <motion.span
-        initial={{ value: from }}
-        animate={{ value: to }}
+        initial={{ value: from } as any}
+        animate={{ value: to } as any}
         transition={{ duration, ease: 'easeOut' }}
       >
         {from}

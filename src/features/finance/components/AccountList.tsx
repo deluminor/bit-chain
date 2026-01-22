@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { AccountForm } from '@/components/forms/AccountForm';
+import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
+import { AnimatedDiv } from '@/components/ui/animations';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -26,35 +29,34 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
 import { TableLoadingBar } from '@/components/ui/table-loading-bar';
-import { useToast } from '@/hooks/use-toast';
 import {
-  MoreHorizontal,
+  FinanceAccount,
+  useAccountAction,
+  useAccounts,
+  useDeleteAccount,
+} from '@/features/finance/queries/accounts';
+import { useMonobankAutoSync } from '@/features/integrations/hooks/useMonobankAutoSync';
+import { useMonobankSync } from '@/features/integrations/queries/monobank';
+import { useToast } from '@/hooks/use-toast';
+import { convertToBaseCurrencySafe, formatCurrency, formatSummaryAmount } from '@/lib/currency';
+import {
+  Activity,
+  AlertTriangle,
+  CreditCard,
+  DollarSign,
   Edit,
-  Trash2,
   Eye,
   EyeOff,
-  Plus,
-  Wallet,
-  CreditCard,
+  MoreHorizontal,
   PiggyBank,
+  Plus,
+  RefreshCw,
+  Trash2,
   TrendingUp,
-  AlertTriangle,
-  DollarSign,
-  Activity,
+  Wallet,
 } from 'lucide-react';
-import { AccountForm } from '@/components/forms/AccountForm';
-import {
-  useAccounts,
-  useAccountAction,
-  useDeleteAccount,
-  FinanceAccount,
-} from '@/features/finance/queries/accounts';
-import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
-import { convertToBaseCurrencySafe, formatCurrency, formatSummaryAmount } from '@/lib/currency';
-import { AnimatedDiv } from '@/components/ui/animations';
-import { useMonobankAutoSync } from '@/features/integrations/hooks/useMonobankAutoSync';
+import { useEffect, useMemo, useState } from 'react';
 
 const accountTypeIcons = {
   CASH: Wallet,
@@ -66,22 +68,22 @@ const accountTypeIcons = {
 const getAccountTypeColor = (type: string) => {
   switch (type) {
     case 'CASH':
-      return 'text-green-600 bg-green-100 dark:bg-green-900/20';
+      return 'text-income bg-income/10';
     case 'BANK_CARD':
-      return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20';
+      return 'text-transfer bg-transfer/10';
     case 'SAVINGS':
       return 'text-purple-600 bg-purple-100 dark:bg-purple-900/20';
     case 'INVESTMENT':
-      return 'text-orange-600 bg-orange-100 dark:bg-orange-900/20';
+      return 'text-amber-600 bg-amber-100 dark:bg-amber-900/20';
     default:
-      return 'text-gray-600 bg-gray-100 dark:bg-gray-900/20';
+      return 'text-muted-foreground bg-muted';
   }
 };
 
 const getBalanceColor = (balance: number) => {
-  if (balance > 0) return 'text-green-600 dark:text-green-400';
-  if (balance < 0) return 'text-red-600 dark:text-red-400';
-  return 'text-gray-600 dark:text-gray-400';
+  if (balance > 0) return 'text-income';
+  if (balance < 0) return 'text-expense';
+  return 'text-muted-foreground';
 };
 
 export function AccountList() {
@@ -89,6 +91,7 @@ export function AccountList() {
   const accountAction = useAccountAction();
   const deleteAccount = useDeleteAccount();
   const { toast } = useToast();
+  const syncMutation = useMonobankSync();
 
   useMonobankAutoSync('accounts_page');
 
@@ -251,6 +254,7 @@ export function AccountList() {
               </p>
             </div>
           </div>
+
           <Button onClick={() => setShowCreateDialog(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Add Account
@@ -314,12 +318,25 @@ export function AccountList() {
 
         {/* Accounts Table */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              Your Accounts
-            </CardTitle>
-            <CardDescription>Manage your financial accounts and track balances</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div className="space-y-1.5">
+              <CardTitle className="flex items-center gap-2">
+                <Wallet className="h-5 w-5" />
+                Your Accounts
+              </CardTitle>
+              <CardDescription>Manage your financial accounts and track balances</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => syncMutation.mutate({ reason: 'manual_reload', force: true })}
+              disabled={syncMutation.isPending}
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`}
+              />
+              Sync
+            </Button>
           </CardHeader>
           <CardContent className="p-0">
             <div className="relative">

@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { DateRange } from 'react-day-picker';
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { useTransactions } from '../queries/transactions';
+import { FINANCE_COLORS } from '@/constants/colors';
 
 import { convertToBaseCurrencySafe, formatSummaryAmount } from '@/lib/currency';
 
@@ -36,11 +37,11 @@ export function IncomeExpenseChart() {
   const chartConfig = {
     income: {
       label: 'Income',
-      color: '#10B981', // Green
+      color: FINANCE_COLORS.INCOME,
     },
     expenses: {
       label: 'Expenses',
-      color: '#EF4444', // Red
+      color: FINANCE_COLORS.EXPENSE,
     },
   } satisfies ChartConfig;
 
@@ -159,20 +160,20 @@ export function IncomeExpenseChart() {
         {/* Summary Stats */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-income">
               {formatSummaryAmount(totals.income)}
             </div>
             <div className="text-sm text-muted-foreground">Total Income</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-expense">
               {formatSummaryAmount(totals.expenses)}
             </div>
             <div className="text-sm text-muted-foreground">Total Expenses</div>
           </div>
           <div className="text-center">
             <div
-              className={`text-2xl font-bold ${totals.net >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              className={`text-2xl font-bold ${totals.net >= 0 ? 'text-income' : 'text-expense'}`}
             >
               {totals.net >= 0 ? '+' : ''}
               {formatSummaryAmount(totals.net)}
@@ -185,78 +186,14 @@ export function IncomeExpenseChart() {
           <AreaChart data={processedData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
             <defs>
               <linearGradient id="fillIncome" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.55}
-                />
-                <stop
-                  offset="15%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.48}
-                />
-                <stop
-                  offset="30%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.38}
-                />
-                <stop
-                  offset="50%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.25}
-                />
-                <stop
-                  offset="70%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.15}
-                />
-                <stop
-                  offset="85%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.08}
-                />
-                <stop
-                  offset="100%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.02}
-                />
+                <stop offset="0%" stopColor="var(--income)" stopOpacity={0.4} />
+                <stop offset="50%" stopColor="var(--income)" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="var(--income)" stopOpacity={0.01} />
               </linearGradient>
               <linearGradient id="fillExpenses" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                  stopOpacity={0.45}
-                />
-                <stop
-                  offset="15%"
-                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                  stopOpacity={0.38}
-                />
-                <stop
-                  offset="30%"
-                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                  stopOpacity={0.28}
-                />
-                <stop
-                  offset="50%"
-                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                  stopOpacity={0.18}
-                />
-                <stop
-                  offset="70%"
-                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                  stopOpacity={0.1}
-                />
-                <stop
-                  offset="85%"
-                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                  stopOpacity={0.05}
-                />
-                <stop
-                  offset="100%"
-                  stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                  stopOpacity={0.01}
-                />
+                <stop offset="0%" stopColor="var(--expense)" stopOpacity={0.4} />
+                <stop offset="50%" stopColor="var(--expense)" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="var(--expense)" stopOpacity={0.01} />
               </linearGradient>
             </defs>
             <CartesianGrid
@@ -325,14 +262,14 @@ export function IncomeExpenseChart() {
               dataKey="expenses"
               type="monotone"
               fill="url(#fillExpenses)"
-              stroke={theme === THEME.DARK ? '#d1d5db' : '#6b7280'}
-              strokeWidth={0.7}
+              stroke="var(--expense)"
+              strokeWidth={1.5}
               connectNulls
               dot={false}
               activeDot={{
                 r: 4,
                 strokeWidth: 2,
-                stroke: theme === THEME.DARK ? '#d1d5db' : '#6b7280',
+                stroke: 'var(--expense)',
                 fill: theme === THEME.DARK ? '#000000' : '#ffffff',
                 opacity: 1,
               }}
@@ -344,14 +281,14 @@ export function IncomeExpenseChart() {
               dataKey="income"
               type="monotone"
               fill="url(#fillIncome)"
-              stroke={theme === THEME.DARK ? '#ffffff' : '#4b5563'}
-              strokeWidth={0.7}
+              stroke="var(--income)"
+              strokeWidth={1.5}
               connectNulls
               dot={false}
               activeDot={{
                 r: 4,
                 strokeWidth: 2,
-                stroke: theme === THEME.DARK ? '#ffffff' : '#4b5563',
+                stroke: 'var(--income)',
                 fill: theme === THEME.DARK ? '#000000' : '#ffffff',
                 opacity: 1,
               }}

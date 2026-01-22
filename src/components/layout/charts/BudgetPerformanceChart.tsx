@@ -13,11 +13,11 @@ import { Target, AlertTriangle } from 'lucide-react';
 const chartConfig = {
   budgeted: {
     label: 'Budgeted',
-    color: '#000000',
+    color: 'var(--primary)',
   },
   spent: {
     label: 'Spent',
-    color: '#666666',
+    color: 'var(--expense)',
   },
 } satisfies ChartConfig;
 
@@ -61,15 +61,13 @@ export function BudgetPerformanceChart() {
     <div className="flex items-center justify-between text-sm">
       <div className="flex items-center gap-1">
         {overBudgetCategories > 0 ? (
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <AlertTriangle className="h-4 w-4 text-expense" />
         ) : (
-          <Target className="h-4 w-4 text-green-600" />
+          <Target className="h-4 w-4 text-income" />
         )}
         <span className="text-muted-foreground">Over Budget:</span>
         <span
-          className={`font-medium ${
-            overBudgetCategories > 0 ? 'text-amber-600' : 'text-green-600'
-          }`}
+          className={`font-medium ${overBudgetCategories > 0 ? 'text-expense' : 'text-income'}`}
         >
           {overBudgetCategories} categories
         </span>
@@ -79,10 +77,10 @@ export function BudgetPerformanceChart() {
         <span
           className={`font-medium ${
             budgetUtilization > 100
-              ? 'text-red-600'
+              ? 'text-expense'
               : budgetUtilization > 80
                 ? 'text-amber-600'
-                : 'text-green-600'
+                : 'text-income'
           }`}
         >
           {budgetUtilization.toFixed(1)}%
@@ -108,115 +106,19 @@ export function BudgetPerformanceChart() {
             >
               <defs>
                 <linearGradient id="budgetGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.55}
-                  />
-                  <stop
-                    offset="15%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.48}
-                  />
-                  <stop
-                    offset="30%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.38}
-                  />
-                  <stop
-                    offset="50%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.25}
-                  />
-                  <stop
-                    offset="70%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.15}
-                  />
-                  <stop
-                    offset="85%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.08}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                    stopOpacity={0.02}
-                  />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.4} />
+                  <stop offset="50%" stopColor="var(--primary)" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.01} />
                 </linearGradient>
                 <linearGradient id="spentGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                    stopOpacity={0.45}
-                  />
-                  <stop
-                    offset="15%"
-                    stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                    stopOpacity={0.38}
-                  />
-                  <stop
-                    offset="30%"
-                    stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                    stopOpacity={0.28}
-                  />
-                  <stop
-                    offset="50%"
-                    stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                    stopOpacity={0.18}
-                  />
-                  <stop
-                    offset="70%"
-                    stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                    stopOpacity={0.1}
-                  />
-                  <stop
-                    offset="85%"
-                    stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                    stopOpacity={0.05}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor={theme === THEME.DARK ? '#d1d5db' : '#9ca3af'}
-                    stopOpacity={0.01}
-                  />
+                  <stop offset="0%" stopColor="var(--income)" stopOpacity={0.4} />
+                  <stop offset="50%" stopColor="var(--income)" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="var(--income)" stopOpacity={0.01} />
                 </linearGradient>
                 <linearGradient id="overSpentGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
-                    stopOpacity={0.45}
-                  />
-                  <stop
-                    offset="15%"
-                    stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
-                    stopOpacity={0.38}
-                  />
-                  <stop
-                    offset="30%"
-                    stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
-                    stopOpacity={0.28}
-                  />
-                  <stop
-                    offset="50%"
-                    stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
-                    stopOpacity={0.18}
-                  />
-                  <stop
-                    offset="70%"
-                    stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
-                    stopOpacity={0.1}
-                  />
-                  <stop
-                    offset="85%"
-                    stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
-                    stopOpacity={0.05}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor={theme === THEME.DARK ? '#fca5a5' : '#ef4444'}
-                    stopOpacity={0.01}
-                  />
+                  <stop offset="0%" stopColor="var(--expense)" stopOpacity={0.4} />
+                  <stop offset="50%" stopColor="var(--expense)" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="var(--expense)" stopOpacity={0.01} />
                 </linearGradient>
               </defs>
               <CartesianGrid
@@ -271,13 +173,9 @@ export function BudgetPerformanceChart() {
                                 className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
                                 style={{
                                   backgroundColor:
-                                    entry.name === 'budgeted'
-                                      ? theme === THEME.DARK
-                                        ? '#ffffff'
-                                        : '#6b7280'
-                                      : theme === THEME.DARK
-                                        ? '#d1d5db'
-                                        : '#9ca3af',
+                                    entry.name === 'budgeted' || entry.name === 'Budgeted'
+                                      ? 'var(--primary)'
+                                      : 'var(--expense)',
                                 }}
                               />
                               <div className="flex w-full flex-wrap items-stretch gap-2">

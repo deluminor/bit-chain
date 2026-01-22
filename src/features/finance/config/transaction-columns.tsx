@@ -71,26 +71,26 @@ const transactionTypeIcons = {
 const getTransactionTypeColor = (type: string) => {
   switch (type) {
     case 'INCOME':
-      return 'text-green-600 bg-green-100 dark:bg-green-900/20';
+      return 'text-income bg-income/10';
     case 'EXPENSE':
-      return 'text-red-600 bg-red-100 dark:bg-red-900/20';
+      return 'text-expense bg-expense/10';
     case 'TRANSFER':
-      return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20';
+      return 'text-transfer bg-transfer/10';
     default:
-      return 'text-gray-600 bg-gray-100 dark:bg-gray-900/20';
+      return 'text-muted-foreground bg-muted';
   }
 };
 
 const getAmountColor = (type: string) => {
   switch (type) {
     case 'INCOME':
-      return 'text-green-600 dark:text-green-400';
+      return 'text-income';
     case 'EXPENSE':
-      return 'text-red-600 dark:text-red-400';
+      return 'text-expense';
     case 'TRANSFER':
-      return 'text-blue-600 dark:text-blue-400';
+      return 'text-transfer';
     default:
-      return 'text-gray-600 dark:text-gray-400';
+      return 'text-muted-foreground';
   }
 };
 

@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from '@/generated/prisma';
 import {
+  fetchMonobankClientInfo,
   fetchMonobankServerSync,
   fetchMonobankStatement,
   mapCurrencyCode,
@@ -29,6 +30,7 @@ export type SyncPayload = {
   reason?: string | null;
   fromDate?: Date | null;
   force?: boolean;
+  accountName?: string;
 };
 
 export type SyncResult = {
@@ -269,9 +271,50 @@ export async function syncMonobankAccounts({
     } satisfies SyncResult;
   }
 
+  // Always perform balance reconciliation
+  try {
+    const clientInfo = await fetchMonobankClientInfo(token);
+
+    const balanceMap = new Map<string, number>();
+
+    const processAccount = (acc: { id: string; currencyCode: number; balance: number }) => {
+      const currency = mapCurrencyCode(acc.currencyCode);
+      const normalized = normalizeMonobankAmount(acc.balance, currency);
+      balanceMap.set(acc.id, normalized);
+    };
+
+    clientInfo.accounts.forEach(processAccount);
+    clientInfo.managedClients?.forEach(client => client.accounts.forEach(processAccount));
+
+    for (const account of integration.accounts) {
+      const correctBalance = balanceMap.get(account.providerAccountId);
+      if (correctBalance !== undefined) {
+        // Update both integration and finance accounts directly
+        await prisma.integrationAccount.update({
+          where: { id: account.id },
+          data: { balance: correctBalance },
+        });
+
+        if (account.financeAccountId) {
+          await prisma.financeAccount.update({
+            where: { id: account.financeAccountId },
+            data: { balance: correctBalance },
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to perform balance reconciliation:', error);
+    // Continue with normal sync even if this fails
+  }
+
   const integrationAccounts = integration.accounts as IntegrationAccountShape[];
   const enabledAccounts = integrationAccounts.filter(
-    account => account.importEnabled && account.financeAccountId,
+    account =>
+      account.importEnabled &&
+      account.financeAccountId &&
+      (!effectivePayload.accountName ||
+        account.name.toLowerCase().includes(effectivePayload.accountName.toLowerCase())),
   );
 
   if (enabledAccounts.length === 0) {
@@ -344,11 +387,27 @@ export async function syncMonobankAccounts({
     let statements = [] as Awaited<ReturnType<typeof fetchMonobankStatement>>;
 
     try {
+      console.log(`[MonobankSync] Fetching statement for account ${account.name} (${account.id})`, {
+        fromTimestamp,
+        toTimestamp,
+        fromDate: new Date(fromTimestamp * 1000).toISOString(),
+      });
+
       statements = await fetchMonobankStatement(
         token,
         account.providerAccountId,
         fromTimestamp,
         toTimestamp,
+      );
+
+      console.log(
+        `[MonobankSync] Received ${statements.length} items for ${account.name}`,
+        statements.length > 0
+          ? {
+              first: statements[0],
+              last: statements[statements.length - 1],
+            }
+          : 'No items',
       );
     } catch (error) {
       const status = getErrorStatus(error);
@@ -383,7 +442,7 @@ export async function syncMonobankAccounts({
 
     if (statements.length > 0) {
       const transactionData = statements
-        .filter(item => !item.hold)
+        // .filter(item => !item.hold) // Allow pending transactions
         .map(item => {
           const accountCurrency = account.currency;
           const operationCurrency = mapCurrencyCode(item.currencyCode, accountCurrency);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -69,7 +69,7 @@ export function LoanForm({ onClose, onSuccess, loan }: LoanFormProps) {
   const isEditing = !!loan;
 
   const form = useForm<LoanFormData>({
-    resolver: zodResolver(loanFormSchema),
+    resolver: zodResolver(loanFormSchema) as unknown as Resolver<LoanFormData>,
     defaultValues: {
       name: loan?.name || '',
       type: loan?.type || 'LOAN',
@@ -89,7 +89,7 @@ export function LoanForm({ onClose, onSuccess, loan }: LoanFormProps) {
   const watchedCurrentBalance = form.watch('currentBalance');
   const outstanding = Math.max(watchedCurrentBalance, 0);
 
-  const onSubmit = async (data: LoanFormData) => {
+  const onSubmit: SubmitHandler<LoanFormData> = async data => {
     try {
       const payload = {
         ...data,
@@ -118,10 +118,14 @@ export function LoanForm({ onClose, onSuccess, loan }: LoanFormProps) {
 
       onSuccess?.();
       onClose();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : `Failed to ${isEditing ? 'update' : 'create'} loan`;
       toast({
         title: 'Error',
-        description: error?.message || `Failed to ${isEditing ? 'update' : 'create'} loan`,
+        description: errorMessage,
         variant: 'destructive',
       });
     }

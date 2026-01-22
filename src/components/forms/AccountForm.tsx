@@ -160,7 +160,12 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
       {/* Account Type */}
       <div className="space-y-3">
         <Label>Account Type</Label>
-        <Select value={form.watch('type')} onValueChange={value => form.setValue('type', value)}>
+        <Select
+          value={form.watch('type')}
+          onValueChange={value =>
+            form.setValue('type', value as 'CASH' | 'BANK_CARD' | 'SAVINGS' | 'INVESTMENT')
+          }
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>

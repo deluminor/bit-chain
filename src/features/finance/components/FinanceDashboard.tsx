@@ -52,9 +52,9 @@ function QuickStatCard({ title, value, change, changeType, icon, href }: QuickSt
             <p
               className={`text-xs flex items-center gap-1 mt-1 ${
                 changeType === 'positive'
-                  ? 'text-green-600'
+                  ? 'text-income'
                   : changeType === 'negative'
-                    ? 'text-red-600'
+                    ? 'text-expense'
                     : 'text-muted-foreground'
               }`}
             >
@@ -179,7 +179,7 @@ export function FinanceDashboard() {
             value={formatSummaryAmount(monthlyIncomeEUR)}
             changeType="positive"
             change={`${incomeFrequency} transactions`}
-            icon={<TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
+            icon={<TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-income" />}
             href="/transactions"
           />
 
@@ -188,7 +188,7 @@ export function FinanceDashboard() {
             value={formatSummaryAmount(monthlyExpensesEUR)}
             changeType="negative"
             change={`${expenseFrequency} transactions`}
-            icon={<TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
+            icon={<TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-expense" />}
             href="/transactions"
           />
 
@@ -210,16 +210,14 @@ export function FinanceDashboard() {
             <CardContent className="p-4 md:p-6 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Net Flow</span>
-                <span
-                  className={`font-semibold ${netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                >
+                <span className={`font-semibold ${netFlow >= 0 ? 'text-income' : 'text-expense'}`}>
                   {netFlow >= 0 ? '+' : ''}
                   {formatSummaryAmount(netFlow)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Savings Rate</span>
-                <span className="font-semibold text-emerald-500">{savingsRate}%</span>
+                <span className="font-semibold text-income">{savingsRate}%</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Income Count</span>
@@ -239,13 +237,13 @@ export function FinanceDashboard() {
             <CardContent className="p-4 md:p-6 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Largest Income</span>
-                <span className="font-semibold text-emerald-500">
+                <span className="font-semibold text-income">
                   {formatSummaryAmount(largestIncome)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Largest Expense</span>
-                <span className="font-semibold text-rose-500">
+                <span className="font-semibold text-expense">
                   {formatSummaryAmount(largestExpense)}
                 </span>
               </div>

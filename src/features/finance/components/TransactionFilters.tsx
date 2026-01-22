@@ -11,7 +11,8 @@ import {
 import { Loader2, RefreshCw, Search, X } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { useTransactionCategories } from '@/features/finance/queries/transactions';
-import { useAccounts } from '@/features/finance/queries/accounts';
+import { useAccounts, FinanceAccount } from '@/features/finance/queries/accounts';
+import { TransactionCategory } from '@/features/finance/queries/categories';
 
 interface TransactionFiltersProps {
   searchTerm: string;
@@ -57,8 +58,8 @@ export function TransactionFilters({
   const { data: categoriesData } = useTransactionCategories();
   const { data: accountsData } = useAccounts();
 
-  const categories = categoriesData || [];
-  const accounts = accountsData?.accounts || [];
+  const categories: TransactionCategory[] = categoriesData || [];
+  const accounts: FinanceAccount[] = accountsData?.accounts || [];
 
   const clearFilters = () => {
     onSearchChange('');
@@ -122,8 +123,8 @@ export function TransactionFilters({
       <div className="flex flex-wrap gap-2">
         {/* Date Range */}
         <DatePicker
-          date={dateRange}
-          onDateChange={onDateRangeChange}
+          dateRange={dateRange}
+          onDateRangeChange={onDateRangeChange}
           placeholder="Select date range"
           mode="range"
         />
@@ -131,7 +132,11 @@ export function TransactionFilters({
         {/* Transaction Type */}
         <Select
           value={typeFilter || ''}
-          onValueChange={value => onTypeFilterChange(value || undefined)}
+          onValueChange={value =>
+            onTypeFilterChange(
+              (value || undefined) as 'INCOME' | 'EXPENSE' | 'TRANSFER' | undefined,
+            )
+          }
         >
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Type" />

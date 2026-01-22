@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { PrismaClient } from '@/generated/prisma';
 import type { Prisma } from '@/generated/prisma';
+import { PrismaClient } from '@/generated/prisma';
 import { convertToBaseCurrencySafe } from '@/lib/currency';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const prisma = new PrismaClient();
@@ -477,38 +477,58 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Update account balances based on transaction type
-      switch (validatedData.type) {
-        case 'INCOME':
-          await tx.financeAccount.update({
-            where: { id: validatedData.accountId },
-            data: { balance: { increment: validatedData.amount } },
-          });
-          break;
+      // Check if account is integrated
+      const account = await tx.financeAccount.findUnique({
+        where: { id: validatedData.accountId },
+        include: { integrationAccounts: true },
+      });
 
-        case 'EXPENSE':
-          await tx.financeAccount.update({
-            where: { id: validatedData.accountId },
-            data: { balance: { decrement: validatedData.amount } },
-          });
-          break;
+      const isIntegrated = (account?.integrationAccounts.length ?? 0) > 0;
 
-        case 'TRANSFER':
-          if (validatedData.transferToId) {
-            // Subtract from source account
+      if (!isIntegrated) {
+        // Update account balances based on transaction type
+        switch (validatedData.type) {
+          case 'INCOME':
+            await tx.financeAccount.update({
+              where: { id: validatedData.accountId },
+              data: { balance: { increment: validatedData.amount } },
+            });
+            break;
+
+          case 'EXPENSE':
             await tx.financeAccount.update({
               where: { id: validatedData.accountId },
               data: { balance: { decrement: validatedData.amount } },
             });
+            break;
 
-            // Add to destination account (use transferAmount for multi-currency transfers)
-            const amountToAdd = validatedData.transferAmount || validatedData.amount;
-            await tx.financeAccount.update({
-              where: { id: validatedData.transferToId },
-              data: { balance: { increment: amountToAdd } },
-            });
-          }
-          break;
+          case 'TRANSFER':
+            if (validatedData.transferToId) {
+              // Subtract from source account
+              await tx.financeAccount.update({
+                where: { id: validatedData.accountId },
+                data: { balance: { decrement: validatedData.amount } },
+              });
+
+              // Check if destination account is integrated
+              const destAccount = await tx.financeAccount.findUnique({
+                where: { id: validatedData.transferToId },
+                include: { integrationAccounts: true },
+              });
+
+              const isDestIntegrated = (destAccount?.integrationAccounts.length ?? 0) > 0;
+
+              if (!isDestIntegrated) {
+                // Add to destination account (use transferAmount for multi-currency transfers)
+                const amountToAdd = validatedData.transferAmount || validatedData.amount;
+                await tx.financeAccount.update({
+                  where: { id: validatedData.transferToId },
+                  data: { balance: { increment: amountToAdd } },
+                });
+              }
+            }
+            break;
+        }
       }
 
       if (category.loanId) {
@@ -577,34 +597,57 @@ export async function PUT(request: NextRequest) {
 
     // Update transaction and balances in a database transaction
     const result = await prisma.$transaction(async tx => {
-      // First, reverse the original transaction's balance effects
-      switch (existingTransaction.type) {
-        case 'INCOME':
-          await tx.financeAccount.update({
-            where: { id: existingTransaction.accountId },
-            data: { balance: { decrement: existingTransaction.amount } },
-          });
-          break;
-        case 'EXPENSE':
-          await tx.financeAccount.update({
-            where: { id: existingTransaction.accountId },
-            data: { balance: { increment: existingTransaction.amount } },
-          });
-          break;
-        case 'TRANSFER':
-          if (existingTransaction.transferToId) {
+      // Check if original account is integrated
+      const originalAccount = await tx.financeAccount.findUnique({
+        where: { id: existingTransaction.accountId },
+        include: { integrationAccounts: true },
+      });
+
+      const isOriginalIntegrated = (originalAccount?.integrationAccounts.length ?? 0) > 0;
+
+      if (!isOriginalIntegrated) {
+        // First, reverse the original transaction's balance effects
+        switch (existingTransaction.type) {
+          case 'INCOME':
+            await tx.financeAccount.update({
+              where: { id: existingTransaction.accountId },
+              data: { balance: { decrement: existingTransaction.amount } },
+            });
+            break;
+          case 'EXPENSE':
             await tx.financeAccount.update({
               where: { id: existingTransaction.accountId },
               data: { balance: { increment: existingTransaction.amount } },
             });
-            // Use transferAmount from existing transaction if available, otherwise use amount
-            const amountToRevert = existingTransaction.transferAmount || existingTransaction.amount;
-            await tx.financeAccount.update({
-              where: { id: existingTransaction.transferToId },
-              data: { balance: { decrement: amountToRevert } },
-            });
-          }
-          break;
+            break;
+          case 'TRANSFER':
+            if (existingTransaction.transferToId) {
+              await tx.financeAccount.update({
+                where: { id: existingTransaction.accountId },
+                data: { balance: { increment: existingTransaction.amount } },
+              });
+
+              // Check if original destination is integrated
+              const originalDestAccount = await tx.financeAccount.findUnique({
+                where: { id: existingTransaction.transferToId },
+                include: { integrationAccounts: true },
+              });
+
+              const isOriginalDestIntegrated =
+                (originalDestAccount?.integrationAccounts.length ?? 0) > 0;
+
+              if (!isOriginalDestIntegrated) {
+                // Use transferAmount from existing transaction if available, otherwise use amount
+                const amountToRevert =
+                  existingTransaction.transferAmount || existingTransaction.amount;
+                await tx.financeAccount.update({
+                  where: { id: existingTransaction.transferToId },
+                  data: { balance: { decrement: amountToRevert } },
+                });
+              }
+            }
+            break;
+        }
       }
 
       if (existingTransaction.category.loanId) {
@@ -671,34 +714,55 @@ export async function PUT(request: NextRequest) {
       const newAccountId = updateData.accountId || existingTransaction.accountId;
       const newTransferToId = updateData.transferToId || existingTransaction.transferToId;
 
-      switch (newType) {
-        case 'INCOME':
-          await tx.financeAccount.update({
-            where: { id: newAccountId },
-            data: { balance: { increment: newAmount } },
-          });
-          break;
-        case 'EXPENSE':
-          await tx.financeAccount.update({
-            where: { id: newAccountId },
-            data: { balance: { decrement: newAmount } },
-          });
-          break;
-        case 'TRANSFER':
-          if (newTransferToId) {
+      // Check if new account is integrated
+      const newAccount = await tx.financeAccount.findUnique({
+        where: { id: newAccountId },
+        include: { integrationAccounts: true },
+      });
+
+      const isNewIntegrated = (newAccount?.integrationAccounts.length ?? 0) > 0;
+
+      if (!isNewIntegrated) {
+        switch (newType) {
+          case 'INCOME':
+            await tx.financeAccount.update({
+              where: { id: newAccountId },
+              data: { balance: { increment: newAmount } },
+            });
+            break;
+          case 'EXPENSE':
             await tx.financeAccount.update({
               where: { id: newAccountId },
               data: { balance: { decrement: newAmount } },
             });
-            // Use transferAmount for destination account if available, otherwise use amount
-            const amountToAdd =
-              updateData.transferAmount || existingTransaction.transferAmount || newAmount;
-            await tx.financeAccount.update({
-              where: { id: newTransferToId },
-              data: { balance: { increment: amountToAdd } },
-            });
-          }
-          break;
+            break;
+          case 'TRANSFER':
+            if (newTransferToId) {
+              await tx.financeAccount.update({
+                where: { id: newAccountId },
+                data: { balance: { decrement: newAmount } },
+              });
+
+              // Check if new destination is integrated
+              const newDestAccount = await tx.financeAccount.findUnique({
+                where: { id: newTransferToId },
+                include: { integrationAccounts: true },
+              });
+
+              const isNewDestIntegrated = (newDestAccount?.integrationAccounts.length ?? 0) > 0;
+
+              if (!isNewDestIntegrated) {
+                // Use transferAmount for destination account if available, otherwise use amount
+                const amountToAdd =
+                  updateData.transferAmount || existingTransaction.transferAmount || newAmount;
+                await tx.financeAccount.update({
+                  where: { id: newTransferToId },
+                  data: { balance: { increment: amountToAdd } },
+                });
+              }
+            }
+            break;
+        }
       }
 
       const newCategory = await tx.transactionCategory.findFirst({
@@ -796,36 +860,57 @@ export async function DELETE(request: NextRequest) {
 
     // Delete transaction and reverse balance effects in a database transaction
     await prisma.$transaction(async tx => {
-      // Reverse the transaction's balance effects
-      switch (existingTransaction.type) {
-        case 'INCOME':
-          await tx.financeAccount.update({
-            where: { id: existingTransaction.accountId },
-            data: { balance: { decrement: existingTransaction.amount } },
-          });
-          break;
-        case 'EXPENSE':
-          await tx.financeAccount.update({
-            where: { id: existingTransaction.accountId },
-            data: { balance: { increment: existingTransaction.amount } },
-          });
-          break;
-        case 'TRANSFER':
-          if (existingTransaction.transferToId) {
+      // Check if account is integrated
+      const account = await tx.financeAccount.findUnique({
+        where: { id: existingTransaction.accountId },
+        include: { integrationAccounts: true },
+      });
+
+      const isIntegrated = (account?.integrationAccounts.length ?? 0) > 0;
+
+      if (!isIntegrated) {
+        // Reverse the transaction's balance effects
+        switch (existingTransaction.type) {
+          case 'INCOME':
+            await tx.financeAccount.update({
+              where: { id: existingTransaction.accountId },
+              data: { balance: { decrement: existingTransaction.amount } },
+            });
+            break;
+          case 'EXPENSE':
             await tx.financeAccount.update({
               where: { id: existingTransaction.accountId },
               data: { balance: { increment: existingTransaction.amount } },
             });
-            // Use transferAmount from existing transaction if available, otherwise use amount
-            const amountToRevert = existingTransaction.transferAmount || existingTransaction.amount;
-            await tx.financeAccount.update({
-              where: { id: existingTransaction.transferToId },
-              data: { balance: { decrement: amountToRevert } },
-            });
-          }
-          break;
-      }
+            break;
+          case 'TRANSFER':
+            if (existingTransaction.transferToId) {
+              await tx.financeAccount.update({
+                where: { id: existingTransaction.accountId },
+                data: { balance: { increment: existingTransaction.amount } },
+              });
 
+              // For the destination account, we also need to check if it's integrated
+              const destAccount = await tx.financeAccount.findUnique({
+                where: { id: existingTransaction.transferToId },
+                include: { integrationAccounts: true },
+              });
+
+              const isDestIntegrated = (destAccount?.integrationAccounts.length ?? 0) > 0;
+
+              if (!isDestIntegrated) {
+                // Use transferAmount from existing transaction if available, otherwise use amount
+                const amountToRevert =
+                  existingTransaction.transferAmount || existingTransaction.amount;
+                await tx.financeAccount.update({
+                  where: { id: existingTransaction.transferToId },
+                  data: { balance: { decrement: amountToRevert } },
+                });
+              }
+            }
+            break;
+        }
+      }
       if (existingTransaction.category.loanId) {
         await adjustLoanBalance(
           tx,
@@ -835,15 +920,12 @@ export async function DELETE(request: NextRequest) {
         );
       }
 
-      // Delete the transaction
       await tx.transaction.delete({
         where: { id: transactionId },
       });
     });
 
-    return NextResponse.json({
-      message: 'Transaction deleted successfully',
-    });
+    return NextResponse.json({ message: 'Transaction deleted successfully' });
   } catch (error) {
     console.error('Error deleting transaction:', error);
     return NextResponse.json({ error: 'Failed to delete transaction' }, { status: 500 });

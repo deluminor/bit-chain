@@ -20,6 +20,7 @@ import { useAccounts } from '../queries/accounts';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
 import { convertToBaseCurrencySafe, formatSummaryAmount } from '@/lib/currency';
+import { FINANCE_COLORS } from '@/constants/colors';
 
 interface NetWorthDataPoint {
   date: string;
@@ -220,11 +221,11 @@ export function NetWorthChart() {
   const chartConfig = {
     netWorth: {
       label: 'Net Worth',
-      color: '#10B981', // Green
+      color: FINANCE_COLORS.NET_WORTH,
     },
     totalAssets: {
       label: 'Total Assets',
-      color: '#3B82F6', // Blue
+      color: FINANCE_COLORS.TRANSFER,
     },
   } satisfies ChartConfig;
 
@@ -255,8 +256,8 @@ export function NetWorthChart() {
         {/* Performance Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-3 rounded-lg bg-muted/50">
-            <div className="text-2xl font-bold text-green-600">
-              <TotalBalanceDisplay size="lg" className="text-green-600" />
+            <div className="text-2xl font-bold text-income">
+              <TotalBalanceDisplay size="lg" className="text-income" />
             </div>
             <div className="text-sm text-muted-foreground">Current Net Worth</div>
           </div>
@@ -264,7 +265,7 @@ export function NetWorthChart() {
           <div className="text-center p-3 rounded-lg bg-muted/50">
             <div
               className={`text-2xl font-bold flex items-center justify-center gap-1 ${
-                performance.totalChange >= 0 ? 'text-green-600' : 'text-red-600'
+                performance.totalChange >= 0 ? 'text-income' : 'text-expense'
               }`}
             >
               {performance.totalChange >= 0 ? (
@@ -281,7 +282,7 @@ export function NetWorthChart() {
           <div className="text-center p-3 rounded-lg bg-muted/50">
             <div
               className={`text-2xl font-bold ${
-                performance.percentageChange >= 0 ? 'text-green-600' : 'text-red-600'
+                performance.percentageChange >= 0 ? 'text-income' : 'text-expense'
               }`}
             >
               {performance.percentageChange >= 0 ? '+' : ''}
@@ -303,41 +304,9 @@ export function NetWorthChart() {
           <AreaChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
             <defs>
               <linearGradient id="fillNetWorth" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.55}
-                />
-                <stop
-                  offset="15%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.48}
-                />
-                <stop
-                  offset="30%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.38}
-                />
-                <stop
-                  offset="50%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.25}
-                />
-                <stop
-                  offset="70%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.15}
-                />
-                <stop
-                  offset="85%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.08}
-                />
-                <stop
-                  offset="100%"
-                  stopColor={theme === THEME.DARK ? '#ffffff' : '#6b7280'}
-                  stopOpacity={0.02}
-                />
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.4} />
+                <stop offset="50%" stopColor="var(--primary)" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.01} />
               </linearGradient>
             </defs>
             <CartesianGrid
@@ -408,14 +377,14 @@ export function NetWorthChart() {
               dataKey="netWorth"
               type="monotone"
               fill="url(#fillNetWorth)"
-              stroke={theme === THEME.DARK ? '#ffffff' : '#4b5563'}
-              strokeWidth={0.7}
+              stroke="var(--primary)"
+              strokeWidth={1.5}
               connectNulls
               dot={false}
               activeDot={{
                 r: 4,
                 strokeWidth: 2,
-                stroke: theme === THEME.DARK ? '#ffffff' : '#4b5563',
+                stroke: 'var(--primary)',
                 fill: theme === THEME.DARK ? '#000000' : '#ffffff',
                 opacity: 1,
               }}
@@ -439,7 +408,7 @@ export function NetWorthChart() {
                 <span className="text-muted-foreground">Average daily change:</span>
                 <span
                   className={`font-medium ${
-                    performance.averageChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    performance.averageChange >= 0 ? 'text-income' : 'text-expense'
                   }`}
                 >
                   {performance.averageChange >= 0 ? '+' : ''}€{performance.averageChange.toFixed(0)}

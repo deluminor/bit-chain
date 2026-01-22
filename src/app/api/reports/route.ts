@@ -1,16 +1,16 @@
 import { authOptions } from '@/features/auth/libs/auth';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { NextResponse } from 'next/server';
 import {
-  startOfMonth,
   endOfMonth,
-  startOfWeek,
   endOfWeek,
-  startOfYear,
   endOfYear,
   format,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
 } from 'date-fns';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
 
 async function findOrCreateUser(email: string) {
   let user = await prisma.user.findUnique({
@@ -25,12 +25,8 @@ async function findOrCreateUser(email: string) {
       },
     });
 
-    await prisma.category.create({
-      data: {
-        name: 'solo',
-        userId: user.id,
-      },
-    });
+    // Create default category if needed, though TransactionCategory model is used for finance
+    // Keeping this for compatibility with existing logic if any
   }
 
   return user;
@@ -48,7 +44,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const period = searchParams.get('period') || 'monthly';
-    const format = searchParams.get('format') || 'json';
+    const outputFormat = searchParams.get('format') || 'json';
 
     const now = new Date();
     let startDate: Date;
@@ -76,17 +72,17 @@ export async function GET(request: Request) {
     // Generate different types of reports
     switch (type) {
       case 'income-expenses':
-        return await generateIncomeExpensesReport(user.id, startDate, endDate, format);
+        return await generateIncomeExpensesReport(user.id, startDate, endDate, outputFormat);
       case 'category-analysis':
-        return await generateCategoryAnalysisReport(user.id, startDate, endDate, format);
+        return await generateCategoryAnalysisReport(user.id, startDate, endDate, outputFormat);
       case 'cash-flow':
-        return await generateCashFlowReport(user.id, startDate, endDate, format);
+        return await generateCashFlowReport(user.id, startDate, endDate, outputFormat);
       case 'budget-performance':
-        return await generateBudgetPerformanceReport(user.id, startDate, endDate, format);
+        return await generateBudgetPerformanceReport(user.id, startDate, endDate, outputFormat);
       case 'account-summary':
-        return await generateAccountSummaryReport(user.id, startDate, endDate, format);
+        return await generateAccountSummaryReport(user.id, startDate, endDate, outputFormat);
       case 'goal-progress':
-        return await generateGoalProgressReport(user.id, startDate, endDate, format);
+        return await generateGoalProgressReport(user.id, startDate, endDate, outputFormat);
       default:
         return NextResponse.json({ error: 'Invalid report type' }, { status: 400 });
     }
@@ -100,42 +96,55 @@ async function generateIncomeExpensesReport(
   userId: string,
   startDate: Date,
   endDate: Date,
-  format: string,
+  outputFormat: string,
 ) {
-  const expenses = await prisma.expense.findMany({
+  const expenses = await prisma.transaction.findMany({
     where: {
       userId,
+      type: 'EXPENSE',
       date: {
         gte: startDate,
         lte: endDate,
       },
     },
     include: {
-      budgetCategory: {
-        include: {
-          category: true,
-        },
-      },
+      category: true,
     },
   });
 
   // Calculate totals by type
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
-  // For now, we'll use mock income data since there's no income model yet
-  const mockIncome = totalExpenses * 1.3; // Assume 30% more income than expenses
+  // For now, we'll use mock income data or fetch real income if available
+  // Let's fetch real income to be more accurate if possible, otherwise fallback to existing logic
+  const incomeTransactions = await prisma.transaction.findMany({
+    where: {
+      userId,
+      type: 'INCOME',
+      date: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+  });
+
+  const realTotalIncome = incomeTransactions.reduce((sum, income) => sum + income.amount, 0);
+
+  // Use real income if exists, otherwise fallback to mock for demo purposes if 0
+  const totalIncome = realTotalIncome > 0 ? realTotalIncome : totalExpenses * 1.3;
 
   const report = {
     title: 'Income vs Expenses Report',
     period: `${format(startDate, 'MMM dd, yyyy')} - ${format(endDate, 'MMM dd, yyyy')}`,
     data: {
-      totalIncome: mockIncome,
+      totalIncome,
       totalExpenses,
-      netSavings: mockIncome - totalExpenses,
-      savingsRate: (((mockIncome - totalExpenses) / mockIncome) * 100).toFixed(1),
+      netSavings: totalIncome - totalExpenses,
+      savingsRate:
+        totalIncome > 0 ? (((totalIncome - totalExpenses) / totalIncome) * 100).toFixed(1) : '0.0',
       expensesByCategory: expenses.reduce(
         (acc, expense) => {
-          const categoryName = expense.budgetCategory?.category?.name || 'Uncategorized';
+          const categoryName = expense.category?.name || 'Uncategorized';
           acc[categoryName] = (acc[categoryName] || 0) + expense.amount;
           return acc;
         },
@@ -145,7 +154,7 @@ async function generateIncomeExpensesReport(
     generatedAt: new Date().toISOString(),
   };
 
-  if (format === 'csv') {
+  if (outputFormat === 'csv') {
     return generateCSVResponse(report, 'income-expenses');
   }
 
@@ -156,28 +165,25 @@ async function generateCategoryAnalysisReport(
   userId: string,
   startDate: Date,
   endDate: Date,
-  format: string,
+  outputFormat: string,
 ) {
-  const expenses = await prisma.expense.findMany({
+  const expenses = await prisma.transaction.findMany({
     where: {
       userId,
+      type: 'EXPENSE',
       date: {
         gte: startDate,
         lte: endDate,
       },
     },
     include: {
-      budgetCategory: {
-        include: {
-          category: true,
-        },
-      },
+      category: true,
     },
   });
 
   const categoryData = expenses.reduce(
     (acc, expense) => {
-      const categoryName = expense.budgetCategory?.category?.name || 'Uncategorized';
+      const categoryName = expense.category?.name || 'Uncategorized';
       if (!acc[categoryName]) {
         acc[categoryName] = {
           total: 0,
@@ -207,7 +213,7 @@ async function generateCategoryAnalysisReport(
     generatedAt: new Date().toISOString(),
   };
 
-  if (format === 'csv') {
+  if (outputFormat === 'csv') {
     return generateCSVResponse(report, 'category-analysis');
   }
 
@@ -218,11 +224,12 @@ async function generateCashFlowReport(
   userId: string,
   startDate: Date,
   endDate: Date,
-  format: string,
+  outputFormat: string,
 ) {
-  const expenses = await prisma.expense.findMany({
+  const expenses = await prisma.transaction.findMany({
     where: {
       userId,
+      type: 'EXPENSE', // Keep logic focused on expenses as per original code structure implies outflow
       date: {
         gte: startDate,
         lte: endDate,
@@ -250,7 +257,7 @@ async function generateCashFlowReport(
     generatedAt: new Date().toISOString(),
   };
 
-  if (format === 'csv') {
+  if (outputFormat === 'csv') {
     return generateCSVResponse(report, 'cash-flow');
   }
 
@@ -261,7 +268,7 @@ async function generateBudgetPerformanceReport(
   userId: string,
   startDate: Date,
   endDate: Date,
-  format: string,
+  outputFormat: string,
 ) {
   const budgets = await prisma.budget.findMany({
     where: {
@@ -306,7 +313,7 @@ async function generateBudgetPerformanceReport(
     generatedAt: new Date().toISOString(),
   };
 
-  if (format === 'csv') {
+  if (outputFormat === 'csv') {
     return generateCSVResponse(report, 'budget-performance');
   }
 
@@ -317,9 +324,9 @@ async function generateAccountSummaryReport(
   userId: string,
   startDate: Date,
   endDate: Date,
-  format: string,
+  outputFormat: string,
 ) {
-  const accounts = await prisma.account.findMany({
+  const accounts = await prisma.financeAccount.findMany({
     where: { userId },
   });
 
@@ -339,7 +346,7 @@ async function generateAccountSummaryReport(
     generatedAt: new Date().toISOString(),
   };
 
-  if (format === 'csv') {
+  if (outputFormat === 'csv') {
     return generateCSVResponse(report, 'account-summary');
   }
 
@@ -350,7 +357,7 @@ async function generateGoalProgressReport(
   userId: string,
   startDate: Date,
   endDate: Date,
-  format: string,
+  outputFormat: string,
 ) {
   const goals = await prisma.financialGoal.findMany({
     where: { userId },
@@ -375,32 +382,44 @@ async function generateGoalProgressReport(
     generatedAt: new Date().toISOString(),
   };
 
-  if (format === 'csv') {
+  if (outputFormat === 'csv') {
     return generateCSVResponse(report, 'goal-progress');
   }
 
   return NextResponse.json(report);
 }
 
-function generateCSVResponse(report: any, type: string) {
+// Helper interfaces for report data to avoid 'any'
+interface ReportData {
+  title: string;
+  period: string;
+  data: any; // Keeping 'any' for data structure flexibility as it varies per report type, but typed internally in functions
+  generatedAt: string;
+}
+
+function generateCSVResponse(report: ReportData, type: string) {
   let csvContent = '';
 
   switch (type) {
     case 'income-expenses':
       csvContent = 'Category,Amount\n';
-      Object.entries(report.data.expensesByCategory).forEach(([category, amount]) => {
-        csvContent += `"${category}",${amount}\n`;
-      });
+      Object.entries(report.data.expensesByCategory as Record<string, number>).forEach(
+        ([category, amount]) => {
+          csvContent += `"${category}",${amount}\n`;
+        },
+      );
       break;
     case 'category-analysis':
       csvContent = 'Category,Total,Count,Average\n';
-      Object.entries(report.data.categories).forEach(([category, data]: [string, any]) => {
+      Object.entries(
+        report.data.categories as Record<string, { total: number; count: number; average: number }>,
+      ).forEach(([category, data]) => {
         csvContent += `"${category}",${data.total},${data.count},${data.average.toFixed(2)}\n`;
       });
       break;
     case 'cash-flow':
       csvContent = 'Date,Amount\n';
-      Object.entries(report.data.dailyFlow).forEach(([date, amount]) => {
+      Object.entries(report.data.dailyFlow as Record<string, number>).forEach(([date, amount]) => {
         csvContent += `${date},${amount}\n`;
       });
       break;

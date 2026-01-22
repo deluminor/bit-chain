@@ -1,7 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import { accountKeys } from '@/features/finance/queries/accounts';
 import { transactionKeys } from '@/features/finance/queries/transactions';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 
 export type IntegrationStatus = 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
 export type IntegrationProvider = 'MONOBANK';
@@ -97,7 +97,12 @@ export function useMonobankSync() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload?: { reason?: string }) => {
+    mutationFn: async (payload?: {
+      reason?: string;
+      force?: boolean;
+      fromDate?: Date;
+      limit?: number;
+    }) => {
       const { data } = await axios.post('/api/integrations/monobank/sync', payload ?? {});
       return data;
     },

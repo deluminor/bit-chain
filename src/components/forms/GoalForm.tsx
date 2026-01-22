@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -124,7 +124,7 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
   const isEditing = !!goal;
 
   const form = useForm<GoalFormData>({
-    resolver: zodResolver(goalFormSchema),
+    resolver: zodResolver(goalFormSchema) as unknown as Resolver<GoalFormData>,
     defaultValues: {
       name: goal?.name || '',
       description: goal?.description || '',
@@ -159,7 +159,7 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
     setSelectedColor(template.color);
   };
 
-  const onSubmit = async (data: GoalFormData) => {
+  const onSubmit: SubmitHandler<GoalFormData> = async data => {
     try {
       const formData = {
         ...data,
@@ -189,10 +189,14 @@ export function GoalForm({ onClose, onSuccess, goal }: GoalFormProps) {
 
       onSuccess?.();
       onClose();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : `Failed to ${isEditing ? 'update' : 'create'} goal`;
       toast({
         title: 'Error',
-        description: error?.message || `Failed to ${isEditing ? 'update' : 'create'} goal`,
+        description: errorMessage,
         variant: 'destructive',
       });
     }

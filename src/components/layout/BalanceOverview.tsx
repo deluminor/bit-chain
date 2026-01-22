@@ -123,9 +123,9 @@ export function BalanceOverview({
   };
 
   const getBalanceColor = (amount: number) => {
-    if (amount > 0) return 'text-green-600 dark:text-green-400';
-    if (amount < 0) return 'text-red-600 dark:text-red-400';
-    return 'text-gray-600 dark:text-gray-400';
+    if (amount > 0) return 'text-income';
+    if (amount < 0) return 'text-expense';
+    return 'text-muted-foreground';
   };
 
   const activeBalances = balances.filter(b => b.isActive);
@@ -155,7 +155,7 @@ export function BalanceOverview({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Euro className="h-5 w-5 text-blue-600" />
+            <Euro className="h-5 w-5 text-transfer" />
             Total Balance (EUR)
           </div>
           <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function BalanceOverview({
           <div className="text-sm text-muted-foreground mt-1">
             {activeBalances.length} active account{activeBalances.length !== 1 ? 's' : ''}
             {isConverting && (
-              <span className="ml-2 text-blue-600">
+              <span className="ml-2 text-transfer">
                 <RefreshCw className="h-3 w-3 animate-spin inline mr-1" />
                 Updating rates...
               </span>

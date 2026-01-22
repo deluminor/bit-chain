@@ -1,15 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Activity } from 'lucide-react';
-import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
-import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
+import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { formatSummaryAmount } from '@/lib/currency';
-import { THEME, useStore } from '@/store';
 import { useCashFlowSankey } from '@/features/finance/hooks/useCashFlowSankey';
+import { formatSummaryAmount } from '@/lib/currency';
+import { cn } from '@/lib/utils';
+import { THEME, useStore } from '@/store';
+import { Activity } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
 
 type SankeyNodePayload = {
   name: string;
@@ -60,11 +60,11 @@ export function CashFlowSankeyChart() {
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [activeLink, setActiveLink] = useState<string | null>(null);
   const isDark = theme === THEME.DARK;
-  const textColor = isDark ? '#E5E7EB' : '#111827';
-  const mutedColor = isDark ? '#6B7280' : '#9CA3AF';
-  const sankeyBase = isDark ? '#A1A1AA' : '#6B7280';
-  const freeCashColor = isDark ? '#D1D5DB' : '#4B5563';
-  const linkFallback = sankeyBase;
+  const textColor = isDark ? '#FFFFFF' : '#111827';
+  const mutedColor = isDark ? '#D1D5DB' : '#6B7280';
+  const sankeyBase = 'var(--primary)';
+  const freeCashColor = 'var(--income)';
+  const linkFallback = 'var(--muted-foreground)';
 
   const totals = useMemo(() => {
     if (!data) return { income: 0, expenses: 0, net: 0 };
@@ -175,7 +175,7 @@ export function CashFlowSankeyChart() {
     const value = payload.value ?? 0;
 
     const isActive = activeNode ? payload.name === activeNode : true;
-    const opacity = isActive ? 0.85 : 0.2;
+    const opacity = isActive ? 1 : 0.2;
 
     return (
       <g onMouseEnter={() => setActiveNode(payload.name)} onMouseLeave={() => setActiveNode(null)}>
@@ -259,16 +259,22 @@ export function CashFlowSankeyChart() {
       footer={
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-orange-500" />
+            <Activity className="h-4 w-4 text-transfer" />
             <span className="text-muted-foreground">Net Flow:</span>
-            <span className={cn(totals.net >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
+            <span className={cn(totals.net >= 0 ? 'text-income' : 'text-expense')}>
               {totals.net >= 0 ? '+' : ''}
               {formatSummaryAmount(totals.net)}
             </span>
           </div>
           <div className="flex items-center gap-4 text-muted-foreground">
-            <span>Income: {formatSummaryAmount(totals.income)}</span>
-            <span>Expenses: {formatSummaryAmount(totals.expenses)}</span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-income" />
+              Income: {formatSummaryAmount(totals.income)}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-expense" />
+              Expenses: {formatSummaryAmount(totals.expenses)}
+            </span>
           </div>
         </div>
       }

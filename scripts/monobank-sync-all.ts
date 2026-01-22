@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 const parseArgs = () => {
   const args = process.argv.slice(2);
-  const result: { email?: string; from?: string; force?: boolean } = {};
+  const result: { email?: string; from?: string; force?: boolean; accountName?: string } = {};
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -23,6 +23,11 @@ const parseArgs = () => {
     }
     if (arg === '--force') {
       result.force = true;
+    }
+    if (arg === '--account') {
+      result.accountName = args[i + 1];
+      i += 1;
+      continue;
     }
   }
 
@@ -56,6 +61,7 @@ const run = async () => {
     reason: 'script',
     fromDate: fromDate ?? null,
     force: Boolean(force),
+    accountName: parseArgs().accountName,
   };
 
   console.log(`Syncing Monobank for ${user.email}`);

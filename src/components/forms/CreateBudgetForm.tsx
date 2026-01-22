@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Calendar, Plus, Trash2, DollarSign, Target, Clock } from 'lucide-react';
 import { CreateBudgetData, useCreateBudget } from '@/features/finance/queries/budget';
+import { TransactionCategory } from '@/features/finance/queries/categories';
 import { useTransactionCategories } from '@/features/finance/queries/transactions';
 import { formatCurrency, BASE_CURRENCY } from '@/lib/currency';
 import { endOfMonth, endOfWeek, endOfQuarter, endOfYear } from 'date-fns';
@@ -82,7 +83,7 @@ export function CreateBudgetForm({ onClose, onSuccess }: CreateBudgetFormProps) 
   const [totalPlannedInput, setTotalPlannedInput] = useState('');
 
   const form = useForm<BudgetFormData>({
-    resolver: zodResolver(budgetFormSchema) as any,
+    resolver: zodResolver(budgetFormSchema) as unknown as Resolver<BudgetFormData>,
     defaultValues: {
       name: '',
       period: 'MONTHLY',
@@ -103,7 +104,7 @@ export function CreateBudgetForm({ onClose, onSuccess }: CreateBudgetFormProps) 
 
   // Get expense categories for budget allocation
   const { data: categoriesData } = useTransactionCategories('EXPENSE');
-  const categories = categoriesData?.categories || [];
+  const categories: TransactionCategory[] = categoriesData?.categories || [];
 
   // Auto-update end date when period or start date changes
   useEffect(() => {
@@ -214,7 +215,7 @@ export function CreateBudgetForm({ onClose, onSuccess }: CreateBudgetFormProps) 
   const totalAllocated = watchedCategories.reduce((sum, cat) => sum + cat.planned, 0);
   const remainingAmount = (form.getValues('totalPlanned') || 0) - totalAllocated;
 
-  const onSubmit = async (data: BudgetFormData) => {
+  const onSubmit: SubmitHandler<BudgetFormData> = async data => {
     try {
       const formData: CreateBudgetData = {
         ...data,
@@ -237,10 +238,11 @@ export function CreateBudgetForm({ onClose, onSuccess }: CreateBudgetFormProps) 
 
       onSuccess?.();
       onClose();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create budget';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create budget',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -261,7 +263,7 @@ export function CreateBudgetForm({ onClose, onSuccess }: CreateBudgetFormProps) 
       </div>
 
       <div>
-        <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Budget Period */}
           <div className="space-y-3">
             <Label>Budget Period</Label>

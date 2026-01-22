@@ -40,7 +40,8 @@ export class BackupService {
           });
 
       // Export screenshots
-      let screenshots: unknown[] = [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let screenshots: any[] = [];
       if (includeScreenshots) {
         screenshots = userId
           ? await prisma.screenshot.findMany({

@@ -1,5 +1,3 @@
-// Chart Colors - Minimalist Black & White Theme
-
 // Primary Chart Colors - Monochrome
 export const CHART_COLORS = {
   // Minimalist grayscale gradients
@@ -83,6 +81,14 @@ export const CHART_COLORS = {
   },
 };
 
+// Semantic Finance Colors (mapped to CSS variables)
+export const FINANCE_COLORS = {
+  INCOME: 'var(--income)',
+  EXPENSE: 'var(--expense)',
+  TRANSFER: 'var(--transfer)',
+  NET_WORTH: 'var(--primary)',
+};
+
 // Area/Line Chart Gradients - Minimalist Monochrome Style
 export const AREA_GRADIENTS = {
   // Subtle grayscale fill gradients for area charts
@@ -95,23 +101,23 @@ export const AREA_GRADIENTS = {
       { offset: '100%', color: '#666666', opacity: 0.02 },
     ],
     INCOME: [
-      { offset: '0%', color: '#00BCD4', opacity: 0.5 },
-      { offset: '30%', color: '#26C6DA', opacity: 0.35 },
-      { offset: '70%', color: '#4DD0E1', opacity: 0.25 },
-      { offset: '100%', color: '#80DEEA', opacity: 0.05 },
+      { offset: '0%', color: 'var(--income)', opacity: 0.5 },
+      { offset: '30%', color: 'var(--income)', opacity: 0.35 },
+      { offset: '70%', color: 'var(--income)', opacity: 0.25 },
+      { offset: '100%', color: 'var(--income)', opacity: 0.05 },
     ],
     EXPENSE: [
-      { offset: '0%', color: '#F59E0B', opacity: 0.5 },
-      { offset: '30%', color: '#FBBF24', opacity: 0.35 },
-      { offset: '70%', color: '#FCD34D', opacity: 0.25 },
-      { offset: '100%', color: '#FDE68A', opacity: 0.05 },
+      { offset: '0%', color: 'var(--expense)', opacity: 0.5 },
+      { offset: '30%', color: 'var(--expense)', opacity: 0.35 },
+      { offset: '70%', color: 'var(--expense)', opacity: 0.25 },
+      { offset: '100%', color: 'var(--expense)', opacity: 0.05 },
     ],
     NET_WORTH: [
-      { offset: '0%', color: '#8B5CF6', opacity: 0.7 },
-      { offset: '25%', color: '#A78BFA', opacity: 0.6 },
-      { offset: '50%', color: '#C4B5FD', opacity: 0.5 },
-      { offset: '75%', color: '#DDD6FE', opacity: 0.3 },
-      { offset: '100%', color: '#F3F4F6', opacity: 0.05 },
+      { offset: '0%', color: 'var(--primary)', opacity: 0.7 },
+      { offset: '25%', color: 'var(--primary)', opacity: 0.6 },
+      { offset: '50%', color: 'var(--primary)', opacity: 0.5 },
+      { offset: '75%', color: 'var(--primary)', opacity: 0.3 },
+      { offset: '100%', color: 'var(--primary)', opacity: 0.05 },
     ],
     NEUTRAL: [
       { offset: '0%', color: '#6B7280', opacity: 0.4 },
@@ -122,18 +128,18 @@ export const AREA_GRADIENTS = {
 };
 
 // Pie Chart Colors - More Vibrant Fintech Palette
-export const PIE_COLORS = [
-  '#FF5722', // More vibrant primary orange
-  '#00BCD4', // Vibrant cyan
-  '#2196F3', // Vibrant blue
-  '#9C27B0', // Vibrant purple
-  '#FF9800', // Vibrant amber
-  '#F44336', // Vibrant red
-  '#607D8B', // Blue gray
-  '#009688', // Teal
-  '#FF6F00', // Deep orange
-  '#8BC34A', // Light green
+export const VIBRANT_PALETTE = [
+  'oklch(0.65 0.24 25.5)' /* Vibrant Ruby */,
+  'oklch(0.7 0.18 145)' /* Emerald */,
+  'oklch(0.65 0.2 260)' /* Royal Blue */,
+  'oklch(0.75 0.15 85)' /* Amber/Gold */,
+  'oklch(0.6 0.2 300)' /* Purple */,
+  'oklch(0.7 0.15 180)' /* Teal */,
+  'oklch(0.8 0.12 60)' /* Orange */,
+  'oklch(0.5 0.15 220)' /* Indigo */,
 ];
+
+export const PIE_COLORS = VIBRANT_PALETTE;
 
 // Multi-line Chart Colors - Financial Accounts (More Vibrant)
 export const LINE_COLORS = {

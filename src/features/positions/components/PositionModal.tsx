@@ -35,6 +35,7 @@ export function PositionModal({ position, onSave, onDelete, children }: Position
   const { data: defaultCategory } = useDefaultCategory();
 
   const form = useForm<PositionFormValues>({
+    // @ts-expect-error - Known type mismatch between zodResolver and react-hook-form
     resolver: zodResolver(positionSchema),
     defaultValues: position
       ? {

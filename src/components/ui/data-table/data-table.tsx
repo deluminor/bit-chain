@@ -58,10 +58,10 @@ export interface DataTableProps<T = unknown> {
   maxHeight?: string;
 
   // Row key
-  getRowKey?: (item: T) => string | number;
+  getRowKey?: (item: T, index: number) => string | number;
 }
 
-export function DataTable<T = any>({
+export function DataTable<T>({
   data,
   columns,
   isLoading = false,

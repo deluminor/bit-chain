@@ -86,11 +86,11 @@ export function useTransactionFilters() {
       }
 
       if (newFilters.dateRange?.from) {
-        params.set('from', newFilters.dateRange.from.toISOString().split('T')[0]);
+        params.set('from', newFilters.dateRange.from.toISOString().split('T')[0] || '');
       }
 
       if (newFilters.dateRange?.to) {
-        params.set('to', newFilters.dateRange.to.toISOString().split('T')[0]);
+        params.set('to', newFilters.dateRange.to.toISOString().split('T')[0] || '');
       }
 
       router.push(`?${params.toString()}`);

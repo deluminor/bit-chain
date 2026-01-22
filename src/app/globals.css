@@ -37,6 +37,12 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-income: var(--income);
+  --color-income-foreground: var(--income-foreground);
+  --color-expense: var(--expense);
+  --color-expense-foreground: var(--expense-foreground);
+  --color-transfer: var(--transfer);
+  --color-transfer-foreground: var(--transfer-foreground);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -76,6 +82,14 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
+
+  /* Semantic Finance Colors (Light Mode) */
+  --income: oklch(0.6 0.18 145); /* Emerald/Teal */
+  --income-foreground: oklch(0.98 0 0);
+  --expense: oklch(0.6 0.2 25); /* Ruby/Red */
+  --expense-foreground: oklch(0.98 0 0);
+  --transfer: oklch(0.55 0.2 260); /* Royal Blue */
+  --transfer-foreground: oklch(0.98 0 0);
 }
 
 .dark {
@@ -110,6 +124,14 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
+
+  /* Semantic Finance Colors (Dark Mode) */
+  --income: oklch(0.7 0.18 145); /* Brighter Emerald */
+  --income-foreground: oklch(0.98 0 0);
+  --expense: oklch(0.65 0.2 25); /* Brighter Ruby */
+  --expense-foreground: oklch(0.98 0 0);
+  --transfer: oklch(0.65 0.2 260); /* Brighter Royal Blue */
+  --transfer-foreground: oklch(0.98 0 0);
 }
 
 @layer base {

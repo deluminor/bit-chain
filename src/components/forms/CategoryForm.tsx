@@ -1,19 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -23,6 +10,15 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
   TransactionCategory,
@@ -30,20 +26,24 @@ import {
   useCreateCategory,
   useUpdateCategory,
 } from '@/features/finance/queries/categories';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  DollarSign,
-  ShoppingCart,
-  Home,
+  Briefcase,
   Car,
   Coffee,
+  DollarSign,
   Gamepad2,
-  HeartHandshake,
-  Briefcase,
-  GraduationCap,
-  Plane,
   Gift,
+  GraduationCap,
+  HeartHandshake,
+  Home,
+  Plane,
+  ShoppingCart,
   Wrench,
 } from 'lucide-react';
+import { useState } from 'react';
+import { Resolver, SubmitHandler, useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Category name is required').max(50, 'Category name too long'),
@@ -93,7 +93,9 @@ interface CategoryFormProps {
 }
 
 export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProps) {
-  const [selectedColor, setSelectedColor] = useState(category?.color || COLOR_OPTIONS[0]);
+  const [selectedColor, setSelectedColor] = useState<string>(
+    category?.color || COLOR_OPTIONS[0] || '#3b82f6',
+  );
   const [selectedIcon, setSelectedIcon] = useState(category?.icon || 'DollarSign');
 
   const { data: categoriesData } = useCategories();
@@ -101,17 +103,17 @@ export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProp
   const updateCategory = useUpdateCategory();
 
   const isEditing = !!category;
-  const categories = categoriesData?.categories || [];
+  const categories: TransactionCategory[] = categoriesData?.categories || [];
 
   const form = useForm<CategoryFormData>({
-    resolver: zodResolver(categorySchema),
+    resolver: zodResolver(categorySchema) as unknown as Resolver<CategoryFormData>,
     defaultValues: {
       name: category?.name || '',
       type: category?.type || 'EXPENSE',
       parentId: category?.parentId || 'none',
       color: category?.color || COLOR_OPTIONS[0],
       icon: category?.icon || 'DollarSign',
-      isDefault: category?.isDefault || false,
+      isDefault: category?.isDefault ?? false,
     },
   });
 
@@ -131,11 +133,11 @@ export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProp
       cat.id !== category?.id, // Can't be parent of itself
   );
 
-  const onSubmit = async (data: CategoryFormData) => {
+  const onSubmit: SubmitHandler<CategoryFormData> = async data => {
     try {
       const payload = {
         ...data,
-        color: selectedColor,
+        color: selectedColor || COLOR_OPTIONS[0] || '#3b82f6',
         icon: selectedIcon,
         parentId: data.parentId === 'none' ? undefined : data.parentId || undefined,
       };

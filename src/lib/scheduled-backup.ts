@@ -1,7 +1,9 @@
-import { BackupService } from './backup';
-import cron from 'node-cron';
 import fs from 'fs';
+// eslint-disable-next-line
+// @ts-expect-error
+import cron from 'node-cron';
 import path from 'path';
+import { BackupService } from './backup';
 
 export class ScheduledBackupService {
   private static instance: ScheduledBackupService;

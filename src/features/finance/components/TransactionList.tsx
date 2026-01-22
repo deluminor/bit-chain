@@ -66,26 +66,26 @@ const transactionTypeIcons = {
 const getTransactionTypeColor = (type: string) => {
   switch (type) {
     case 'INCOME':
-      return 'text-green-600 bg-green-100 dark:bg-green-900/20';
+      return 'text-income bg-income/10';
     case 'EXPENSE':
-      return 'text-red-600 bg-red-100 dark:bg-red-900/20';
+      return 'text-expense bg-expense/10';
     case 'TRANSFER':
-      return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20';
+      return 'text-transfer bg-transfer/10';
     default:
-      return 'text-gray-600 bg-gray-100 dark:bg-gray-900/20';
+      return 'text-muted-foreground bg-muted';
   }
 };
 
 const getAmountColor = (type: string) => {
   switch (type) {
     case 'INCOME':
-      return 'text-green-600 dark:text-green-400';
+      return 'text-income';
     case 'EXPENSE':
-      return 'text-red-600 dark:text-red-400';
+      return 'text-expense';
     case 'TRANSFER':
-      return 'text-blue-600 dark:text-blue-400';
+      return 'text-transfer';
     default:
-      return 'text-gray-600 dark:text-gray-400';
+      return 'text-muted-foreground';
   }
 };
 
@@ -317,9 +317,7 @@ export function TransactionList() {
             const isReceived = transaction.transferToId === filters.accountId;
 
             return (
-              <div
-                className={`font-semibold ${isReceived ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}
-              >
+              <div className={`font-semibold ${isReceived ? 'text-income' : 'text-transfer'}`}>
                 {isReceived ? '+' : '-'}
                 {formatCurrency(
                   isReceived
@@ -345,14 +343,14 @@ export function TransactionList() {
 
           return (
             <div className="flex flex-col items-end">
-              <div className="font-semibold text-blue-600 dark:text-blue-400">
+              <div className="font-semibold text-transfer">
                 {formatCurrency(transaction.amount, sourceCurrency, {
                   useLargeNumberFormat: false,
                 })}
                 {isMultiCurrency && <span className="text-muted-foreground ml-1">→</span>}
               </div>
               {isMultiCurrency && (
-                <div className="text-xs text-green-600 dark:text-green-400">
+                <div className="text-xs text-income">
                   {formatCurrency(
                     transaction.transferAmount || transaction.amount,
                     targetCurrency,
@@ -366,8 +364,8 @@ export function TransactionList() {
 
         return (
           <div className={`font-semibold ${amountColor}`}>
-            {transaction.amount < 0 && '-'}
-            {transaction.amount > 0 && '+'}
+            {transaction.type === 'EXPENSE' && '-'}
+            {transaction.type === 'INCOME' && '+'}
             {formatCurrency(
               Math.abs(transaction.amount),
               transaction.currency || transaction.account.currency,
@@ -464,7 +462,7 @@ export function TransactionList() {
           </div>
           <div
             className={`text-lg sm:text-xl lg:text-2xl font-bold mb-1 ${
-              netIncomeEUR >= 0 ? 'text-green-600' : 'text-red-600'
+              netIncomeEUR >= 0 ? 'text-income' : 'text-expense'
             }`}
           >
             {formatSummaryAmount(netIncomeEUR)}
@@ -474,12 +472,12 @@ export function TransactionList() {
 
         <Card className="p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className="p-1.5 sm:p-2 bg-green-500/10 rounded-lg">
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+            <div className="p-1.5 sm:p-2 bg-income/10 rounded-lg">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-income" />
             </div>
             <h3 className="font-medium sm:font-semibold text-sm sm:text-base">Income</h3>
           </div>
-          <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 text-green-600">
+          <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 text-income">
             {formatSummaryAmount(incomeEUR)}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
@@ -489,12 +487,12 @@ export function TransactionList() {
 
         <Card className="p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className="p-1.5 sm:p-2 bg-red-500/10 rounded-lg">
-              <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
+            <div className="p-1.5 sm:p-2 bg-expense/10 rounded-lg">
+              <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-expense" />
             </div>
             <h3 className="font-medium sm:font-semibold text-sm sm:text-base">Expenses</h3>
           </div>
-          <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 text-red-600">
+          <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 text-expense">
             {formatSummaryAmount(expensesEUR)}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
@@ -504,12 +502,12 @@ export function TransactionList() {
 
         <Card className="p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg">
-              <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+            <div className="p-1.5 sm:p-2 bg-transfer/10 rounded-lg">
+              <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5 text-transfer" />
             </div>
             <h3 className="font-medium sm:font-semibold text-sm sm:text-base">Transfers</h3>
           </div>
-          <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 text-blue-600">
+          <div className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 text-transfer">
             {formatSummaryAmount(transfersEUR)}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">

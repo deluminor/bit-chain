@@ -1,33 +1,29 @@
 'use client';
 
-import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
+import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { useMemo, useState, useEffect } from 'react';
-import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
-import { useTransactions } from '../queries/transactions';
-import { PieChart as PieChartIcon, MoreHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { subDays, startOfMonth } from 'date-fns';
-import { convertToBaseCurrencySafe, formatCurrency, BASE_CURRENCY } from '@/lib/currency';
+import { VIBRANT_PALETTE } from '@/constants/colors';
+import { BASE_CURRENCY, convertToBaseCurrencySafe, formatCurrency } from '@/lib/currency';
 import { useTheme } from '@/providers/ThemeProvider';
-import { THEME } from '@/store';
-import {
-  MINIMALIST_PIE_COLORS,
-  MINIMALIST_PIE_COLORS_DARK,
-} from '@/constants/minimalist-chart-styles';
+import { startOfMonth, subDays } from 'date-fns';
+import { MoreHorizontal, PieChart as PieChartIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
+import { useTransactions } from '../queries/transactions';
 
 interface CategorySpendingChartProps {
   type?: 'INCOME' | 'EXPENSE';
@@ -39,7 +35,7 @@ export function CategorySpendingChart({
   period = 'month',
 }: CategorySpendingChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(period);
-  const { theme } = useTheme();
+  const { theme: _theme } = useTheme();
 
   // Calculate date range based on period
   const dateRange = useMemo(() => {
@@ -150,10 +146,9 @@ export function CategorySpendingChart({
         });
       }
 
-      // Apply minimalist colors based on theme
-      const colors = theme === THEME.DARK ? MINIMALIST_PIE_COLORS_DARK : MINIMALIST_PIE_COLORS;
+      // Apply vibrant colors
       processedData.forEach((item, index) => {
-        item.color = colors[index % colors.length] || '#000000';
+        item.color = VIBRANT_PALETTE[index % VIBRANT_PALETTE.length] || '#000000';
       });
 
       setChartData(processedData);

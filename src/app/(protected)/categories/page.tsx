@@ -1,8 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { CategoryForm } from '@/components/forms/CategoryForm';
+import { AnimatedDiv } from '@/components/ui/animations';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DataTable,
+  DataTableColumn,
+  FilterField,
+  createSelectFilter,
+} from '@/components/ui/data-table';
 import {
   Dialog,
   DialogContent,
@@ -18,44 +25,36 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Plus,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  AlertTriangle,
-  Tag,
-  DollarSign,
-  ShoppingCart,
-  Home,
-  Car,
-  Coffee,
-  Gamepad2,
-  HeartHandshake,
-  Briefcase,
-  GraduationCap,
-  Plane,
-  Gift,
-  Wrench,
-  Eye,
-  EyeOff,
-} from 'lucide-react';
-import { CategoryForm } from '@/components/forms/CategoryForm';
-import {
+  CategoryFilters,
+  TransactionCategory,
   useCategories,
   useDeleteCategory,
   useUpdateCategory,
-  TransactionCategory,
-  CategoryFilters,
 } from '@/features/finance/queries/categories';
-import { AnimatedDiv } from '@/components/ui/animations';
-import {
-  DataTable,
-  TableFilters,
-  DataTableColumn,
-  FilterField,
-  createSelectFilter,
-} from '@/components/ui/data-table';
 import { useDataTable } from '@/hooks/useDataTable';
+import {
+  AlertTriangle,
+  Briefcase,
+  Car,
+  Coffee,
+  DollarSign,
+  Edit,
+  Eye,
+  EyeOff,
+  Gamepad2,
+  Gift,
+  GraduationCap,
+  HeartHandshake,
+  Home,
+  MoreHorizontal,
+  Plane,
+  Plus,
+  ShoppingCart,
+  Tag,
+  Trash2,
+  Wrench,
+} from 'lucide-react';
+import { useState } from 'react';
 
 const ICON_MAP = {
   DollarSign,
@@ -342,101 +341,85 @@ export default function CategoriesPage() {
             </div>
           </div>
 
-          {/* Filters */}
-          <TableFilters
-            fields={filterFields}
-            onClearFilters={clearFilters}
-            onRefresh={refetch}
-            isFetching={isFetching}
-            hasActiveFilters={hasActiveFilters}
-            gridColumns="grid-cols-1 md:grid-cols-3"
-          />
-
           {/* Categories Table */}
-          <div className="overflow-x-auto">
-            <DataTable
-              data={categories}
-              columns={columns}
-              isLoading={isLoading}
-              isFetching={isFetching}
-              currentPage={currentPage}
-              totalPages={totalPages(categories.length)}
-              pageSize={pageSize}
-              onPageChange={onPageChange}
-              onPageSizeChange={onPageSizeChange}
-              pageSizeOptions={[10, 25, 50, 100]}
-              title={
-                <>
-                  <Tag className="h-5 w-5" />
-                  Categories
-                </>
-              }
-              description={`Your transaction categories ${hasActiveFilters ? '(filtered)' : ''}`}
-              onRefresh={refetch}
-              actions={category => (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setShowEditDialog(true);
-                      }}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleToggleActive(category)}>
-                      {category.isActive ? (
-                        <>
-                          <EyeOff className="h-4 w-4 mr-2" />
-                          Deactivate
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Activate
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setShowDeleteDialog(true);
-                      }}
-                      className="text-destructive"
-                      disabled={category.isDefault}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              emptyMessage={
-                hasActiveFilters ? 'No categories match your filters' : 'No categories found'
-              }
-              emptyDescription={
-                hasActiveFilters
-                  ? 'Try adjusting your filters'
-                  : 'Create your first category to get started'
-              }
-              emptyActions={
-                !hasActiveFilters && (
-                  <Button onClick={() => setShowCreateDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Category
+          <DataTable
+            data={categories}
+            columns={columns}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            currentPage={currentPage}
+            totalPages={totalPages(categories.length)}
+            pageSize={pageSize}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+            pageSizeOptions={[10, 25, 50, 100]}
+            filterFields={filterFields}
+            onClearFilters={clearFilters}
+            hasActiveFilters={hasActiveFilters}
+            onRefresh={refetch}
+            actions={category => (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreHorizontal className="h-4 w-4" />
                   </Button>
-                )
-              }
-              showPagination={categories.length > 10}
-            />
-          </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSelectedCategory(category);
+                      setShowEditDialog(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleToggleActive(category)}>
+                    {category.isActive ? (
+                      <>
+                        <EyeOff className="h-4 w-4 mr-2" />
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSelectedCategory(category);
+                      setShowDeleteDialog(true);
+                    }}
+                    className="text-destructive"
+                    disabled={category.isDefault}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            emptyMessage={
+              hasActiveFilters ? 'No categories match your filters' : 'No categories found'
+            }
+            emptyDescription={
+              hasActiveFilters
+                ? 'Try adjusting your filters'
+                : 'Create your first category to get started'
+            }
+            emptyActions={
+              !hasActiveFilters && (
+                <Button onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Category
+                </Button>
+              )
+            }
+            showPagination={categories.length > 10}
+          />
 
           {/* Create Category Dialog */}
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

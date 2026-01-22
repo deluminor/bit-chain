@@ -5,7 +5,13 @@ import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
 import { AnimatedDiv } from '@/components/ui/animations';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  FilterField,
+  TableFilters,
+  createSearchFilter,
+  createSelectFilter,
+} from '@/components/ui/data-table';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +36,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { TableLoadingBar } from '@/components/ui/table-loading-bar';
+import { AccountFilters, useAccountFilters } from '@/features/finance/hooks/useAccountFilters';
 import {
   FinanceAccount,
   useAccountAction,
@@ -51,7 +58,6 @@ import {
   MoreHorizontal,
   PiggyBank,
   Plus,
-  RefreshCw,
   Trash2,
   TrendingUp,
   Wallet,
@@ -103,7 +109,48 @@ export function AccountList() {
   const [totalBalanceEUR, setTotalBalanceEUR] = useState<number>(0);
   const [isConverting, setIsConverting] = useState<boolean>(false);
 
-  const accounts = useMemo(() => accountsData?.accounts || [], [accountsData?.accounts]);
+  // Filter states
+  const {
+    filters,
+    handleSearchChange,
+    handleTypeFilterChange,
+    handleCurrencyFilterChange,
+    handleStatusFilterChange,
+    resetFilters,
+  } = useAccountFilters();
+
+  const allAccounts = useMemo(() => accountsData?.accounts || [], [accountsData?.accounts]);
+
+  const accounts = useMemo(() => {
+    return allAccounts.filter((account: FinanceAccount) => {
+      // Search filter
+      if (
+        filters.searchTerm &&
+        !account.name.toLowerCase().includes(filters.searchTerm.toLowerCase())
+      ) {
+        return false;
+      }
+
+      // Type filter
+      if (filters.typeFilter && account.type !== filters.typeFilter) {
+        return false;
+      }
+
+      // Currency filter
+      if (filters.currencyFilter && account.currency !== filters.currencyFilter) {
+        return false;
+      }
+
+      // Status filter
+      if (filters.statusFilter) {
+        const isActive = filters.statusFilter === 'active';
+        if (account.isActive !== isActive) return false;
+      }
+
+      return true;
+    });
+  }, [allAccounts, filters]);
+
   const summary = useMemo(
     () =>
       accountsData?.summary || {
@@ -114,6 +161,57 @@ export function AccountList() {
       },
     [accountsData?.summary],
   );
+
+  const clearFilters = () => {
+    resetFilters();
+  };
+
+  const hasActiveFilters = Boolean(
+    filters.searchTerm || filters.typeFilter || filters.currencyFilter || filters.statusFilter,
+  );
+
+  const uniqueCurrencies = useMemo(() => {
+    const currencies = new Set(allAccounts.map((a: FinanceAccount) => a.currency));
+    return Array.from(currencies).map(c => ({ value: c as string, label: c as string }));
+  }, [allAccounts]);
+
+  // Define filter fields
+  const filterFields: FilterField[] = [
+    createSearchFilter('search', filters.searchTerm, handleSearchChange, 'Search accounts...'),
+    createSelectFilter(
+      'type',
+      filters.typeFilter,
+      value =>
+        handleTypeFilterChange(
+          value === 'all' ? undefined : (value as AccountFilters['typeFilter']),
+        ),
+      [
+        { value: 'CASH', label: 'Cash' },
+        { value: 'BANK_CARD', label: 'Bank Card' },
+        { value: 'SAVINGS', label: 'Savings' },
+        { value: 'INVESTMENT', label: 'Investment' },
+      ],
+      'types',
+    ),
+    createSelectFilter(
+      'currency',
+      filters.currencyFilter,
+      value => handleCurrencyFilterChange(value === 'all' ? undefined : value),
+      uniqueCurrencies,
+      'currencies',
+    ),
+    createSelectFilter(
+      'status',
+      filters.statusFilter,
+      value =>
+        handleStatusFilterChange(value === 'all' ? undefined : (value as 'active' | 'inactive')),
+      [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+      ],
+      'status',
+    ),
+  ];
 
   // Convert account balances to EUR (only active accounts)
   useEffect(() => {
@@ -317,28 +415,20 @@ export function AccountList() {
         </div>
 
         {/* Accounts Table */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div className="space-y-1.5">
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
-                Your Accounts
-              </CardTitle>
-              <CardDescription>Manage your financial accounts and track balances</CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => syncMutation.mutate({ reason: 'manual_reload', force: true })}
-              disabled={syncMutation.isPending}
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`}
-              />
-              Sync
-            </Button>
-          </CardHeader>
-          <CardContent className="p-0">
+        <div className="shadow rounded-lg border bg-card text-card-foreground">
+          <div className="p-4 border-b flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+            <TableFilters
+              fields={filterFields}
+              onClearFilters={clearFilters}
+              onRefresh={() => syncMutation.mutate({ reason: 'manual_reload', force: true })}
+              isFetching={syncMutation.isPending || isLoading}
+              hasActiveFilters={hasActiveFilters}
+              layout="flex"
+              showCard={false}
+              className="items-center w-full"
+            />
+          </div>
+          <div className="p-0">
             <div className="relative">
               <TableLoadingBar
                 isLoading={isLoading}
@@ -526,8 +616,8 @@ export function AccountList() {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Create Account Dialog */}
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

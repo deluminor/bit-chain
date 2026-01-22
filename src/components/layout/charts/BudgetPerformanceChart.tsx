@@ -1,14 +1,13 @@
 'use client';
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
+import { Card } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart';
-import { useTheme } from '@/providers/ThemeProvider';
-import { THEME } from '@/store';
 import { useBudgetPerformance } from '@/features/finance/hooks/useBudgetPerformance';
 import { useIsClient } from '@/hooks/useIsClient';
-import { formatSummaryAmount, SUPPORTED_CURRENCIES, BASE_CURRENCY } from '@/lib/currency';
-import { ChartWrapper } from './ChartWrapper';
-import { Target, AlertTriangle } from 'lucide-react';
+import { BASE_CURRENCY, formatSummaryAmount, SUPPORTED_CURRENCIES } from '@/lib/currency';
+import { useTheme } from '@/providers/ThemeProvider';
+import { THEME } from '@/store';
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 const chartConfig = {
   budgeted: {
@@ -24,79 +23,23 @@ const chartConfig = {
 export function BudgetPerformanceChart() {
   const { theme } = useTheme();
   const isClient = useIsClient();
-  const { data: budgetData, isLoading, error } = useBudgetPerformance();
+  const { data: budgetData, error } = useBudgetPerformance();
 
   if (!isClient) {
-    return (
-      <ChartWrapper
-        title="Budget Performance"
-        description="Compare budgeted vs actual spending by category"
-        isLoading={true}
-      >
-        <div />
-      </ChartWrapper>
-    );
+    return <div />;
   }
 
   if (error || !budgetData?.length) {
     return (
-      <ChartWrapper
-        title="Budget Performance"
-        description="Compare budgeted vs actual spending by category"
-      >
-        <div className="h-[300px] w-full flex items-center justify-center">
-          <div className="text-muted-foreground">No budget data available</div>
-        </div>
-      </ChartWrapper>
+      <div className="h-[300px] w-full flex items-center justify-center">
+        <div className="text-muted-foreground">No budget data available</div>
+      </div>
     );
   }
 
-  // Calculate totals for footer
-  const totalBudgeted = budgetData.reduce((sum, item) => sum + item.budgeted, 0);
-  const totalSpent = budgetData.reduce((sum, item) => sum + item.spent, 0);
-  const overBudgetCategories = budgetData.filter(item => item.spent > item.budgeted).length;
-  const budgetUtilization = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
-
-  const footer = (
-    <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-1">
-        {overBudgetCategories > 0 ? (
-          <AlertTriangle className="h-4 w-4 text-expense" />
-        ) : (
-          <Target className="h-4 w-4 text-income" />
-        )}
-        <span className="text-muted-foreground">Over Budget:</span>
-        <span
-          className={`font-medium ${overBudgetCategories > 0 ? 'text-expense' : 'text-income'}`}
-        >
-          {overBudgetCategories} categories
-        </span>
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="text-muted-foreground">Utilization:</span>
-        <span
-          className={`font-medium ${
-            budgetUtilization > 100
-              ? 'text-expense'
-              : budgetUtilization > 80
-                ? 'text-amber-600'
-                : 'text-income'
-          }`}
-        >
-          {budgetUtilization.toFixed(1)}%
-        </span>
-      </div>
-    </div>
-  );
-
   return (
-    <ChartWrapper
-      title="Budget Performance"
-      description="Compare budgeted vs actual spending by category"
-      footer={footer}
-      isLoading={isLoading}
-    >
-      <div className="h-[300px] w-full">
+    <Card className="col-span-4">
+      <div className="h-[350px] w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -225,6 +168,6 @@ export function BudgetPerformanceChart() {
           </ResponsiveContainer>
         </ChartContainer>
       </div>
-    </ChartWrapper>
+    </Card>
   );
 }

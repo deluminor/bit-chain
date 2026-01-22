@@ -1,8 +1,7 @@
 'use client';
 
-import { ReactNode } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { CardDescription, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -14,11 +13,13 @@ import {
 } from '@/components/ui/table';
 import { TableLoadingBar } from '@/components/ui/table-loading-bar';
 import { RefreshCw } from 'lucide-react';
+import { ReactNode } from 'react';
 import { DataTablePagination } from './pagination';
+import { FilterField, TableFilters } from './table-filters';
 
-export interface DataTableColumn<T = unknown> {
+export interface DataTableColumn<T> {
   key: string;
-  header: string | ReactNode;
+  header: ReactNode;
   cell: (item: T) => ReactNode;
   className?: string;
 }
@@ -44,6 +45,11 @@ export interface DataTableProps<T = unknown> {
   // Actions
   actions?: (item: T) => ReactNode;
   onRefresh?: () => void;
+
+  // Filters
+  filterFields?: FilterField[];
+  onClearFilters?: () => void;
+  hasActiveFilters?: boolean;
 
   // Card wrapper
   title?: string | ReactNode;
@@ -75,6 +81,9 @@ export function DataTable<T>({
   showPagination = true,
   actions,
   onRefresh,
+  filterFields,
+  onClearFilters,
+  hasActiveFilters,
   title,
   description,
   headerActions,
@@ -132,12 +141,12 @@ export function DataTable<T>({
 
   const tableContent = (
     <div className="pb-4 flex flex-col gap-4 justify-between items-start md:items-center overflow-hidden">
-      <div className="w-full relative pt-4">
+      <div className="w-full relative pt-0">
         <TableLoadingBar isLoading={isFetching} className="absolute top-0 left-0 right-0 z-10" />
-        <div className="w-full px-4">
+        <div className="w-full px-0">
           <div className={`overflow-auto data-table ${tableClassName}`} style={{ maxHeight }}>
             <Table>
-              <TableHeader className="sticky top-0 z-10">
+              <TableHeader className="sticky top-0 z-10 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/60">
                 <TableRow className="hover:bg-transparent">
                   {columns.map(column => (
                     <TableHead key={column.key} className={column.className}>
@@ -158,7 +167,7 @@ export function DataTable<T>({
       </div>
 
       {showPagination && data.length > 0 && !isLoading && (
-        <div className="pt-4 border-t w-full">
+        <div className="pt-4 border-t w-full px-4">
           <DataTablePagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -172,34 +181,59 @@ export function DataTable<T>({
     </div>
   );
 
-  // If title is provided, wrap in Card
-  if (title || description || headerActions || onRefresh) {
-    return (
-      <Card>
-        {(title || description || headerActions || onRefresh) && (
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                {title && <CardTitle className="flex items-center gap-2">{title}</CardTitle>}
-                {description && <CardDescription>{description}</CardDescription>}
-              </div>
-              <div className="flex items-center gap-2">
-                {headerActions}
-                {onRefresh && (
-                  <Button variant="outline" size="sm" onClick={onRefresh} disabled={isFetching}>
-                    <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-        )}
-        <CardContent className="p-0">{tableContent}</CardContent>
-      </Card>
-    );
-  }
+  // Helper to render the header content
+  const renderHeader = () => {
+    if (filterFields && filterFields.length > 0) {
+      return (
+        <div className="w-full">
+          <TableFilters
+            fields={filterFields}
+            onClearFilters={onClearFilters}
+            onRefresh={onRefresh}
+            isFetching={isFetching}
+            hasActiveFilters={hasActiveFilters}
+            layout="flex"
+            showCard={false}
+            className="items-center w-full"
+          />
+        </div>
+      );
+    }
 
-  // Return bare table without Card wrapper
-  return tableContent;
+    if (title || description || headerActions || onRefresh) {
+      return (
+        <div className="flex items-center justify-between w-full">
+          <div>
+            {title && <CardTitle className="flex items-center gap-2">{title}</CardTitle>}
+            {description && <CardDescription>{description}</CardDescription>}
+          </div>
+          <div className="flex items-center gap-2">
+            {headerActions}
+            {onRefresh && (
+              <Button variant="outline" size="sm" onClick={onRefresh} disabled={isFetching}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const headerContent = renderHeader();
+
+  // Return wrapped in a styled container that matches the Trades look
+  return (
+    <div className="shadow rounded-lg border bg-card text-card-foreground">
+      {headerContent && (
+        <div className="p-4 border-b flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+          {headerContent}
+        </div>
+      )}
+      <div className="p-0">{tableContent}</div>
+    </div>
+  );
 }

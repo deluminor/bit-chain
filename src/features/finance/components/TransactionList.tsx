@@ -1,9 +1,18 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { AddTransactionForm } from '@/components/forms/AddTransactionForm';
+import { AnimatedDiv } from '@/components/ui/animations';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import {
+  DataTable,
+  DataTableColumn,
+  FilterField,
+  createDateRangeFilter,
+  createSearchFilter,
+  createSelectFilter,
+} from '@/components/ui/data-table';
 import {
   Dialog,
   DialogContent,
@@ -18,44 +27,35 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/hooks/use-toast';
+import { TransactionImportDialog } from '@/features/finance/components/TransactionImportDialog';
+import { useTransactionFilters } from '@/features/finance/hooks/useTransactionFilters';
+import { useAccounts } from '@/features/finance/queries/accounts';
 import {
-  Plus,
-  Minus,
-  ArrowRightLeft,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  TrendingUp,
-  TrendingDown,
+  Transaction,
+  useDeleteTransaction,
+  useTransactions,
+} from '@/features/finance/queries/transactions';
+import { useMonobankAutoSync } from '@/features/integrations/hooks/useMonobankAutoSync';
+import { useToast } from '@/hooks/use-toast';
+import { useDataTable } from '@/hooks/useDataTable';
+import { formatCurrency, formatSummaryAmount } from '@/lib/currency';
+import {
   AlertTriangle,
-  Receipt,
-  DollarSign,
+  ArrowRightLeft,
   Calendar,
+  DollarSign,
+  Edit,
+  Minus,
+  MoreHorizontal,
+  Plus,
+  Receipt,
   Tag,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
   Upload,
 } from 'lucide-react';
-import { AddTransactionForm } from '@/components/forms/AddTransactionForm';
-import {
-  useTransactions,
-  useDeleteTransaction,
-  Transaction,
-  TransactionFilters,
-} from '@/features/finance/queries/transactions';
-import { useAccounts } from '@/features/finance/queries/accounts';
-import { formatCurrency, formatSummaryAmount } from '@/lib/currency';
-import { AnimatedDiv } from '@/components/ui/animations';
-import {
-  DataTable,
-  TableFilters,
-  DataTableColumn,
-  FilterField,
-  createSearchFilter,
-  createSelectFilter,
-} from '@/components/ui/data-table';
-import { useDataTable } from '@/hooks/useDataTable';
-import { useMonobankAutoSync } from '@/features/integrations/hooks/useMonobankAutoSync';
-import { TransactionImportDialog } from '@/features/finance/components/TransactionImportDialog';
+import { useMemo, useState } from 'react';
 
 const transactionTypeIcons = {
   INCOME: Plus,
@@ -101,12 +101,13 @@ export function TransactionList() {
   });
 
   // Filter states
-  const [filters, setFilters] = useState<Partial<TransactionFilters>>({
-    type: undefined,
-    accountId: undefined,
-    categoryId: undefined,
-  });
-  const [searchTerm, setSearchTerm] = useState('');
+  const {
+    filters,
+    handleSearchChange,
+    handleTypeFilterChange,
+    handleAccountFilterChange,
+    handleDateRangeChange,
+  } = useTransactionFilters();
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -124,8 +125,12 @@ export function TransactionList() {
     refetch,
     isFetching,
   } = useTransactions({
-    ...filters,
-    search: searchTerm || undefined,
+    type: filters.typeFilter,
+    accountId: filters.accountFilter,
+    categoryId: filters.categoryFilter,
+    search: filters.searchTerm || undefined,
+    dateFrom: filters.dateRange?.from?.toISOString(),
+    dateTo: filters.dateRange?.to?.toISOString(),
     limit: pageSize,
     page: currentPage,
   });
@@ -218,17 +223,19 @@ export function TransactionList() {
   };
 
   const clearFilters = () => {
-    setFilters({
-      type: undefined,
-      accountId: undefined,
-      categoryId: undefined,
-    });
-    setSearchTerm('');
+    handleSearchChange('');
+    handleTypeFilterChange(undefined);
+    handleAccountFilterChange(undefined);
+    handleDateRangeChange(undefined);
     onPageChange(1);
   };
 
   const hasActiveFilters = Boolean(
-    filters.type || filters.accountId || filters.categoryId || searchTerm,
+    filters.typeFilter ||
+      filters.accountFilter ||
+      filters.categoryFilter ||
+      filters.searchTerm ||
+      filters.dateRange,
   );
 
   // Define table columns
@@ -313,8 +320,8 @@ export function TransactionList() {
         // For transfers, handle display based on filter context
         if (transaction.type === 'TRANSFER') {
           // Case 1: Viewing a specific account
-          if (filters.accountId) {
-            const isReceived = transaction.transferToId === filters.accountId;
+          if (filters.accountFilter) {
+            const isReceived = transaction.transferToId === filters.accountFilter;
 
             return (
               <div className={`font-semibold ${isReceived ? 'text-income' : 'text-transfer'}`}>
@@ -379,15 +386,15 @@ export function TransactionList() {
 
   // Define filter fields
   const filterFields: FilterField[] = [
-    createSearchFilter('search', searchTerm, setSearchTerm, 'Search transactions...'),
+    createDateRangeFilter('date', filters.dateRange, handleDateRangeChange, 'Select date range'),
+    createSearchFilter('search', filters.searchTerm, handleSearchChange, 'Search transactions...'),
     createSelectFilter(
       'type',
-      filters.type,
+      filters.typeFilter,
       value =>
-        setFilters(prev => ({
-          ...prev,
-          type: value === 'all' ? undefined : (value as 'INCOME' | 'EXPENSE' | 'TRANSFER'),
-        })),
+        handleTypeFilterChange(
+          value === 'all' ? undefined : (value as 'INCOME' | 'EXPENSE' | 'TRANSFER'),
+        ),
       [
         { value: 'INCOME', label: 'Income' },
         { value: 'EXPENSE', label: 'Expense' },
@@ -397,8 +404,8 @@ export function TransactionList() {
     ),
     createSelectFilter(
       'account',
-      filters.accountId,
-      value => setFilters(prev => ({ ...prev, accountId: value === 'all' ? undefined : value })),
+      filters.accountFilter,
+      value => handleAccountFilterChange(value === 'all' ? undefined : value),
       accounts.map((account: { id: string; name: string }) => ({
         value: account.id,
         label: account.name,
@@ -516,84 +523,69 @@ export function TransactionList() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <TableFilters
-        fields={filterFields}
-        onClearFilters={clearFilters}
-        onRefresh={refetch}
-        isFetching={isFetching}
-        hasActiveFilters={hasActiveFilters}
-      />
-
       {/* Transactions Table */}
-      <div className="overflow-x-auto">
-        <DataTable
-          data={transactions}
-          columns={columns}
-          isLoading={isLoading}
-          isFetching={isFetching}
-          currentPage={currentPage}
-          totalPages={totalPages(summary.totalTransactions)}
-          pageSize={pageSize}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
-          title={
-            <>
-              <Receipt className="h-5 w-5" />
-              Recent Transactions
-            </>
-          }
-          description={`Your transaction history ${hasActiveFilters ? '(filtered)' : ''}`}
-          onRefresh={refetch}
-          actions={transaction => (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedTransaction(transaction);
-                    setShowEditDialog(true);
-                  }}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedTransaction(transaction);
-                    setShowDeleteDialog(true);
-                  }}
-                  className="text-destructive"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          emptyMessage={
-            hasActiveFilters ? 'No transactions match your filters' : 'No transactions found'
-          }
-          emptyDescription={
-            hasActiveFilters
-              ? 'Try adjusting your filters or search terms'
-              : 'Create your first transaction to get started'
-          }
-          emptyActions={
-            !hasActiveFilters && (
-              <Button onClick={() => setShowCreateDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Transaction
+      <DataTable
+        data={transactions}
+        columns={columns}
+        isLoading={isLoading}
+        isFetching={isFetching}
+        currentPage={currentPage}
+        totalPages={totalPages(summary.totalTransactions)}
+        pageSize={pageSize}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        filterFields={filterFields}
+        onClearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
+        onRefresh={refetch}
+        actions={transaction => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
-            )
-          }
-        />
-      </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedTransaction(transaction);
+                  setShowEditDialog(true);
+                }}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedTransaction(transaction);
+                  setShowDeleteDialog(true);
+                }}
+                className="text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        emptyMessage={
+          hasActiveFilters ? 'No transactions match your filters' : 'No transactions found'
+        }
+        emptyDescription={
+          hasActiveFilters
+            ? 'Try adjusting your filters or search terms'
+            : 'Create your first transaction to get started'
+        }
+        emptyActions={
+          !hasActiveFilters && (
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Transaction
+            </Button>
+          )
+        }
+      />
 
       {/* Create Transaction Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

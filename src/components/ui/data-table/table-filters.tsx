@@ -1,8 +1,8 @@
 'use client';
 
-import { ReactNode } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -11,8 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Filter, Search, X, RefreshCw } from 'lucide-react';
+import { Filter, RefreshCw, Search, XCircle } from 'lucide-react';
+import { ReactNode } from 'react';
 import { DateRange } from 'react-day-picker';
 
 export interface FilterOption {
@@ -48,6 +48,7 @@ export interface TableFiltersProps {
   // Layout
   gridColumns?: string; // e.g., "grid-cols-1 md:grid-cols-4"
   className?: string;
+  layout?: 'grid' | 'flex';
 }
 
 export function TableFilters({
@@ -66,14 +67,15 @@ export function TableFilters({
   showCard = true,
   gridColumns = 'grid-cols-1 md:grid-cols-4',
   className = '',
+  layout = 'grid',
 }: TableFiltersProps) {
   const renderField = (field: FilterField) => {
-    const baseClassName = `${field.className || ''}`;
+    const baseClassName = `${field.className || ''} ${layout === 'flex' ? 'w-full' : ''}`;
 
     switch (field.type) {
       case 'search':
         return (
-          <div className={`relative ${baseClassName}`} key={field.key}>
+          <div className={`relative ${baseClassName}`}>
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={field.placeholder || 'Search...'}
@@ -86,7 +88,7 @@ export function TableFilters({
 
       case 'select':
         return (
-          <Select key={field.key} value={field.value || 'all'} onValueChange={field.onChange}>
+          <Select value={field.value || 'all'} onValueChange={field.onChange}>
             <SelectTrigger className={baseClassName}>
               <SelectValue placeholder={field.placeholder || 'Select option'} />
             </SelectTrigger>
@@ -103,7 +105,7 @@ export function TableFilters({
 
       case 'date-range':
         return (
-          <div className={baseClassName} key={field.key}>
+          <div className={baseClassName}>
             <DatePicker
               dateRange={field.value}
               onDateRangeChange={field.onChange}
@@ -115,11 +117,7 @@ export function TableFilters({
         );
 
       case 'custom':
-        return (
-          <div className={baseClassName} key={field.key}>
-            {field.render?.()}
-          </div>
-        );
+        return <div className={baseClassName}>{field.render?.()}</div>;
 
       default:
         return null;
@@ -127,14 +125,22 @@ export function TableFilters({
   };
 
   const filtersContent = (
-    <div className={`grid ${gridColumns} gap-4 ${className}`}>
-      {fields.map(renderField)}
+    <div
+      className={`${
+        layout === 'grid' ? `grid ${gridColumns}` : 'flex flex-wrap items-center'
+      } gap-4 ${className}`}
+    >
+      {fields.map(field => (
+        <div key={field.key} className={layout === 'flex' ? 'min-w-[150px]' : undefined}>
+          {renderField(field)}
+        </div>
+      ))}
 
       {/* Clear filters button */}
       {hasActiveFilters && onClearFilters && (
-        <Button variant="outline" size="sm" onClick={onClearFilters} className="h-9">
-          <X className="h-4 w-4 mr-2" />
-          Clear Filters
+        <Button variant="outline" size="sm" onClick={onClearFilters} className="h-9 gap-2">
+          <XCircle className="h-4 w-4" />
+          Reset filters
         </Button>
       )}
 
@@ -145,7 +151,7 @@ export function TableFilters({
           size="sm"
           onClick={onRefresh}
           disabled={isFetching}
-          className="h-9"
+          className="h-9 ml-auto"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
           Refresh

@@ -70,6 +70,18 @@ export async function GET() {
       budgets.map(async budget => {
         const categoriesWithActual = await Promise.all(
           budget.categories.map(async budgetCategory => {
+            // Clone dates to avoid mutating the original budget object in the loop
+            const startDate = new Date(budget.startDate);
+            const endDate = new Date(budget.endDate);
+
+            // If monthly budget, ensure we check from the start of the month
+            if (budget.period === 'MONTHLY') {
+              startDate.setDate(1);
+            }
+
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+
             // Get transactions for this category within budget period
             const transactions = await prisma.transaction.findMany({
               where: {
@@ -77,15 +89,17 @@ export async function GET() {
                 categoryId: budgetCategory.categoryId,
                 type: 'EXPENSE',
                 date: {
-                  gte: budget.startDate,
-                  lte: budget.endDate,
+                  gte: startDate,
+                  lte: endDate,
                 },
               },
             });
 
-            const actualSpending = transactions.reduce((sum, transaction) => {
-              return sum + transaction.amount;
-            }, 0);
+            const actualSpending = Math.abs(
+              transactions.reduce((sum, transaction) => {
+                return sum + transaction.amount;
+              }, 0),
+            );
 
             const convertedTransactions = await Promise.all(
               transactions.map(transaction =>
@@ -93,9 +107,8 @@ export async function GET() {
               ),
             );
 
-            const actualSpendingBase = convertedTransactions.reduce(
-              (sum, amount) => sum + amount,
-              0,
+            const actualSpendingBase = Math.abs(
+              convertedTransactions.reduce((sum, amount) => sum + amount, 0),
             );
 
             const plannedBase = await convertToBaseCurrencySafe(

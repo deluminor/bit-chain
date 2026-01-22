@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { AccountBalanceTrendsChart } from '@/components/layout/charts/AccountBalanceTrendsChart';
 import { BudgetPerformanceChart } from '@/components/layout/charts/BudgetPerformanceChart';
@@ -17,6 +17,7 @@ import { useTransactions } from '@/features/finance/queries/transactions';
 import {
   Activity,
   BarChart3,
+  PieChart,
   RefreshCw,
   Target,
   TrendingDown,
@@ -347,7 +348,18 @@ export function FinanceDashboard() {
               <CategorySpendingChart />
             </div>
             <div className="animate-fade-in">
-              <BudgetPerformanceChart />
+              <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PieChart className="h-5 w-5" />
+                    Budget Performance
+                  </CardTitle>
+                  <CardDescription>Your budget vs actual spending by category</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BudgetPerformanceChart />
+                </CardContent>
+              </Card>
             </div>
           </div>
 

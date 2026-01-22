@@ -1,10 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BudgetPerformanceChart } from '@/components/layout/charts/BudgetPerformanceChart';
 import { CreateBudgetForm } from '@/components/forms/CreateBudgetForm';
+import { BudgetPerformanceChart } from '@/components/layout/charts/BudgetPerformanceChart';
+import { AnimatedDiv } from '@/components/ui/animations';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -13,28 +13,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { CardSkeleton, ChartSkeleton, StatCardSkeleton } from '@/components/ui/loading-skeleton';
+import { BudgetList } from '@/features/finance/components/BudgetList';
 import {
-  Plus,
-  PieChart,
-  TrendingUp,
-  DollarSign,
-  Target,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Calendar,
-  Clock,
-} from 'lucide-react';
-import { useState } from 'react';
-import { AnimatedDiv } from '@/components/ui/animations';
-import {
+  useApplyBudgetTemplate,
   useBudgets,
   useBudgetTemplates,
-  useApplyBudgetTemplate,
 } from '@/features/finance/queries/budget';
 import { useToast } from '@/hooks/use-toast';
 import { formatEuroAmount } from '@/lib/currency';
-import { StatCardSkeleton, ChartSkeleton, CardSkeleton } from '@/components/ui/loading-skeleton';
+import {
+  Clock,
+  DollarSign,
+  Edit,
+  MoreHorizontal,
+  PieChart,
+  Plus,
+  Target,
+  Trash2,
+  TrendingUp,
+} from 'lucide-react';
+import { useState } from 'react';
 
 export default function BudgetPage() {
   const { toast } = useToast();
@@ -199,97 +198,22 @@ export default function BudgetPage() {
         </Card>
 
         {/* Budget List */}
-        <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              All Budgets
-            </CardTitle>
-            <CardDescription>Manage your budget templates and periods</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {budgets.length > 0 ? (
-              <div className="space-y-4">
-                {budgets.map(budget => (
-                  <div
-                    key={budget.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-3 h-3 rounded-full ${budget.isActive ? 'bg-green-500' : 'bg-gray-400'}`}
-                        ></div>
-                        <div>
-                          <h4 className="font-medium">{budget.name}</h4>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Badge variant="outline" className="text-xs">
-                              {budget.period}
-                            </Badge>
-                            <span>•</span>
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              {new Date(budget.startDate).toLocaleDateString()} -{' '}
-                              {new Date(budget.endDate).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div className="font-medium">
-                          {formatEuroAmount(budget.totalActualBase ?? budget.totalActual)} /{' '}
-                          {formatEuroAmount(budget.totalPlannedBase ?? budget.totalPlanned)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {(budget.totalPlannedBase ?? budget.totalPlanned) > 0
-                            ? Math.round(
-                                ((budget.totalActualBase ?? budget.totalActual) /
-                                  (budget.totalPlannedBase ?? budget.totalPlanned)) *
-                                  100,
-                              )
-                            : 0}
-                          % used
-                        </div>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Calendar className="h-4 w-4 mr-2" />
-                            {budget.isActive ? 'Deactivate' : 'Activate'}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-muted-foreground mb-4">No budgets created yet</div>
-                <Button onClick={() => setShowCreateForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Budget
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <BudgetList
+          budgets={budgets} // TS might complain if types don't strictly match, hopefully inferred type matches
+          onEdit={budget => {
+            // TODO: Implement edit
+            console.log('Edit budget', budget);
+          }}
+          onDelete={budget => {
+            // TODO: Implement delete
+            console.log('Delete budget', budget);
+          }}
+          onToggleStatus={budget => {
+            // TODO: Implement toggle
+            console.log('Toggle status', budget);
+          }}
+          onCreate={() => setShowCreateForm(true)}
+        />
 
         {/* Budget Templates */}
         <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 
 // Types
@@ -98,7 +98,7 @@ export function useAccounts(includeInactive = false) {
 
 export function useAccount(accountId: string, includeTransactions = false, transactionLimit = 10) {
   return useQuery({
-    queryKey: accountKeys.detail(accountId),
+    queryKey: [...accountKeys.detail(accountId), { includeTransactions, transactionLimit }],
     queryFn: async () => {
       const { data } = await axios.get(`/api/finance/accounts/${accountId}`, {
         params: {

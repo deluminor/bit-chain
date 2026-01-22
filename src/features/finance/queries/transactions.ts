@@ -1,4 +1,10 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import axios from 'axios';
 
 // Types
@@ -176,6 +182,7 @@ export function useTransactions(
       const { data } = await axios.get('/api/finance/transactions', { params });
       return data;
     },
+    placeholderData: keepPreviousData,
   });
 }
 

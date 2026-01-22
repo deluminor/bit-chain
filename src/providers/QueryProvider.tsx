@@ -6,8 +6,8 @@ import { ReactNode } from 'react';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 6 * 5 * 1000,
-      gcTime: 6 * 5 * 1000,
+      staleTime: 30 * 1000,
+      gcTime: 15 * 60 * 1000,
     },
   },
 });

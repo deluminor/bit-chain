@@ -65,6 +65,8 @@ export function MonobankIntegrationCard() {
   const updateAccountsMutation = useMonobankUpdateAccounts();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isConnectDialogOpen, setIsConnectDialogOpen] = useState(false);
+  const [token, setToken] = useState('');
   const [draftAccounts, setDraftAccounts] = useState<MonobankIntegrationAccount[]>([]);
 
   const integration = data?.integration ?? null;
@@ -91,18 +93,20 @@ export function MonobankIntegrationCard() {
 
   const handleConnect = async () => {
     try {
-      await connectMutation.mutateAsync();
+      await connectMutation.mutateAsync({ token: token || undefined });
       toast({
         title: 'Monobank connected',
         description: 'Accounts fetched successfully. Select what to import.',
       });
+      setIsConnectDialogOpen(false);
+      setToken('');
     } catch (connectionError) {
       toast({
         title: 'Connection failed',
         description:
           connectionError instanceof Error
             ? connectionError.message
-            : 'Unable to connect to Monobank',
+            : 'Unable to connect to Monobank. Check your token.',
         variant: 'destructive',
       });
     }
@@ -218,8 +222,11 @@ export function MonobankIntegrationCard() {
               <Wallet className="h-4 w-4" />
               Connect Monobank to import balances and statements.
             </div>
-            <Button onClick={handleConnect} disabled={connectMutation.isPending || isLoading}>
-              {connectMutation.isPending ? 'Connecting...' : 'Connect Monobank'}
+            <Button
+              onClick={() => setIsConnectDialogOpen(true)}
+              disabled={connectMutation.isPending || isLoading}
+            >
+              Connect Monobank
             </Button>
           </div>
         )}
@@ -291,6 +298,47 @@ export function MonobankIntegrationCard() {
             </Button>
             <Button onClick={handleSaveAccounts} disabled={!hasChanges || isSaving}>
               {isSaving ? 'Saving...' : 'Save changes'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isConnectDialogOpen} onOpenChange={setIsConnectDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Connect Monobank</DialogTitle>
+            <DialogDescription>
+              Enter your Monobank Activation Token. You can get it from{' '}
+              <a
+                href="https://api.monobank.ua/"
+                target="_blank"
+                rel="noreferrer"
+                className="underline hover:text-primary"
+              >
+                api.monobank.ua
+              </a>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Input
+                placeholder="uX..."
+                value={token}
+                onChange={e => setToken(e.target.value)}
+                autoComplete="off"
+                type="password"
+              />
+              <p className="text-xs text-muted-foreground">
+                The token is encrypted and stored securely.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsConnectDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConnect} disabled={!token || connectMutation.isPending}>
+              {connectMutation.isPending ? 'Connecting...' : 'Connect'}
             </Button>
           </div>
         </DialogContent>

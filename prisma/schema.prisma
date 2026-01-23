@@ -20,11 +20,11 @@ model User {
   password        String
   createdAt       DateTime              @default(now())
   defaultCategory String                @default("solo") // Reference to the default category name
-  
+
   // Existing crypto trading relations
   trades          Trade[]
   categories      Category[]            // Trading categories
-  
+
   // New finance relations
   financeAccounts     FinanceAccount[]
   transactions        Transaction[]
@@ -118,12 +118,12 @@ model FinanceAccount {
   description  String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  
+
   // Relations
   transactions Transaction[]
   transfersTo  Transaction[] @relation("TransferTo")
   integrationAccounts IntegrationAccount[]
-  
+
   @@unique([userId, name])
 }
 
@@ -142,13 +142,13 @@ model Transaction {
   date            DateTime         @default(now())
   tags            String[]         // Array of tags for flexible organization
   isDemo          Boolean          @default(false)
-  
+
   // Transfer specific fields
   transferToId    String?          // For transfer transactions
   transferTo      FinanceAccount?  @relation("TransferTo", fields: [transferToId], references: [id])
   transferAmount  Float?           // Amount received in destination account for transfers
   transferCurrency String?         // Currency of the amount received in destination account
-  
+
   // Recurring transaction info
   isRecurring     Boolean          @default(false)
   recurringPattern RecurringPattern?
@@ -159,10 +159,10 @@ model Transaction {
   externalId      String?
   integrationAccountId String?
   integrationAccount IntegrationAccount? @relation(fields: [integrationAccountId], references: [id], onDelete: SetNull)
-  
+
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  
+
   @@index([userId, date])
   @@index([accountId, date])
   @@index([categoryId])
@@ -175,6 +175,7 @@ model Integration {
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider     IntegrationProvider
   status       IntegrationStatus    @default(CONNECTED)
+  token        String?              @db.Text // Encrypted or plain token
   lastSyncedAt DateTime?
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
@@ -226,11 +227,11 @@ model TransactionCategory {
   isActive     Boolean      @default(true)
   isDemo       Boolean      @default(false)
   createdAt    DateTime     @default(now())
-  
+
   // Relations
   transactions Transaction[]
   budgetCategories BudgetCategory[]
-  
+
   @@unique([userId, name, type])
   @@unique([loanId])
   @@index([userId, type])
@@ -273,7 +274,7 @@ model Budget {
   totalActual  Float          @default(0)
   isActive     Boolean        @default(true)
   isDemo       Boolean        @default(false)
-  
+
   // Template functionality for recurring budgets
   isTemplate   Boolean        @default(false)  // If true, this is a budget template
   templateName String?        // Name of the template ("Monthly Expenses", "Living Costs")
@@ -281,13 +282,13 @@ model Budget {
   parentTemplateId String?    // Reference to template if this budget was created from template
   parentTemplate Budget?     @relation("BudgetTemplate", fields: [parentTemplateId], references: [id])
   childBudgets   Budget[]     @relation("BudgetTemplate")
-  
+
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-  
+
   // Relations
   categories   BudgetCategory[]
-  
+
   @@unique([userId, name])
 }
 
@@ -299,7 +300,7 @@ model BudgetCategory {
   category     TransactionCategory @relation(fields: [categoryId], references: [id])
   planned      Float
   actual       Float          @default(0)
-  
+
   @@unique([budgetId, categoryId])
 }
 
@@ -321,7 +322,7 @@ model FinancialGoal {
   completedAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-  
+
   @@unique([userId, name])
 }
 
@@ -329,7 +330,7 @@ model FinancialGoal {
 
 enum AccountType {
   CASH
-  BANK_CARD  
+  BANK_CARD
   SAVINGS
   INVESTMENT
 }
@@ -351,7 +352,7 @@ enum IntegrationAccountOwner {
 
 enum TransactionType {
   INCOME
-  EXPENSE  
+  EXPENSE
   TRANSFER
 }
 

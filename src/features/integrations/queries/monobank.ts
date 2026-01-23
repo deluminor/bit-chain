@@ -68,8 +68,8 @@ export function useMonobankConnect() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      const { data } = await axios.post('/api/integrations/monobank/connect');
+    mutationFn: async (payload?: { token?: string }) => {
+      const { data } = await axios.post('/api/integrations/monobank/connect', payload);
       return data;
     },
     onSuccess: () => {

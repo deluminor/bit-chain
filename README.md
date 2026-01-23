@@ -446,9 +446,6 @@ DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
 NEXTAUTH_SECRET="your-super-secret-jwt-key-here"
 NEXTAUTH_URL="http://localhost:3000"
 
-# Monobank integration
-MONO_API="your_monobank_personal_token"
-
 # Optional API keys for crypto data
 CRYPTOPANIC_API_KEY="your_cryptopanic_api_key"
 COINGECKO_API_KEY="your_coingecko_api_key" # Pro plan

@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { PrismaClient } from '@/generated/prisma';
 import {
   fetchMonobankClientInfo,
   mapCurrencyCode,
   normalizeMonobankAmount,
 } from '@/lib/integrations/monobank';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
@@ -88,19 +88,48 @@ const buildDefaultAccountName = (
   return details.join(' - ');
 };
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const user = await getUserFromSession();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = process.env.MONO_API;
+    const body = await request.json().catch(() => ({}));
+    const token = body.token;
+
     if (!token) {
-      return NextResponse.json({ error: 'Monobank token is not configured' }, { status: 500 });
+      // Check if we already have a token in DB (for reconnect cases without providing new token)
+      const existingIntegration = await prisma.integration.findUnique({
+        where: {
+          userId_provider: {
+            userId: user.id,
+            provider: 'MONOBANK',
+          },
+        },
+      });
+
+      if (existingIntegration?.token) {
+        // Use existing token
+      } else {
+        return NextResponse.json({ error: 'Monobank token is required' }, { status: 400 });
+      }
     }
 
-    const clientInfo = await fetchMonobankClientInfo(token);
+    // If we have a token (either new from body or env), use it to validate
+    const activeToken =
+      token ||
+      (
+        await prisma.integration.findUnique({
+          where: { userId_provider: { userId: user.id, provider: 'MONOBANK' } },
+        })
+      )?.token;
+
+    if (!activeToken) {
+      return NextResponse.json({ error: 'No token available' }, { status: 400 });
+    }
+
+    const clientInfo = await fetchMonobankClientInfo(activeToken);
 
     const integration = await prisma.integration.upsert({
       where: {
@@ -111,11 +140,13 @@ export async function POST() {
       },
       update: {
         status: 'CONNECTED',
+        token: activeToken, // specific update to save token
       },
       create: {
         userId: user.id,
         provider: 'MONOBANK',
         status: 'CONNECTED',
+        token: activeToken, // specific create to save token
       },
     });
 

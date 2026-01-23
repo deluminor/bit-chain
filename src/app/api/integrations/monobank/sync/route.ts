@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { PrismaClient } from '@/generated/prisma';
 import { syncMonobankAccounts } from '@/lib/integrations/monobank-sync';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
@@ -61,9 +61,23 @@ export async function POST(request: Request) {
 
     const payload = await parseSyncPayload(request);
 
-    const token = process.env.MONO_API;
+    const integration = await prisma.integration.findUnique({
+      where: {
+        userId_provider: {
+          userId: user.id,
+          provider: 'MONOBANK',
+        },
+      },
+      select: { token: true },
+    });
+
+    const token = integration?.token;
+
     if (!token) {
-      return NextResponse.json({ error: 'Monobank token is not configured' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Monobank is not connected. Please connect first.' },
+        { status: 400 },
+      );
     }
     const result = await syncMonobankAccounts({
       prisma,

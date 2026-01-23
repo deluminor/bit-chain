@@ -38,18 +38,37 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const run = async () => {
   const { email, from, force } = parseArgs();
-  const token = process.env.MONO_API;
+  let user;
 
-  if (!token) {
-    throw new Error('MONO_API is not configured');
+  if (email) {
+    user = await prisma.user.findUnique({ where: { email } });
+  } else {
+    // If no email provided, find the first user that has a Monobank integration
+    const integration = await prisma.integration.findFirst({
+      where: { provider: 'MONOBANK', status: 'CONNECTED' },
+      include: { user: true },
+    });
+    user = integration?.user ?? null;
   }
-
-  const user = email
-    ? await prisma.user.findUnique({ where: { email } })
-    : await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
 
   if (!user) {
     throw new Error('No user found for sync');
+  }
+
+  // Fetch token from integration record
+  const integration = await prisma.integration.findUnique({
+    where: {
+      userId_provider: {
+        userId: user.id,
+        provider: 'MONOBANK',
+      },
+    },
+  });
+
+  const token = integration?.token;
+
+  if (!token) {
+    throw new Error(`Monobank token is not configured for user ${user.email}`);
   }
 
   const fromDate = from ? new Date(from) : null;

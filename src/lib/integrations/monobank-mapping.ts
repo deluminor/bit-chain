@@ -52,6 +52,19 @@ const TRANSFER_KEYWORDS = [
   'з гривневого рахунку',
   'from account',
   'to account',
+  'продаж валюти',
+  'купівля валюти',
+  'обмін валюти',
+  'sale of currency',
+  'purchase of currency',
+  'currency exchange',
+  'за договором',
+  'для переказу на картку',
+  'на чорну картку',
+  'на білу картку',
+  'на гривневий рахунок фоп',
+  'на євровий рахунок',
+  'з єврового рахунку фоп',
 ];
 
 const TRANSFER_EXCLUDE_KEYWORDS = [

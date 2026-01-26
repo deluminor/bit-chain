@@ -31,8 +31,8 @@ import { formatCurrency, BASE_CURRENCY } from '@/lib/currency';
 const loanFormSchema = z.object({
   name: z.string().min(1, 'Loan name is required').max(120, 'Loan name is too long'),
   type: z.enum(['LOAN', 'DEBT']),
-  originalAmount: z.number().positive('Original amount must be positive'),
-  currentBalance: z.number().min(0, 'Current balance cannot be negative'),
+  totalAmount: z.number().positive('Total amount must be positive'),
+  paidAmount: z.number().min(0, 'Paid amount cannot be negative'),
   currency: z.string().min(3).max(3).optional().default(BASE_CURRENCY),
   startDate: z.date().optional(),
   dueDate: z.date().optional(),
@@ -73,8 +73,8 @@ export function LoanForm({ onClose, onSuccess, loan }: LoanFormProps) {
     defaultValues: {
       name: loan?.name || '',
       type: loan?.type || 'LOAN',
-      originalAmount: loan?.originalAmount || 0,
-      currentBalance: loan?.currentBalance ?? loan?.originalAmount ?? 0,
+      totalAmount: loan?.totalAmount || 0,
+      paidAmount: loan?.paidAmount ?? 0,
       currency: loan?.currency || BASE_CURRENCY,
       startDate: loan?.startDate ? new Date(loan.startDate) : undefined,
       dueDate: loan?.dueDate ? new Date(loan.dueDate) : undefined,
@@ -85,15 +85,23 @@ export function LoanForm({ onClose, onSuccess, loan }: LoanFormProps) {
   });
 
   const watchedCurrency = form.watch('currency');
-  const watchedOriginalAmount = form.watch('originalAmount');
-  const watchedCurrentBalance = form.watch('currentBalance');
-  const outstanding = Math.max(watchedCurrentBalance, 0);
+  const watchedTotalAmount = form.watch('totalAmount');
+  const watchedPaidAmount = form.watch('paidAmount');
+  const remaining = Math.max(watchedTotalAmount - watchedPaidAmount, 0);
 
   const onSubmit: SubmitHandler<LoanFormData> = async data => {
     try {
+      if (data.paidAmount > data.totalAmount) {
+        toast({
+          title: 'Validation Error',
+          description: 'Paid amount cannot exceed total amount',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const payload = {
         ...data,
-        currentBalance: data.currentBalance ?? data.originalAmount,
         startDate: data.startDate ? data.startDate.toISOString() : undefined,
         dueDate: data.dueDate ? data.dueDate.toISOString() : undefined,
         interestRate: data.interestRate ?? undefined,
@@ -196,7 +204,7 @@ export function LoanForm({ onClose, onSuccess, loan }: LoanFormProps) {
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
             <UserRound className="h-4 w-4" />
-            Lender
+            Lender / Borrower
           </Label>
           <Input
             placeholder="Bank or person"
@@ -214,57 +222,70 @@ export function LoanForm({ onClose, onSuccess, loan }: LoanFormProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="originalAmount">Original Amount *</Label>
+          <Label htmlFor="totalAmount">Total Amount *</Label>
           <CurrencyInput
             placeholder="10000.00"
-            value={form.getValues('originalAmount')}
-            onAmountChange={(value: number) => form.setValue('originalAmount', value)}
-            className={form.formState.errors.originalAmount ? 'border-destructive' : ''}
+            value={form.getValues('totalAmount')}
+            onAmountChange={(value: number) => form.setValue('totalAmount', value)}
+            className={form.formState.errors.totalAmount ? 'border-destructive' : ''}
             currency={watchedCurrency}
             showCurrencySelect={false}
           />
-          {form.formState.errors.originalAmount && (
+          {form.formState.errors.totalAmount && (
             <p className="text-sm text-destructive flex items-center gap-1">
               <span className="text-xs">⚠</span>
-              {form.formState.errors.originalAmount.message}
+              {form.formState.errors.totalAmount.message}
             </p>
           )}
+          <p className="text-xs text-muted-foreground">Original loan/debt amount</p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="currentBalance">Current Balance</Label>
+          <Label htmlFor="paidAmount">Paid Amount</Label>
           <CurrencyInput
-            placeholder="10000.00"
-            value={form.getValues('currentBalance')}
-            onAmountChange={(value: number) => form.setValue('currentBalance', value)}
-            className={form.formState.errors.currentBalance ? 'border-destructive' : ''}
+            placeholder="0.00"
+            value={form.getValues('paidAmount')}
+            onAmountChange={(value: number) => form.setValue('paidAmount', value)}
+            className={form.formState.errors.paidAmount ? 'border-destructive' : ''}
             currency={watchedCurrency}
             showCurrencySelect={false}
           />
-          {form.formState.errors.currentBalance && (
+          {form.formState.errors.paidAmount && (
             <p className="text-sm text-destructive flex items-center gap-1">
               <span className="text-xs">⚠</span>
-              {form.formState.errors.currentBalance.message}
+              {form.formState.errors.paidAmount.message}
             </p>
           )}
+          <p className="text-xs text-muted-foreground">Amount paid/received so far</p>
         </div>
       </div>
 
       <div className="p-4 rounded-lg border bg-muted/40">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Outstanding</span>
-          <span className="font-semibold">
-            {formatCurrency(outstanding, watchedCurrency || BASE_CURRENCY)}
+          <span className="text-muted-foreground">Remaining</span>
+          <span className="font-semibold text-lg">
+            {formatCurrency(remaining, watchedCurrency || BASE_CURRENCY)}
           </span>
         </div>
-        <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
-          <span>
-            Original: {formatCurrency(watchedOriginalAmount, watchedCurrency || BASE_CURRENCY)}
-          </span>
-          <span>
-            Balance: {formatCurrency(watchedCurrentBalance, watchedCurrency || BASE_CURRENCY)}
-          </span>
+        <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+          <span>Total: {formatCurrency(watchedTotalAmount, watchedCurrency || BASE_CURRENCY)}</span>
+          <span>Paid: {formatCurrency(watchedPaidAmount, watchedCurrency || BASE_CURRENCY)}</span>
         </div>
+        {watchedTotalAmount > 0 && (
+          <div className="mt-2">
+            <div className="w-full bg-muted rounded-full h-2">
+              <div
+                className="bg-primary h-2 rounded-full transition-all"
+                style={{
+                  width: `${Math.min((watchedPaidAmount / watchedTotalAmount) * 100, 100)}%`,
+                }}
+              />
+            </div>
+            <p className="text-xs text-center mt-1 text-muted-foreground">
+              {((watchedPaidAmount / watchedTotalAmount) * 100).toFixed(1)}% paid
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -22,51 +22,6 @@ const importSchema = z.object({
     .min(1),
 });
 
-const getExpectedTransactionType = (loanType: 'LOAN' | 'DEBT') =>
-  loanType === 'LOAN' ? 'EXPENSE' : 'INCOME';
-
-const createLoanValidationError = (message: string) => {
-  const error = new Error(message) as Error & { status?: number };
-  error.status = 400;
-  return error;
-};
-
-async function adjustLoanBalance(
-  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  loanId: string,
-  amount: number,
-  direction: 'increase' | 'decrease',
-) {
-  const loan = await tx.loan.findFirst({ where: { id: loanId } });
-
-  if (!loan) {
-    throw createLoanValidationError('Loan not found or access denied');
-  }
-
-  const nextBalance =
-    direction === 'decrease' ? loan.currentBalance - amount : loan.currentBalance + amount;
-
-  if (nextBalance < 0) {
-    throw createLoanValidationError('Payment exceeds remaining loan balance');
-  }
-
-  const normalizedBalance = Math.max(nextBalance, 0);
-  const isActive = loan.isActive ? normalizedBalance > 0 : false;
-
-  await tx.loan.update({
-    where: { id: loanId },
-    data: {
-      currentBalance: normalizedBalance,
-      isActive,
-    },
-  });
-
-  await tx.transactionCategory.updateMany({
-    where: { loanId },
-    data: { isActive },
-  });
-}
-
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
@@ -115,7 +70,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         isActive: true,
       },
-      select: { id: true, type: true, loanId: true },
+      select: { id: true, type: true },
     });
 
     const categoryMap = new Map(categories.map(category => [category.id, category]));
@@ -123,7 +78,7 @@ export async function POST(request: NextRequest) {
     parsed.items.forEach(item => {
       const category = categoryMap.get(item.categoryId);
       if (!category || category.type !== item.type) {
-        throw createLoanValidationError('Category not found or type mismatch');
+        throw new Error('Category not found or type mismatch');
       }
     });
 
@@ -192,21 +147,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const loanIds = Array.from(
-      new Set(
-        itemsToCreate
-          .map(item => categoryMap.get(item.categoryId)?.loanId)
-          .filter((loanId): loanId is string => Boolean(loanId)),
-      ),
-    );
-
-    const loans = loanIds.length
-      ? await prisma.loan.findMany({
-          where: { id: { in: loanIds }, userId: user.id },
-        })
-      : [];
-    const loanMap = new Map(loans.map(loan => [loan.id, loan]));
-
     const totalIncome = itemsToCreate
       .filter(item => item.type === 'INCOME')
       .reduce((sum, item) => sum + item.amount, 0);
@@ -217,23 +157,6 @@ export async function POST(request: NextRequest) {
 
     const createdCount = await prisma.$transaction(async tx => {
       for (const item of itemsToCreate) {
-        const category = categoryMap.get(item.categoryId);
-        if (category?.loanId) {
-          const loan = loanMap.get(category.loanId);
-          if (!loan) {
-            throw createLoanValidationError('Loan not found or access denied');
-          }
-          const expectedType = getExpectedTransactionType(loan.type);
-          if (item.type !== expectedType) {
-            throw createLoanValidationError(
-              `Loan payments must be ${expectedType.toLowerCase()} transactions`,
-            );
-          }
-          if (item.currency !== loan.currency) {
-            throw createLoanValidationError(`Loan currency must be ${loan.currency}`);
-          }
-        }
-
         await tx.transaction.create({
           data: {
             userId: user.id,
@@ -247,10 +170,6 @@ export async function POST(request: NextRequest) {
             tags: [],
           },
         });
-
-        if (category?.loanId) {
-          await adjustLoanBalance(tx, category.loanId, item.amount, 'decrease');
-        }
       }
 
       if (shouldUpdateBalance) {

@@ -8,8 +8,8 @@ import { BASE_CURRENCY, currencyService } from '@/lib/currency';
 const loanSchema = z.object({
   name: z.string().min(1).max(120),
   type: z.enum(['LOAN', 'DEBT']),
-  originalAmount: z.number().positive(),
-  currentBalance: z.number().min(0).optional(),
+  totalAmount: z.number().positive(),
+  paidAmount: z.number().min(0).optional(),
   currency: z.string().min(3).max(3).optional(),
   startDate: z
     .string()
@@ -28,7 +28,6 @@ const loanSchema = z.object({
 
 const updateLoanSchema = loanSchema.partial().extend({
   id: z.string().cuid(),
-  isActive: z.boolean().optional(),
 });
 
 async function findOrCreateUser(email: string) {
@@ -55,32 +54,20 @@ async function findOrCreateUser(email: string) {
   return user;
 }
 
-const loanCategoryConfig = {
-  LOAN: { type: 'EXPENSE' as const, color: '#EF4444', icon: '💳' },
-  DEBT: { type: 'INCOME' as const, color: '#10B981', icon: '🤝' },
-};
-
 interface LoanRecord {
   id: string;
   name: string;
   type: 'LOAN' | 'DEBT';
-  originalAmount: number;
-  currentBalance: number;
+  totalAmount: number;
+  paidAmount: number;
   currency: string;
   startDate: Date | null;
   dueDate: Date | null;
   interestRate: number | null;
   lender: string | null;
   notes: string | null;
-  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
-  category?: {
-    id: string;
-    name: string;
-    type: 'INCOME' | 'EXPENSE';
-    isActive: boolean;
-  } | null;
 }
 
 export async function GET(request: Request) {
@@ -95,43 +82,38 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
-    const loans = (await prisma.loan.findMany({
+    const allLoans = (await prisma.loan.findMany({
       where: {
         userId: user.id,
-        ...(includeInactive ? {} : { isActive: true }),
       },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            isActive: true,
-          },
-        },
-      },
-      orderBy: [{ isActive: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ createdAt: 'desc' }],
     })) as LoanRecord[];
+
+    // Filter based on status (active = unpaid, inactive = paid)
+    const loans = includeInactive
+      ? allLoans
+      : allLoans.filter(loan => loan.paidAmount < loan.totalAmount);
 
     let totalOutstandingBase = 0;
     for (const loan of loans) {
+      const remaining = loan.totalAmount - loan.paidAmount;
       try {
         if (loan.currency === BASE_CURRENCY) {
-          totalOutstandingBase += loan.currentBalance;
+          totalOutstandingBase += remaining;
         } else {
-          totalOutstandingBase += await currencyService.convertToBaseCurrency(
-            loan.currentBalance,
-            loan.currency,
-          );
+          const converted = await currencyService.convertToBaseCurrency(remaining, loan.currency);
+          totalOutstandingBase += converted;
         }
-      } catch {
-        totalOutstandingBase += loan.currentBalance;
+      } catch (convertError) {
+        console.warn(`Failed to convert ${loan.currency} to ${BASE_CURRENCY}:`, convertError);
+        // Fallback: add raw amount without conversion
+        totalOutstandingBase += remaining;
       }
     }
 
     const summary = {
       total: loans.length,
-      active: loans.filter(loan => loan.isActive).length,
+      active: loans.filter(loan => loan.paidAmount < loan.totalAmount).length,
       loanCount: loans.filter(loan => loan.type === 'LOAN').length,
       debtCount: loans.filter(loan => loan.type === 'DEBT').length,
       totalOutstandingBase,
@@ -155,16 +137,14 @@ export async function POST(request: Request) {
     const user = await findOrCreateUser(session.user.email);
     const payload = loanSchema.parse(await request.json());
 
-    const currentBalance = payload.currentBalance ?? payload.originalAmount;
+    const paidAmount = payload.paidAmount ?? 0;
 
-    if (currentBalance > payload.originalAmount) {
+    if (paidAmount > payload.totalAmount) {
       return NextResponse.json(
-        { error: 'Current balance cannot exceed original amount' },
+        { error: 'Paid amount cannot exceed total amount' },
         { status: 400 },
       );
     }
-
-    const categoryConfig = loanCategoryConfig[payload.type as 'LOAN' | 'DEBT'];
 
     const existingLoan = await prisma.loan.findFirst({
       where: {
@@ -180,56 +160,23 @@ export async function POST(request: Request) {
       );
     }
 
-    const existingCategory = await prisma.transactionCategory.findFirst({
-      where: {
+    const loan = await prisma.loan.create({
+      data: {
         userId: user.id,
         name: payload.name,
-        type: categoryConfig.type,
+        type: payload.type,
+        totalAmount: payload.totalAmount,
+        paidAmount,
+        currency: payload.currency || 'UAH',
+        startDate: payload.startDate || null,
+        dueDate: payload.dueDate || null,
+        interestRate: payload.interestRate ?? null,
+        lender: payload.lender || null,
+        notes: payload.notes || null,
       },
     });
 
-    if (existingCategory) {
-      return NextResponse.json(
-        { error: 'Category with this name already exists. Choose another loan name.' },
-        { status: 400 },
-      );
-    }
-
-    const result = await prisma.$transaction(async tx => {
-      const loan = await tx.loan.create({
-        data: {
-          userId: user.id,
-          name: payload.name,
-          type: payload.type,
-          originalAmount: payload.originalAmount,
-          currentBalance,
-          currency: payload.currency || 'UAH',
-          startDate: payload.startDate || null,
-          dueDate: payload.dueDate || null,
-          interestRate: payload.interestRate ?? null,
-          lender: payload.lender || null,
-          notes: payload.notes || null,
-          isActive: currentBalance > 0,
-        },
-      });
-
-      const category = await tx.transactionCategory.create({
-        data: {
-          userId: user.id,
-          name: payload.name,
-          type: categoryConfig.type,
-          color: categoryConfig.color,
-          icon: categoryConfig.icon,
-          isDefault: false,
-          isActive: currentBalance > 0,
-          loanId: loan.id,
-        },
-      });
-
-      return { loan, category };
-    });
-
-    return NextResponse.json({ loan: result.loan, category: result.category }, { status: 201 });
+    return NextResponse.json({ loan }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -288,75 +235,32 @@ export async function PUT(request: Request) {
       }
     }
 
-    const categoryConfig = loanCategoryConfig[existingLoan.type as 'LOAN' | 'DEBT'];
-    const loanCategory = await prisma.transactionCategory.findFirst({
-      where: {
-        loanId: existingLoan.id,
-      },
-      include: {
-        _count: {
-          select: {
-            transactions: true,
-          },
-        },
-      },
-    });
+    const nextTotalAmount = payload.totalAmount ?? existingLoan.totalAmount;
+    const nextPaidAmount = payload.paidAmount ?? existingLoan.paidAmount;
 
-    if (payload.currency && payload.currency !== existingLoan.currency) {
-      if (loanCategory && loanCategory._count.transactions > 0) {
-        return NextResponse.json(
-          { error: 'Cannot change currency after transactions were recorded' },
-          { status: 400 },
-        );
-      }
-    }
-
-    const nextOriginalAmount = payload.originalAmount ?? existingLoan.originalAmount;
-    const nextCurrentBalance = payload.currentBalance ?? existingLoan.currentBalance;
-    const baseIsActive = payload.isActive ?? existingLoan.isActive;
-    const nextIsActive = baseIsActive && nextCurrentBalance > 0;
-
-    if (nextCurrentBalance > nextOriginalAmount) {
+    if (nextPaidAmount > nextTotalAmount) {
       return NextResponse.json(
-        { error: 'Current balance cannot exceed original amount' },
+        { error: 'Paid amount cannot exceed total amount' },
         { status: 400 },
       );
     }
 
-    const result = await prisma.$transaction(async tx => {
-      const updatedLoan = await tx.loan.update({
-        where: { id: existingLoan.id },
-        data: {
-          name: payload.name ?? existingLoan.name,
-          originalAmount: payload.originalAmount ?? existingLoan.originalAmount,
-          currentBalance: payload.currentBalance ?? existingLoan.currentBalance,
-          currency: payload.currency ?? existingLoan.currency,
-          startDate: payload.startDate ?? existingLoan.startDate,
-          dueDate: payload.dueDate ?? existingLoan.dueDate,
-          interestRate: payload.interestRate ?? existingLoan.interestRate,
-          lender: payload.lender ?? existingLoan.lender,
-          notes: payload.notes ?? existingLoan.notes,
-          isActive: nextIsActive,
-        },
-      });
-
-      if (loanCategory) {
-        await tx.transactionCategory.update({
-          where: { id: loanCategory.id },
-          data: {
-            name: payload.name ?? existingLoan.name,
-            type: categoryConfig.type,
-            color: categoryConfig.color,
-            icon: categoryConfig.icon,
-            isActive: nextIsActive,
-          },
-        });
-      }
-
-      return updatedLoan;
+    const updatedLoan = await prisma.loan.update({
+      where: { id: existingLoan.id },
+      data: {
+        name: payload.name ?? existingLoan.name,
+        totalAmount: payload.totalAmount ?? existingLoan.totalAmount,
+        paidAmount: payload.paidAmount ?? existingLoan.paidAmount,
+        currency: payload.currency ?? existingLoan.currency,
+        startDate: payload.startDate ?? existingLoan.startDate,
+        dueDate: payload.dueDate ?? existingLoan.dueDate,
+        interestRate: payload.interestRate ?? existingLoan.interestRate,
+        lender: payload.lender ?? existingLoan.lender,
+        notes: payload.notes ?? existingLoan.notes,
+      },
     });
 
-    return NextResponse.json({ loan: result });
+    return NextResponse.json({ loan: updatedLoan });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -397,26 +301,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Loan not found' }, { status: 404 });
     }
 
-    const category = await prisma.transactionCategory.findFirst({
-      where: {
-        loanId: existingLoan.id,
-      },
-    });
-
-    await prisma.$transaction(async tx => {
-      if (category) {
-        await tx.transactionCategory.update({
-          where: { id: category.id },
-          data: {
-            isActive: false,
-            loanId: null,
-          },
-        });
-      }
-
-      await tx.loan.delete({
-        where: { id: existingLoan.id },
-      });
+    await prisma.loan.delete({
+      where: { id: existingLoan.id },
     });
 
     return NextResponse.json({ message: 'Loan deleted successfully' });

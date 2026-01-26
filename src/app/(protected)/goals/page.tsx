@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Plus, Target, TrendingUp, Calendar, DollarSign, Edit } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatedDiv } from '@/components/ui/animations';
 import {
   useGoals,
@@ -26,21 +26,25 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { formatDisplayAmount, BASE_CURRENCY } from '@/lib/currency';
 import { StatCardSkeleton } from '@/components/ui/loading-skeleton';
+import { AddFundsDialog } from '@/components/dialogs/AddFundsDialog';
 
 export default function GoalsPage() {
   const { toast } = useToast();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<FinancialGoal | null>(null);
+  const [addFundsGoal, setAddFundsGoal] = useState<FinancialGoal | null>(null);
   const { data: goalsData, isLoading, error, refetch } = useGoals();
   const updateGoal = useUpdateGoal();
 
-  if (error) {
-    toast({
-      title: 'Error',
-      description: 'Failed to load goals',
-      variant: 'destructive',
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load goals',
+        variant: 'destructive',
+      });
+    }
+  }, [error, toast]);
 
   const goals = goalsData?.goals || [];
   const summary = goalsData?.summary || {
@@ -65,19 +69,18 @@ export default function GoalsPage() {
     setEditingGoal(null);
   };
 
-  const handleAddFunds = async (goalId: string, amount: number) => {
-    try {
-      const goal = goals.find(g => g.id === goalId);
-      if (!goal) return;
+  const handleAddFunds = async (amount: number) => {
+    if (!addFundsGoal) return;
 
+    try {
       await updateGoal.mutateAsync({
-        id: goalId,
-        currentAmount: goal.currentAmount + amount,
+        id: addFundsGoal.id,
+        currentAmount: addFundsGoal.currentAmount + amount,
       });
 
       toast({
         title: 'Success',
-        description: `Added ${formatDisplayAmount(amount, goal.currency, 'detailed')} to your goal`,
+        description: `Added ${formatDisplayAmount(amount, addFundsGoal.currency, 'detailed')} to your goal`,
       });
 
       refetch();
@@ -87,6 +90,7 @@ export default function GoalsPage() {
         description: error instanceof Error ? error.message : 'Failed to add funds',
         variant: 'destructive',
       });
+      throw error;
     }
   };
 
@@ -354,18 +358,7 @@ export default function GoalsPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => {
-                                  const amount = prompt(
-                                    `How much would you like to add to ${goal.name}?`,
-                                  );
-                                  if (
-                                    amount &&
-                                    !isNaN(parseFloat(amount)) &&
-                                    parseFloat(amount) > 0
-                                  ) {
-                                    handleAddFunds(goal.id, parseFloat(amount));
-                                  }
-                                }}
+                                onClick={() => setAddFundsGoal(goal)}
                                 className="h-8 w-8 p-0"
                               >
                                 <DollarSign className="h-4 w-4" />
@@ -456,6 +449,19 @@ export default function GoalsPage() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Add Funds Dialog */}
+      {addFundsGoal && (
+        <AddFundsDialog
+          open={!!addFundsGoal}
+          onOpenChange={open => !open && setAddFundsGoal(null)}
+          goalName={addFundsGoal.name}
+          currentAmount={addFundsGoal.currentAmount}
+          targetAmount={addFundsGoal.targetAmount}
+          currency={addFundsGoal.currency}
+          onConfirm={handleAddFunds}
+        />
+      )}
     </AnimatedDiv>
   );
 }

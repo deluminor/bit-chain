@@ -18,7 +18,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/useMobile';
-import { useSidebarSync } from '@/hooks/useSidebarSync';
 import { cn } from '@/lib/utils';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
@@ -84,8 +83,10 @@ function SidebarProvider({
     [setOpenProp, open],
   );
 
-  // Sync with Zustand store
-  useSidebarSync(open, setOpen);
+  // Sync with Zustand store - REMOVED to avoid infinite loops
+  // The SidebarProvider manages its own state via context and cookies.
+  // Bidirectional sync with global store is error-prone.
+  // if (open !== isNavigationOpen) setNavigationOpen(open); // Simplified if needed
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {

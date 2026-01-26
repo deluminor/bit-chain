@@ -56,6 +56,38 @@ type SyncContext = {
 
 const normalizeText = (value: string) => value.toLowerCase();
 
+const isIntermediateTransfer = (params: {
+  text: string;
+  sourceAccount: IntegrationAccountShape;
+  destinationAccount: IntegrationAccountShape | null;
+}) => {
+  const { text, sourceAccount, destinationAccount } = params;
+
+  // Skip if no destination (external transfer)
+  if (!destinationAccount) {
+    return false;
+  }
+
+  // Check if this is EUR FOP → UAH FOP transfer with "для переказу на картку" pattern
+  const isEurToUah =
+    sourceAccount.currency === 'EUR' &&
+    destinationAccount.currency === 'UAH' &&
+    sourceAccount.ownerType === 'FOP' &&
+    destinationAccount.ownerType === 'FOP';
+
+  const hasCardTransferKeywords =
+    text.includes('для переказу на картку') ||
+    text.includes('для переказу') ||
+    text.includes('переказу на картку');
+
+  // This is an intermediate EUR→UAH conversion step, skip it
+  if (isEurToUah && hasCardTransferKeywords) {
+    return true;
+  }
+
+  return false;
+};
+
 const normalizeIban = (value?: string | null) => {
   if (!value) {
     return null;
@@ -73,6 +105,40 @@ const getCurrencyHint = (text: string) => {
   }
   if (text.includes('грив') || text.includes('uah')) {
     return 'UAH';
+  }
+
+  return null;
+};
+
+const getAccountNameHint = (text: string) => {
+  // Check for specific card mentions in Ukrainian
+  if (
+    text.includes('на чорну картку') ||
+    text.includes('чорну картку') ||
+    text.includes('на чорну')
+  ) {
+    return 'black';
+  }
+  if (text.includes('на білу картку') || text.includes('білу картку') || text.includes('на білу')) {
+    return 'white';
+  }
+  if (
+    text.includes('на жовту картку') ||
+    text.includes('жовту картку') ||
+    text.includes('на жовту')
+  ) {
+    return 'yellow';
+  }
+
+  // Check for specific card mentions in English
+  if (text.includes('to black card') || text.includes('black card')) {
+    return 'black';
+  }
+  if (text.includes('to white card') || text.includes('white card')) {
+    return 'white';
+  }
+  if (text.includes('to yellow card') || text.includes('yellow card')) {
+    return 'yellow';
   }
 
   return null;
@@ -98,6 +164,17 @@ const resolveTransferCounterAccount = (params: {
 
   let candidates = params.accounts.filter(account => account.id !== params.currentAccountId);
 
+  // Check for account name hints in description
+  const accountNameHint = getAccountNameHint(params.text);
+  if (accountNameHint) {
+    const nameMatch = candidates.find(account =>
+      account.name.toLowerCase().includes(accountNameHint),
+    );
+    if (nameMatch) {
+      return nameMatch;
+    }
+  }
+
   if (params.text.includes('фоп') || params.text.includes('fop')) {
     candidates = candidates.filter(account => account.ownerType === 'FOP');
   }
@@ -119,8 +196,18 @@ const buildTransferExternalId = (params: {
   amount: number;
   currency: string;
   time: number;
+  destinationAmount?: number;
+  destinationCurrency?: string;
 }) => {
   const pair = [params.sourceAccountId, params.destinationAccountId].sort().join('-');
+
+  // For currency conversions, use timestamp only to match both sides
+  // since the amounts will differ between EUR and UAH sides
+  if (params.destinationCurrency && params.destinationCurrency !== params.currency) {
+    return `transfer:${pair}:${params.time}`;
+  }
+
+  // For same-currency transfers, include amount for additional uniqueness
   return `transfer:${pair}:${params.time}:${params.amount}:${params.currency}`;
 };
 
@@ -522,10 +609,25 @@ export async function syncMonobankAccounts({
                     amount: sourceAmount,
                     currency: sourceCurrency,
                     time: item.time,
+                    destinationAmount,
+                    destinationCurrency,
                   })
                 : item.id;
 
             const isSameAccount = resolvedDestinationAccount?.id === resolvedSourceAccount.id;
+
+            // Check if this is an intermediate transfer (EUR FOP → UAH FOP for card transfer)
+            // We should skip these because the actual transfer (EUR FOP → Card) is recorded separately
+            if (
+              resolvedDestinationAccount &&
+              isIntermediateTransfer({
+                text: normalizedText,
+                sourceAccount: resolvedSourceAccount,
+                destinationAccount: resolvedDestinationAccount,
+              })
+            ) {
+              return null; // Will be filtered out
+            }
 
             return {
               userId,
@@ -570,6 +672,7 @@ export async function syncMonobankAccounts({
             integrationAccountId: account.id,
           } satisfies Prisma.TransactionCreateManyInput;
         })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
         .filter(item => item.amount > 0);
 
       if (transactionData.length > 0) {

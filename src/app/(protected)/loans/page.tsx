@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -18,7 +18,7 @@ import { AnimatedDiv } from '@/components/ui/animations';
 import { useToast } from '@/hooks/use-toast';
 import { LoanForm } from '@/components/forms/LoanForm';
 import { formatDisplayAmount, BASE_CURRENCY } from '@/lib/currency';
-import { Loan, useLoans, useDeleteLoan, useUpdateLoan } from '@/features/finance/queries/loans';
+import { Loan, useLoans, useDeleteLoan } from '@/features/finance/queries/loans';
 import {
   Plus,
   Landmark,
@@ -27,8 +27,6 @@ import {
   BadgeDollarSign,
   Trash2,
   Pencil,
-  Archive,
-  RotateCcw,
 } from 'lucide-react';
 
 const loanTypeLabels = {
@@ -43,22 +41,23 @@ const loanTypeBadge = {
 
 export default function LoansPage() {
   const { toast } = useToast();
-  const [showArchived, setShowArchived] = useState(false);
-  const { data, isLoading, error, refetch } = useLoans(showArchived);
+  const [showPaid, setShowPaid] = useState(false);
+  const { data, isLoading, error, refetch } = useLoans(showPaid);
   const deleteLoan = useDeleteLoan();
-  const updateLoan = useUpdateLoan();
 
   const [showForm, setShowForm] = useState(false);
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Loan | null>(null);
 
-  if (error) {
-    toast({
-      title: 'Error',
-      description: 'Failed to load loans',
-      variant: 'destructive',
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load loans',
+        variant: 'destructive',
+      });
+    }
+  }, [error, toast]);
 
   const loans = data?.loans || [];
   const summary = data?.summary || {
@@ -80,7 +79,9 @@ export default function LoansPage() {
   };
 
   const getStatus = (loan: Loan) => {
-    if (!loan.isActive || loan.currentBalance <= 0) {
+    const isPaid = loan.paidAmount >= loan.totalAmount;
+
+    if (isPaid) {
       return { label: 'Paid', className: 'bg-emerald-100 text-emerald-700' };
     }
 
@@ -114,29 +115,8 @@ export default function LoansPage() {
     }
   };
 
-  const handleArchive = async (loan: Loan, nextState: boolean) => {
-    try {
-      await updateLoan.mutateAsync({
-        id: loan.id,
-        isActive: nextState,
-      });
-
-      toast({
-        title: 'Success',
-        description: nextState ? 'Loan restored successfully' : 'Loan archived successfully',
-      });
-      refetch();
-    } catch (archiveError: any) {
-      toast({
-        title: 'Error',
-        description: archiveError?.message || 'Failed to update loan status',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const nearestDueDate = loans
-    .filter(loan => loan.isActive && loan.dueDate)
+    .filter(loan => loan.paidAmount < loan.totalAmount && loan.dueDate)
     .map(loan => new Date(loan.dueDate as string))
     .sort((a, b) => a.getTime() - b.getTime())[0];
 
@@ -155,8 +135,8 @@ export default function LoansPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <div className="flex items-center gap-2 px-3 py-2 border rounded-lg">
-              <Switch checked={showArchived} onCheckedChange={setShowArchived} />
-              <span className="text-sm text-muted-foreground">Show archived</span>
+              <Switch checked={showPaid} onCheckedChange={setShowPaid} />
+              <span className="text-sm text-muted-foreground">Show paid</span>
             </div>
             <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
@@ -184,7 +164,7 @@ export default function LoansPage() {
               <h3 className="font-semibold">Active</h3>
             </div>
             <div className="text-2xl font-bold">{summary.active}</div>
-            <p className="text-sm text-muted-foreground">Open loans</p>
+            <p className="text-sm text-muted-foreground">Unpaid loans</p>
           </Card>
           <Card className="p-4 md:p-6">
             <div className="flex items-center gap-3 mb-3">
@@ -221,15 +201,20 @@ export default function LoansPage() {
                     <TableRow>
                       <TableHead>Loan</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Balance</TableHead>
+                      <TableHead className="text-right">Remaining / Total</TableHead>
+                      <TableHead className="text-center">Progress</TableHead>
                       <TableHead className="text-center">Due Date</TableHead>
                       <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="w-[120px] text-right">Actions</TableHead>
+                      <TableHead className="w-[100px] text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loans.map(loan => {
                       const status = getStatus(loan);
+                      const remaining = loan.totalAmount - loan.paidAmount;
+                      const progress =
+                        loan.totalAmount > 0 ? (loan.paidAmount / loan.totalAmount) * 100 : 0;
+
                       return (
                         <TableRow key={loan.id}>
                           <TableCell>
@@ -248,19 +233,24 @@ export default function LoansPage() {
                           <TableCell className="text-right">
                             <div className="space-y-1">
                               <div className="font-semibold">
-                                {formatDisplayAmount(
-                                  loan.currentBalance,
-                                  loan.currency,
-                                  'detailed',
-                                )}
+                                {formatDisplayAmount(remaining, loan.currency, 'detailed')}
                               </div>
                               <div className="text-xs text-muted-foreground">
                                 of{' '}
-                                {formatDisplayAmount(
-                                  loan.originalAmount,
-                                  loan.currency,
-                                  'detailed',
-                                )}
+                                {formatDisplayAmount(loan.totalAmount, loan.currency, 'detailed')}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="w-full bg-muted rounded-full h-2">
+                                <div
+                                  className="bg-primary h-2 rounded-full transition-all"
+                                  style={{ width: `${Math.min(progress, 100)}%` }}
+                                />
+                              </div>
+                              <div className="text-xs text-center text-muted-foreground">
+                                {progress.toFixed(1)}%
                               </div>
                             </div>
                           </TableCell>
@@ -285,25 +275,6 @@ export default function LoansPage() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              {loan.isActive ? (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleArchive(loan, false)}
-                                  className="h-8 w-8 p-0 text-muted-foreground"
-                                >
-                                  <Archive className="h-4 w-4" />
-                                </Button>
-                              ) : loan.currentBalance > 0 ? (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleArchive(loan, true)}
-                                  className="h-8 w-8 p-0 text-muted-foreground"
-                                >
-                                  <RotateCcw className="h-4 w-4" />
-                                </Button>
-                              ) : null}
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -354,8 +325,7 @@ export default function LoansPage() {
             <DialogTitle>Delete Loan</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete {pendingDelete?.name}? This will hide the loan category
-            but keep existing transactions.
+            Are you sure you want to delete {pendingDelete?.name}? This action cannot be undone.
           </p>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setPendingDelete(null)}>

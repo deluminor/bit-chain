@@ -219,8 +219,6 @@ model TransactionCategory {
   parentId     String?      // For hierarchical categories
   parent       TransactionCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children     TransactionCategory[] @relation("CategoryHierarchy")
-  loanId       String?
-  loan         Loan?         @relation(fields: [loanId], references: [id], onDelete: SetNull)
   color        String       // Hex color
   icon         String       // Icon identifier
   isDefault    Boolean      @default(false)
@@ -233,7 +231,6 @@ model TransactionCategory {
   budgetCategories BudgetCategory[]
 
   @@unique([userId, name, type])
-  @@unique([loanId])
   @@index([userId, type])
 }
 
@@ -243,19 +240,16 @@ model Loan {
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   name           String
   type           LoanType
-  originalAmount Float
-  currentBalance Float
+  totalAmount    Float       @default(0) // Original loan/debt amount
+  paidAmount     Float       @default(0) // Amount paid/received so far
   currency       String      @default("UAH")
   startDate      DateTime?
   dueDate        DateTime?
   interestRate   Float?
-  lender         String?
+  lender         String?     // For LOAN: who you borrowed from. For DEBT: who owes you
   notes          String?
-  isActive       Boolean     @default(true)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
-
-  category       TransactionCategory?
 
   @@unique([userId, name])
   @@index([userId, type])

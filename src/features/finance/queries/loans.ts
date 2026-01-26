@@ -3,29 +3,20 @@ import axios from 'axios';
 
 export type LoanType = 'LOAN' | 'DEBT';
 
-export interface LoanCategory {
-  id: string;
-  name: string;
-  type: 'INCOME' | 'EXPENSE';
-  isActive: boolean;
-}
-
 export interface Loan {
   id: string;
   name: string;
   type: LoanType;
-  originalAmount: number;
-  currentBalance: number;
+  totalAmount: number;
+  paidAmount: number;
   currency: string;
   startDate: string | null;
   dueDate: string | null;
   interestRate: number | null;
   lender: string | null;
   notes: string | null;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  category?: LoanCategory | null;
 }
 
 export interface LoansSummary {
@@ -44,8 +35,8 @@ export interface LoansResponse {
 export interface CreateLoanData {
   name: string;
   type: LoanType;
-  originalAmount: number;
-  currentBalance?: number;
+  totalAmount: number;
+  paidAmount?: number;
   currency?: string;
   startDate?: string;
   dueDate?: string;
@@ -56,7 +47,6 @@ export interface CreateLoanData {
 
 export interface UpdateLoanData extends Partial<CreateLoanData> {
   id: string;
-  isActive?: boolean;
 }
 
 const loanKeys = {
@@ -86,8 +76,6 @@ export function useCreateLoan() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: loanKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['finance', 'transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['finance', 'categories'] });
     },
   });
 }
@@ -102,8 +90,6 @@ export function useUpdateLoan() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: loanKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['finance', 'transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['finance', 'categories'] });
     },
   });
 }
@@ -118,8 +104,6 @@ export function useDeleteLoan() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: loanKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['finance', 'transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['finance', 'categories'] });
     },
   });
 }

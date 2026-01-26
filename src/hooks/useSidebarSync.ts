@@ -10,17 +10,18 @@ export function useSidebarSync(isOpen: boolean, setOpen: (open: boolean) => void
   const { isNavigationOpen, setNavigationOpen } = useStore();
 
   useEffect(() => {
-    if (isOpen !== isNavigationOpen) {
+    if (isNavigationOpen !== isOpen) {
       setOpen(isNavigationOpen);
     }
-  }, [isOpen, isNavigationOpen, setOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNavigationOpen, setOpen]);
 
-  // Update store when component state changes
   useEffect(() => {
     if (isOpen !== isNavigationOpen) {
       setNavigationOpen(isOpen);
     }
-  }, [isOpen, isNavigationOpen, setNavigationOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, setNavigationOpen]);
 
   return {
     storeIsOpen: isNavigationOpen,

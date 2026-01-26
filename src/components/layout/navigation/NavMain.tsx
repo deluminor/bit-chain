@@ -12,6 +12,7 @@ import { useIsMobile } from '@/hooks/useMobile';
 import { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
 
 interface INavMain {
   items: {
@@ -23,28 +24,30 @@ interface INavMain {
 
 export function NavMain({ items }: INavMain) {
   const pathname = usePathname();
-  const { toggleSidebar } = useSidebar();
+  const { setOpenMobile } = useSidebar();
   const isMobile = useIsMobile();
 
-  const isActive = (url: string) => pathname === url;
+  const handleClick = useCallback(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [isMobile, setOpenMobile]);
 
-  const handleClick = () => {
-    if (isMobile) toggleSidebar();
-  };
+  const menuItems = useMemo(() => {
+    return items.map(item => ({
+      ...item,
+      isActive: pathname === item.url,
+    }));
+  }, [items, pathname]);
 
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          {items.map(item => (
+          {menuItems.map(item => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                asChild
-                tooltip={item.title}
-                isActive={isActive(item.url)}
-                onClick={handleClick}
-              >
-                <Link href={item.url} prefetch>
+              <SidebarMenuButton asChild tooltip={item.title} isActive={item.isActive}>
+                <Link href={item.url} onClick={handleClick}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
                 </Link>

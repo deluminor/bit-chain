@@ -108,13 +108,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const email = session?.user?.email;
   const userName = email?.split('@')[0] || 'User';
 
-  // Get navigation items based on current mode
-  const navigationItems = mode === 'crypto' ? getCryptoNavigation() : getFinanceNavigation();
+  // Get navigation items based on current mode - memoized to prevent infinite re-renders
+  const navigationItems = React.useMemo(
+    () => (mode === 'crypto' ? getCryptoNavigation() : getFinanceNavigation()),
+    [mode],
+  );
 
-  const userData = {
-    name: userName,
-    email: email || 'user@example.com',
-  };
+  const userData = React.useMemo(
+    () => ({
+      name: userName,
+      email: email || 'user@example.com',
+    }),
+    [userName, email],
+  );
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>

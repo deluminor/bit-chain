@@ -9,11 +9,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { DatePicker } from '@/components/ui/date-picker';
 import { THEME, useStore } from '@/store';
-import { subDays, format, startOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { useMemo, useState, useEffect } from 'react';
-import { DateRange } from 'react-day-picker';
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { useTransactions } from '../queries/transactions';
 import { useAccounts, FinanceAccount } from '../queries/accounts';
@@ -33,23 +31,19 @@ interface BalanceDataPoint {
 }
 
 export function AccountBalanceTrendsChart() {
-  const { theme } = useStore();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(subDays(new Date(), 90)),
-    to: new Date(),
-  });
+  const { theme, selectedDateRange } = useStore();
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [chartData, setChartData] = useState<BalanceDataPoint[]>([]);
   const [isConverting, setIsConverting] = useState(false);
 
   const { data: accountsData, isLoading: accountsLoading } = useAccounts();
   const { data: transactionsData, isLoading: transactionsLoading } = useTransactions({
-    dateFrom: dateRange?.from?.toISOString().split('T')[0],
-    dateTo: dateRange?.to?.toISOString().split('T')[0],
+    dateFrom: selectedDateRange?.from?.toISOString().split('T')[0],
+    dateTo: selectedDateRange?.to?.toISOString().split('T')[0],
     limit: 2000,
   });
 
-  const canFetchTransactions = Boolean(dateRange?.from && dateRange?.to);
+  const canFetchTransactions = Boolean(selectedDateRange?.from && selectedDateRange?.to);
 
   const accounts = accountsData?.accounts || [];
   const transactions = transactionsData?.transactions || [];
@@ -163,10 +157,6 @@ export function AccountBalanceTrendsChart() {
     return config;
   }, [accountsToShow]);
 
-  const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range);
-  };
-
   const handleAccountToggle = (accountId: string) => {
     setSelectedAccounts(prev =>
       prev.includes(accountId) ? prev.filter(id => id !== accountId) : [...prev, accountId],
@@ -191,62 +181,49 @@ export function AccountBalanceTrendsChart() {
   }
 
   const headerActions = (
-    <div className="flex gap-2">
-      {/* Account Selector */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <Wallet className="h-4 w-4" />
-            Accounts ({accountsToShow.length})
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <div className="p-2">
-            <div className="text-sm font-medium mb-2">Select Accounts</div>
-            {accounts.map((account: FinanceAccount) => (
-              <DropdownMenuCheckboxItem
-                key={account.id}
-                checked={
-                  selectedAccounts.includes(account.id) ||
-                  (selectedAccounts.length === 0 &&
-                    accountsToShow.some((a: FinanceAccount) => a.id === account.id))
-                }
-                onCheckedChange={() => handleAccountToggle(account.id)}
-                className="flex items-center gap-2"
-              >
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: account.color }} />
-                <span className="flex-1">{account.name}</span>
-                <Badge variant="secondary" className="text-xs">
-                  {formatCurrency(account.balance, account.currency, {
-                    useLargeNumberFormat: false,
-                  })}
-                </Badge>
-              </DropdownMenuCheckboxItem>
-            ))}
-          </div>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* Date Picker */}
-      <DatePicker
-        dateRange={dateRange}
-        onDateRangeChange={handleDateRangeChange}
-        mode="range"
-        showPresets
-        placeholder="Last 3 months"
-        className="w-full"
-      />
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
+          <Wallet className="h-4 w-4" />
+          Accounts ({accountsToShow.length})
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="p-2">
+          <div className="text-sm font-medium mb-2">Select Accounts</div>
+          {accounts.map((account: FinanceAccount) => (
+            <DropdownMenuCheckboxItem
+              key={account.id}
+              checked={
+                selectedAccounts.includes(account.id) ||
+                (selectedAccounts.length === 0 &&
+                  accountsToShow.some((a: FinanceAccount) => a.id === account.id))
+              }
+              onCheckedChange={() => handleAccountToggle(account.id)}
+              className="flex items-center gap-2"
+            >
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: account.color }} />
+              <span className="flex-1">{account.name}</span>
+              <Badge variant="secondary" className="text-xs">
+                {formatCurrency(account.balance, account.currency, {
+                  useLargeNumberFormat: false,
+                })}
+              </Badge>
+            </DropdownMenuCheckboxItem>
+          ))}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 
   return (
     <ChartWrapper
       title="Account Balance Trends (EUR)"
       description="Balance changes over time for selected accounts (converted to EUR)"
+      headerActions={headerActions}
       isLoading={accountsLoading || transactionsLoading || isConverting}
     >
       <div className="space-y-6">
-        <div className="flex justify-end">{headerActions}</div>
         {/* Account Legend */}
         <div className="flex flex-wrap gap-3">
           {accountsToShow.map((account: FinanceAccount) => (

@@ -9,11 +9,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { DatePicker } from '@/components/ui/date-picker';
 import { THEME, useStore } from '@/store';
-import { subDays, format, startOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { useMemo, useState, useEffect } from 'react';
-import { DateRange } from 'react-day-picker';
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { useTransactions } from '../queries/transactions';
 import { useAccounts } from '../queries/accounts';
@@ -30,19 +28,15 @@ interface NetWorthDataPoint {
 }
 
 export function NetWorthChart() {
-  const { theme } = useStore();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(subDays(new Date(), 180)), // 6 months
-    to: new Date(),
-  });
+  const { theme, selectedDateRange } = useStore();
   const [chartData, setChartData] = useState<NetWorthDataPoint[]>([]);
   const [isConverting, setIsConverting] = useState(false);
 
   const { data: accountsData, isLoading: accountsLoading } = useAccounts();
-  const canFetchTransactions = Boolean(dateRange?.from && dateRange?.to);
+  const canFetchTransactions = Boolean(selectedDateRange?.from && selectedDateRange?.to);
   const { data: transactionsData, isLoading: transactionsLoading } = useTransactions({
-    dateFrom: dateRange?.from?.toISOString().split('T')[0],
-    dateTo: dateRange?.to?.toISOString().split('T')[0],
+    dateFrom: selectedDateRange?.from?.toISOString().split('T')[0],
+    dateTo: selectedDateRange?.to?.toISOString().split('T')[0],
     limit: 3000,
   });
 
@@ -229,28 +223,12 @@ export function NetWorthChart() {
     },
   } satisfies ChartConfig;
 
-  const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range);
-  };
-
   if (accountsLoading || transactionsLoading || isConverting) return <ChartSkeleton />;
-
-  const headerActions = (
-    <DatePicker
-      dateRange={dateRange}
-      onDateRangeChange={handleDateRangeChange}
-      mode="range"
-      showPresets
-      placeholder="Last 6 months"
-      className="w-full"
-    />
-  );
 
   return (
     <ChartWrapper
       title="Net Worth Tracking (EUR)"
       description="Your total wealth over time (converted to EUR)"
-      headerActions={headerActions}
     >
       <div className="space-y-6">
         {/* Performance Summary */}

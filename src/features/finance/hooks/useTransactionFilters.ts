@@ -1,10 +1,8 @@
 import { useState, useCallback } from 'react';
-import { DateRange } from 'react-day-picker';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 export interface TransactionFilters {
   searchTerm: string;
-  dateRange?: DateRange;
   typeFilter?: 'INCOME' | 'EXPENSE' | 'TRANSFER';
   accountFilter?: string;
   categoryFilter?: string;
@@ -17,7 +15,7 @@ export function useTransactionFilters() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Initialize filters from URL params
+  // Initialize filters from URL params (date range is now global)
   const [filters, setFilters] = useState<TransactionFilters>(() => {
     const searchTerm = searchParams.get('search') || '';
     const typeFilter = searchParams.get('type') as 'INCOME' | 'EXPENSE' | 'TRANSFER' | undefined;
@@ -31,19 +29,8 @@ export function useTransactionFilters() {
       ? parseFloat(searchParams.get('maxAmount')!)
       : undefined;
 
-    const fromDate = searchParams.get('from');
-    const toDate = searchParams.get('to');
-    const dateRange =
-      fromDate && toDate
-        ? {
-            from: new Date(fromDate),
-            to: new Date(toDate),
-          }
-        : undefined;
-
     return {
       searchTerm,
-      dateRange,
       typeFilter,
       accountFilter,
       categoryFilter,
@@ -85,14 +72,6 @@ export function useTransactionFilters() {
         params.set('maxAmount', newFilters.maxAmount.toString());
       }
 
-      if (newFilters.dateRange?.from) {
-        params.set('from', newFilters.dateRange.from.toISOString().split('T')[0] || '');
-      }
-
-      if (newFilters.dateRange?.to) {
-        params.set('to', newFilters.dateRange.to.toISOString().split('T')[0] || '');
-      }
-
       router.push(`?${params.toString()}`);
     },
     [router],
@@ -110,13 +89,6 @@ export function useTransactionFilters() {
   const handleSearchChange = useCallback(
     (searchTerm: string) => {
       updateFilters({ searchTerm });
-    },
-    [updateFilters],
-  );
-
-  const handleDateRangeChange = useCallback(
-    (dateRange?: DateRange) => {
-      updateFilters({ dateRange });
     },
     [updateFilters],
   );
@@ -166,7 +138,6 @@ export function useTransactionFilters() {
   return {
     filters,
     handleSearchChange,
-    handleDateRangeChange,
     handleTypeFilterChange,
     handleAccountFilterChange,
     handleCategoryFilterChange,

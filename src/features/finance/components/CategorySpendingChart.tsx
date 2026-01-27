@@ -3,66 +3,47 @@
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { VIBRANT_PALETTE } from '@/constants/colors';
 import { BASE_CURRENCY, convertToBaseCurrencySafe, formatCurrency } from '@/lib/currency';
-import { useTheme } from '@/providers/ThemeProvider';
-import { startOfMonth, subDays } from 'date-fns';
-import { MoreHorizontal, PieChart as PieChartIcon } from 'lucide-react';
+import { useStore } from '@/store';
+import { endOfDay, startOfDay } from 'date-fns';
+import { PieChart as PieChartIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import { useTransactions } from '../queries/transactions';
 
 interface CategorySpendingChartProps {
   type?: 'INCOME' | 'EXPENSE';
-  period?: 'month' | 'quarter' | 'year';
 }
 
-export function CategorySpendingChart({
-  type = 'EXPENSE',
-  period = 'month',
-}: CategorySpendingChartProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState(period);
-  const { theme: _theme } = useTheme();
+export function CategorySpendingChart({ type = 'EXPENSE' }: CategorySpendingChartProps) {
+  const { selectedDateRange } = useStore();
 
-  // Calculate date range based on period
-  const dateRange = useMemo(() => {
-    const now = new Date();
-    let from: Date;
-
-    switch (selectedPeriod) {
-      case 'quarter':
-        from = subDays(now, 90);
-        break;
-      case 'year':
-        from = subDays(now, 365);
-        break;
-      default:
-        from = startOfMonth(now);
+  // Use global date filter
+  const dateFrom = useMemo(() => {
+    if (selectedDateRange?.from) {
+      return startOfDay(selectedDateRange.from).toISOString();
     }
+    return undefined;
+  }, [selectedDateRange?.from]);
 
-    return {
-      from: from.toISOString().split('T')[0],
-      to: now.toISOString().split('T')[0],
-    };
-  }, [selectedPeriod]);
+  const dateTo = useMemo(() => {
+    if (selectedDateRange?.to) {
+      return endOfDay(selectedDateRange.to).toISOString();
+    }
+    return new Date().toISOString();
+  }, [selectedDateRange?.to]);
 
   const { data: transactionsData, isLoading } = useTransactions({
     type,
-    dateFrom: dateRange.from,
-    dateTo: dateRange.to,
+    dateFrom,
+    dateTo,
     limit: 1000,
   });
 
@@ -155,7 +136,7 @@ export function CategorySpendingChart({
     };
 
     processData();
-  }, [transactionsData]);
+  }, [transactionsData, summaryTotal]);
 
   // Calculate total for percentage calculations
   const total = useMemo(() => {
@@ -180,7 +161,7 @@ export function CategorySpendingChart({
     return (
       <ChartWrapper
         title={`${type === 'INCOME' ? 'Income' : 'Expense'} Categories`}
-        description={`Category breakdown for ${selectedPeriod}`}
+        description="Top categories for selected period"
         isLoading={false}
       >
         <div className="text-center text-muted-foreground py-8">
@@ -191,32 +172,13 @@ export function CategorySpendingChart({
     );
   }
 
-  const headerActions = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center gap-2">
-          {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}
-          <MoreHorizontal className="h-3 w-3" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setSelectedPeriod('month')}>This Month</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setSelectedPeriod('quarter')}>
-          Last 3 Months
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setSelectedPeriod('year')}>Last Year</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-
   return (
     <ChartWrapper
       title={`${type === 'INCOME' ? 'Income' : 'Expense'} Categories`}
-      description={`Top categories for this ${selectedPeriod}`}
+      description="Top categories for selected period"
       isLoading={isLoading}
     >
       <div className="space-y-4">
-        <div className="flex justify-end">{headerActions}</div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Pie Chart */}
           <div className="h-[300px]">
@@ -262,7 +224,7 @@ export function CategorySpendingChart({
                 {formatCurrency(total, BASE_CURRENCY, { useLargeNumberFormat: false })}
               </div>
               <div className="text-sm text-muted-foreground">
-                Total {type.toLowerCase()} this {selectedPeriod}
+                Total {type.toLowerCase()} for selected period
               </div>
             </div>
 

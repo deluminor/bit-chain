@@ -31,6 +31,8 @@ import {
   formatDisplayAmount,
   formatSummaryAmount,
 } from '@/lib/currency';
+import { useStore } from '@/store';
+import { endOfDay, startOfDay } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface QuickStatsProps {
@@ -83,23 +85,22 @@ function QuickStatCard({ title, value, change, changeType, icon, href }: QuickSt
 
 export function FinanceDashboard() {
   const { data: accountsData, isLoading: accountsLoading } = useAccounts();
+  const { selectedDateRange } = useStore();
+
+  // Use global date filter
   const dateFrom = useMemo(() => {
-    const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
-  }, []);
+    if (selectedDateRange?.from) {
+      return startOfDay(selectedDateRange.from).toISOString();
+    }
+    return undefined;
+  }, [selectedDateRange?.from]);
 
   const dateTo = useMemo(() => {
-    const today = new Date();
-    return new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      23,
-      59,
-      59,
-      999,
-    ).toISOString();
-  }, []);
+    if (selectedDateRange?.to) {
+      return endOfDay(selectedDateRange.to).toISOString();
+    }
+    return new Date().toISOString();
+  }, [selectedDateRange?.to]);
 
   const { data: transactionsData } = useTransactions({
     dateFrom,
@@ -176,7 +177,7 @@ export function FinanceDashboard() {
           />
 
           <QuickStatCard
-            title="This Month Income"
+            title="Income"
             value={formatSummaryAmount(monthlyIncomeEUR)}
             changeType="positive"
             change={`${incomeFrequency} transactions`}
@@ -185,7 +186,7 @@ export function FinanceDashboard() {
           />
 
           <QuickStatCard
-            title="This Month Expenses"
+            title="Expenses"
             value={formatSummaryAmount(monthlyExpensesEUR)}
             changeType="negative"
             change={`${expenseFrequency} transactions`}
@@ -206,7 +207,7 @@ export function FinanceDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle className="text-lg">Monthly Pulse</CardTitle>
+              <CardTitle className="text-lg">Financial Pulse</CardTitle>
             </CardHeader>
             <CardContent className="p-4 md:p-6 space-y-3">
               <div className="flex items-center justify-between">
@@ -250,7 +251,7 @@ export function FinanceDashboard() {
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Activity className="h-4 w-4" />
-                Based on current month activity
+                Based on selected period activity
               </div>
             </CardContent>
           </Card>

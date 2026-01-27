@@ -3,12 +3,14 @@ import { TransactionFilters } from './TransactionFilters';
 import { useTransactionFilters } from '../hooks/useTransactionFilters';
 import { usePagination } from '../hooks/usePagination';
 import { useTransactions } from '../queries/transactions';
+import { useStore } from '@/store';
 
 export function TransactionContainer() {
+  const { selectedDateRange } = useStore();
+
   const {
     filters,
     handleSearchChange,
-    handleDateRangeChange,
     handleTypeFilterChange,
     handleAccountFilterChange,
     handleCategoryFilterChange,
@@ -20,7 +22,7 @@ export function TransactionContainer() {
   // Pagination
   const { currentPage, pageSize, handlePageChange, handlePageSizeChange } = usePagination();
 
-  // Fetch transactions with filters and pagination
+  // Fetch transactions with filters and pagination (using global date range)
   const {
     data: transactionsData,
     isLoading,
@@ -31,8 +33,8 @@ export function TransactionContainer() {
     type: filters.typeFilter,
     accountId: filters.accountFilter,
     categoryId: filters.categoryFilter,
-    dateFrom: filters.dateRange?.from?.toISOString().split('T')[0],
-    dateTo: filters.dateRange?.to?.toISOString().split('T')[0],
+    dateFrom: selectedDateRange?.from?.toISOString().split('T')[0],
+    dateTo: selectedDateRange?.to?.toISOString().split('T')[0],
     minAmount: filters.minAmount,
     maxAmount: filters.maxAmount,
     page: currentPage,
@@ -50,7 +52,6 @@ export function TransactionContainer() {
 
       <TransactionFilters
         searchTerm={filters.searchTerm}
-        dateRange={filters.dateRange}
         typeFilter={filters.typeFilter}
         accountFilter={filters.accountFilter}
         categoryFilter={filters.categoryFilter}
@@ -58,7 +59,6 @@ export function TransactionContainer() {
         minAmount={filters.minAmount}
         maxAmount={filters.maxAmount}
         onSearchChange={handleSearchChange}
-        onDateRangeChange={handleDateRangeChange}
         onTypeFilterChange={handleTypeFilterChange}
         onAccountFilterChange={handleAccountFilterChange}
         onCategoryFilterChange={handleCategoryFilterChange}

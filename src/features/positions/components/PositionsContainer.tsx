@@ -20,11 +20,9 @@ export default function PositionsContainer() {
   const searchParams = useSearchParams();
 
   const {
-    dateRange,
     sideFilter,
     categoryFilter,
     resultFilter,
-    setDateRange,
     handleSideFilterChange,
     handleCategoryFilterChange,
     handleResultFilterChange,
@@ -39,7 +37,6 @@ export default function PositionsContainer() {
     isLoading,
     isFetching,
   } = useTradeData({
-    dateRange,
     sideFilter,
     categoryFilter,
     resultFilter,
@@ -117,11 +114,9 @@ export default function PositionsContainer() {
       <div className="shadow">
         <div className="p-4 bg-card border-b flex flex-col md:flex-row gap-4 justify-between items-start md:items-center rounded-t-lg">
           <PositionFilters
-            dateRange={dateRange}
             sideFilter={sideFilter}
             categoryFilter={categoryFilter}
             resultFilter={resultFilter}
-            onDateRangeChange={setDateRange}
             onSideFilterChange={handleSideFilterChange}
             onCategoryFilterChange={handleCategoryFilterChange}
             onResultFilterChange={handleResultFilterChange}

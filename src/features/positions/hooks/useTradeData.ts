@@ -1,5 +1,5 @@
+import { useStore } from '@/store';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DateRange } from 'react-day-picker';
 import {
   useCreatePosition,
   useDeletePosition,
@@ -9,13 +9,14 @@ import {
 import { Trade } from '../types/position';
 
 interface TradeFilters {
-  dateRange?: DateRange;
   sideFilter?: string;
   categoryFilter?: string;
   resultFilter?: string;
 }
 
 export const useTradeData = (filters: TradeFilters = {}) => {
+  const { selectedDateRange } = useStore();
+
   const {
     data: trades,
     refetch: reactQueryRefetch,
@@ -37,10 +38,10 @@ export const useTradeData = (filters: TradeFilters = {}) => {
     if (!trades) return [];
 
     return trades.filter(trade => {
-      // Date range filter
-      if (filters.dateRange?.from && filters.dateRange?.to) {
+      // Date range filter (using global date range)
+      if (selectedDateRange?.from && selectedDateRange?.to) {
         const tradeDate = new Date(trade.date);
-        if (tradeDate < filters.dateRange.from || tradeDate > filters.dateRange.to) {
+        if (tradeDate < selectedDateRange.from || tradeDate > selectedDateRange.to) {
           return false;
         }
       }
@@ -62,7 +63,7 @@ export const useTradeData = (filters: TradeFilters = {}) => {
 
       return true;
     });
-  }, [trades, filters]);
+  }, [trades, filters, selectedDateRange]);
 
   // Custom refetch function that ensures loading state is visible
   const refetch = useCallback(async () => {

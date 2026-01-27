@@ -2,11 +2,11 @@
 
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
-import { Badge } from '@/components/ui/badge';
 import { useCashFlowSankey } from '@/features/finance/hooks/useCashFlowSankey';
 import { formatSummaryAmount } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { THEME, useStore } from '@/store';
+import { endOfDay, startOfDay } from 'date-fns';
 import { Activity } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
@@ -55,8 +55,24 @@ type SankeyLinkProps = {
 };
 
 export function CashFlowSankeyChart() {
-  const { theme } = useStore();
-  const { data, isLoading } = useCashFlowSankey();
+  const { theme, selectedDateRange } = useStore();
+
+  // Use global date filter
+  const dateFrom = useMemo(() => {
+    if (selectedDateRange?.from) {
+      return startOfDay(selectedDateRange.from).toISOString();
+    }
+    return undefined;
+  }, [selectedDateRange?.from]);
+
+  const dateTo = useMemo(() => {
+    if (selectedDateRange?.to) {
+      return endOfDay(selectedDateRange.to).toISOString();
+    }
+    return new Date().toISOString();
+  }, [selectedDateRange?.to]);
+
+  const { data, isLoading } = useCashFlowSankey({ dateFrom, dateTo });
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [activeLink, setActiveLink] = useState<string | null>(null);
   const isDark = theme === THEME.DARK;
@@ -153,13 +169,9 @@ export function CashFlowSankeyChart() {
 
   if (!data || (!data.sources.length && !data.targets.length)) {
     return (
-      <ChartWrapper
-        title="Income Flow"
-        description="Month-to-date category flow (EUR)"
-        headerActions={<Badge variant="outline">Month to date</Badge>}
-      >
+      <ChartWrapper title="Income Flow" description="Category flow for selected period (EUR)">
         <div className="h-[280px] flex items-center justify-center text-sm text-muted-foreground">
-          No income or expense data for this month.
+          No income or expense data for the selected period.
         </div>
       </ChartWrapper>
     );
@@ -254,8 +266,7 @@ export function CashFlowSankeyChart() {
   return (
     <ChartWrapper
       title="Income Flow"
-      description="Month-to-date category flow (EUR)"
-      headerActions={<Badge variant="outline">Month to date</Badge>}
+      description="Category flow for selected period (EUR)"
       footer={
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
           <div className="flex items-center gap-2">

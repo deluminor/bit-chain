@@ -1,5 +1,6 @@
 'use client';
 
+import { GlobalDateFilter } from '@/components/dashboard/GlobalDateFilter';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -32,7 +33,8 @@ export function DashboardHeader() {
           <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
           <h1 className="text-base font-medium">{pageTitle}</h1>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
+          <GlobalDateFilter />
           <ThemeToggle className="h-9 w-9" />
         </div>
       </div>

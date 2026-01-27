@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -9,14 +8,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, RefreshCw, Search, X } from 'lucide-react';
-import { DateRange } from 'react-day-picker';
 import { useTransactionCategories } from '@/features/finance/queries/transactions';
 import { useAccounts, FinanceAccount } from '@/features/finance/queries/accounts';
 import { TransactionCategory } from '@/features/finance/queries/categories';
 
 interface TransactionFiltersProps {
   searchTerm: string;
-  dateRange?: DateRange;
   typeFilter?: 'INCOME' | 'EXPENSE' | 'TRANSFER';
   accountFilter?: string;
   categoryFilter?: string;
@@ -24,7 +21,6 @@ interface TransactionFiltersProps {
   minAmount?: number;
   maxAmount?: number;
   onSearchChange: (value: string) => void;
-  onDateRangeChange: (range?: DateRange) => void;
   onTypeFilterChange: (value?: 'INCOME' | 'EXPENSE' | 'TRANSFER') => void;
   onAccountFilterChange: (value?: string) => void;
   onCategoryFilterChange: (value?: string) => void;
@@ -37,7 +33,6 @@ interface TransactionFiltersProps {
 
 export function TransactionFilters({
   searchTerm,
-  dateRange,
   typeFilter,
   accountFilter,
   categoryFilter,
@@ -45,7 +40,6 @@ export function TransactionFilters({
   minAmount,
   maxAmount,
   onSearchChange,
-  onDateRangeChange,
   onTypeFilterChange,
   onAccountFilterChange,
   onCategoryFilterChange,
@@ -63,7 +57,6 @@ export function TransactionFilters({
 
   const clearFilters = () => {
     onSearchChange('');
-    onDateRangeChange(undefined);
     onTypeFilterChange(undefined);
     onAccountFilterChange(undefined);
     onCategoryFilterChange(undefined);
@@ -73,13 +66,7 @@ export function TransactionFilters({
   };
 
   const hasActiveFilters =
-    searchTerm ||
-    dateRange ||
-    typeFilter ||
-    accountFilter ||
-    categoryFilter ||
-    minAmount ||
-    maxAmount;
+    searchTerm || typeFilter || accountFilter || categoryFilter || minAmount || maxAmount;
 
   return (
     <div className="flex flex-col gap-4">
@@ -121,14 +108,6 @@ export function TransactionFilters({
 
       {/* Filters Row */}
       <div className="flex flex-wrap gap-2">
-        {/* Date Range */}
-        <DatePicker
-          dateRange={dateRange}
-          onDateRangeChange={onDateRangeChange}
-          placeholder="Select date range"
-          mode="range"
-        />
-
         {/* Transaction Type */}
         <Select
           value={typeFilter || ''}

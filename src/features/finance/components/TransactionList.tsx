@@ -9,7 +9,6 @@ import {
   DataTable,
   DataTableColumn,
   FilterField,
-  createDateRangeFilter,
   createSearchFilter,
   createSelectFilter,
 } from '@/components/ui/data-table';
@@ -39,6 +38,7 @@ import { useMonobankAutoSync } from '@/features/integrations/hooks/useMonobankAu
 import { useToast } from '@/hooks/use-toast';
 import { useDataTable } from '@/hooks/useDataTable';
 import { formatCurrency, formatSummaryAmount } from '@/lib/currency';
+import { useStore } from '@/store';
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -95,19 +95,17 @@ export function TransactionList() {
   const deleteTransaction = useDeleteTransaction();
   useMonobankAutoSync('transactions_page');
 
+  // Global date range from store
+  const { selectedDateRange } = useStore();
+
   // Data table hooks
   const { currentPage, pageSize, onPageChange, onPageSizeChange, totalPages } = useDataTable({
     initialPageSize: 50,
   });
 
   // Filter states
-  const {
-    filters,
-    handleSearchChange,
-    handleTypeFilterChange,
-    handleAccountFilterChange,
-    handleDateRangeChange,
-  } = useTransactionFilters();
+  const { filters, handleSearchChange, handleTypeFilterChange, handleAccountFilterChange } =
+    useTransactionFilters();
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -117,7 +115,7 @@ export function TransactionList() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Get transactions with current filters
+  // Get transactions with current filters (using global date range)
   const {
     data: transactionsData,
     isLoading,
@@ -129,8 +127,8 @@ export function TransactionList() {
     accountId: filters.accountFilter,
     categoryId: filters.categoryFilter,
     search: filters.searchTerm || undefined,
-    dateFrom: filters.dateRange?.from?.toISOString(),
-    dateTo: filters.dateRange?.to?.toISOString(),
+    dateFrom: selectedDateRange?.from?.toISOString(),
+    dateTo: selectedDateRange?.to?.toISOString(),
     limit: pageSize,
     page: currentPage,
   });
@@ -226,16 +224,11 @@ export function TransactionList() {
     handleSearchChange('');
     handleTypeFilterChange(undefined);
     handleAccountFilterChange(undefined);
-    handleDateRangeChange(undefined);
     onPageChange(1);
   };
 
   const hasActiveFilters = Boolean(
-    filters.typeFilter ||
-      filters.accountFilter ||
-      filters.categoryFilter ||
-      filters.searchTerm ||
-      filters.dateRange,
+    filters.typeFilter || filters.accountFilter || filters.categoryFilter || filters.searchTerm,
   );
 
   // Define table columns
@@ -384,9 +377,8 @@ export function TransactionList() {
     },
   ];
 
-  // Define filter fields
+  // Define filter fields (without date range - it's global now)
   const filterFields: FilterField[] = [
-    createDateRangeFilter('date', filters.dateRange, handleDateRangeChange, 'Select date range'),
     createSearchFilter('search', filters.searchTerm, handleSearchChange, 'Search transactions...'),
     createSelectFilter(
       'type',

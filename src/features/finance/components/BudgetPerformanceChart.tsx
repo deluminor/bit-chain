@@ -25,11 +25,7 @@ interface BudgetCategory {
   color: string;
 }
 
-interface BudgetPerformanceChartProps {
-  period?: string;
-}
-
-export function BudgetPerformanceChart({ period = 'This Month' }: BudgetPerformanceChartProps) {
+export function BudgetPerformanceChart() {
   const { theme } = useStore();
   const { data: budgetsResponse, isLoading } = useBudgets();
 
@@ -128,7 +124,7 @@ export function BudgetPerformanceChart({ period = 'This Month' }: BudgetPerforma
   return (
     <ChartWrapper
       title="Budget Performance"
-      description={`${period} spending vs planned budget`}
+      description="Actual spending vs planned budget"
       headerActions={headerActions}
     >
       <div className="space-y-6">

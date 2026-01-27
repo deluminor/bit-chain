@@ -1,7 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { startOfMonth } from 'date-fns';
 import { convertToBaseCurrencySafe } from '@/lib/currency';
 
 export interface CashFlowCategory {
@@ -16,6 +15,11 @@ export interface CashFlowSankeyData {
   targets: CashFlowCategory[];
   totalIncome: number;
   totalExpenses: number;
+}
+
+interface CashFlowSankeyParams {
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 const SOURCE_LIMIT = 4;
@@ -45,13 +49,13 @@ const getTopCategories = (
   return top;
 };
 
-async function fetchCashFlowSankey(): Promise<CashFlowSankeyData> {
-  const now = new Date();
-  const startDate = startOfMonth(now);
+async function fetchCashFlowSankey(params: CashFlowSankeyParams): Promise<CashFlowSankeyData> {
+  const queryParams = new URLSearchParams();
+  if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+  if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+  queryParams.append('limit', '5000');
 
-  const response = await fetch(
-    `/api/finance/transactions?dateFrom=${startDate.toISOString()}&dateTo=${now.toISOString()}&limit=5000`,
-  );
+  const response = await fetch(`/api/finance/transactions?${queryParams.toString()}`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch transactions');
@@ -122,10 +126,10 @@ async function fetchCashFlowSankey(): Promise<CashFlowSankeyData> {
   };
 }
 
-export function useCashFlowSankey() {
+export function useCashFlowSankey(params: CashFlowSankeyParams = {}) {
   return useQuery({
-    queryKey: ['finance', 'cash-flow-sankey'],
-    queryFn: fetchCashFlowSankey,
+    queryKey: ['finance', 'cash-flow-sankey', params.dateFrom, params.dateTo],
+    queryFn: () => fetchCashFlowSankey(params),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

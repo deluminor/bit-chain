@@ -3,12 +3,7 @@ import { useStore } from '@/store';
 const DEFAULT_FILTERS = ['all', undefined, ''];
 
 export const useTradeFilters = () => {
-  const {
-    selectedDateRange: dateRange,
-    tradeFilters,
-    setSelectedDateRange: setDateRange,
-    setTradeFilters,
-  } = useStore();
+  const { tradeFilters, setTradeFilters } = useStore();
 
   const handleSideFilterChange = (value: string) => {
     setTradeFilters({ side: DEFAULT_FILTERS.includes(value) ? undefined : value });
@@ -23,11 +18,9 @@ export const useTradeFilters = () => {
   };
 
   return {
-    dateRange,
     sideFilter: tradeFilters.side,
     categoryFilter: tradeFilters.category,
     resultFilter: tradeFilters.result,
-    setDateRange,
     handleSideFilterChange,
     handleCategoryFilterChange,
     handleResultFilterChange,

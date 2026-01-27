@@ -8,12 +8,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { DatePicker } from '@/components/ui/date-picker';
-import { useIsMobile } from '@/hooks/useMobile';
 import { THEME, useStore } from '@/store';
-import { startOfDay, subDays, format, startOfMonth } from 'date-fns';
+import { startOfDay, format } from 'date-fns';
 import { useEffect, useMemo, useState } from 'react';
-import { DateRange } from 'react-day-picker';
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { useTransactions } from '../queries/transactions';
 import { FINANCE_COLORS } from '@/constants/colors';
@@ -21,16 +18,11 @@ import { FINANCE_COLORS } from '@/constants/colors';
 import { convertToBaseCurrencySafe, formatSummaryAmount } from '@/lib/currency';
 
 export function IncomeExpenseChart() {
-  const isMobile = useIsMobile();
-  const { theme } = useStore();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(subDays(new Date(), 90)),
-    to: new Date(),
-  });
+  const { theme, selectedDateRange } = useStore();
 
   const { data: transactionsData, isLoading } = useTransactions({
-    dateFrom: dateRange?.from?.toISOString().split('T')[0],
-    dateTo: dateRange?.to?.toISOString().split('T')[0],
+    dateFrom: selectedDateRange?.from?.toISOString().split('T')[0],
+    dateTo: selectedDateRange?.to?.toISOString().split('T')[0],
     limit: 1000,
   });
 
@@ -44,15 +36,6 @@ export function IncomeExpenseChart() {
       color: FINANCE_COLORS.EXPENSE,
     },
   } satisfies ChartConfig;
-
-  useEffect(() => {
-    if (isMobile) {
-      setDateRange({
-        from: subDays(new Date(), 30),
-        to: new Date(),
-      });
-    }
-  }, [isMobile]);
 
   // Process transaction data into daily/weekly chart data
   const [processedData, setProcessedData] = useState<
@@ -132,28 +115,12 @@ export function IncomeExpenseChart() {
     };
   }, [processedData]);
 
-  const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range);
-  };
-
   if (isLoading) return <ChartSkeleton />;
-
-  const headerActions = (
-    <DatePicker
-      dateRange={dateRange}
-      onDateRangeChange={handleDateRangeChange}
-      mode="range"
-      showPresets
-      placeholder="Last 3 months"
-      className="w-full"
-    />
-  );
 
   return (
     <ChartWrapper
       title="Income vs Expenses"
       description="Daily income and expense tracking over time"
-      headerActions={headerActions}
       className="@container/card"
     >
       <div className="px-2 pt-4 sm:px-6 sm:pt-6">

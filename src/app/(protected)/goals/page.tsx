@@ -1,10 +1,13 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AddFundsDialog } from '@/components/dialogs/AddFundsDialog';
 import { GoalForm } from '@/components/forms/GoalForm';
+import { AnimatedDiv } from '@/components/ui/animations';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { StatCardSkeleton } from '@/components/ui/loading-skeleton';
+import { Progress } from '@/components/ui/progress';
 import {
   Table,
   TableBody,
@@ -13,20 +16,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Target, TrendingUp, Calendar, DollarSign, Edit } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { AnimatedDiv } from '@/components/ui/animations';
 import {
-  useGoals,
   calculateGoalProgress,
-  getRemainingAmount,
-  useUpdateGoal,
   FinancialGoal,
+  getRemainingAmount,
+  useGoals,
+  useUpdateGoal,
 } from '@/features/finance/queries/goals';
 import { useToast } from '@/hooks/use-toast';
-import { formatDisplayAmount, BASE_CURRENCY } from '@/lib/currency';
-import { StatCardSkeleton } from '@/components/ui/loading-skeleton';
-import { AddFundsDialog } from '@/components/dialogs/AddFundsDialog';
+import { BASE_CURRENCY, formatDisplayAmount } from '@/lib/currency';
+import { Calendar, DollarSign, Edit, Plus, Target, TrendingUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function GoalsPage() {
   const { toast } = useToast();
@@ -46,7 +46,13 @@ export default function GoalsPage() {
     }
   }, [error, toast]);
 
-  const goals = goalsData?.goals || [];
+  const goals = [...(goalsData?.goals || [])].sort((a, b) => {
+    // Sort by deadline (nearest first), with nulls last
+    if (!a.deadline && !b.deadline) return 0;
+    if (!a.deadline) return 1;
+    if (!b.deadline) return -1;
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+  });
   const summary = goalsData?.summary || {
     total: 0,
     active: 0,

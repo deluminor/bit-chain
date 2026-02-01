@@ -29,6 +29,7 @@ import {
 import { TransactionImportDialog } from '@/features/finance/components/TransactionImportDialog';
 import { useTransactionFilters } from '@/features/finance/hooks/useTransactionFilters';
 import { useAccounts } from '@/features/finance/queries/accounts';
+import { useCategories } from '@/features/finance/queries/categories';
 import {
   Transaction,
   useDeleteTransaction,
@@ -92,6 +93,7 @@ const getAmountColor = (type: string) => {
 export function TransactionList() {
   const { toast } = useToast();
   const { data: accountsData } = useAccounts();
+  const { data: categoriesData } = useCategories({ hierarchical: true });
   const deleteTransaction = useDeleteTransaction();
   useMonobankAutoSync('transactions_page');
 
@@ -104,8 +106,13 @@ export function TransactionList() {
   });
 
   // Filter states
-  const { filters, handleSearchChange, handleTypeFilterChange, handleAccountFilterChange } =
-    useTransactionFilters();
+  const {
+    filters,
+    handleSearchChange,
+    handleTypeFilterChange,
+    handleAccountFilterChange,
+    handleCategoryFilterChange,
+  } = useTransactionFilters();
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -154,6 +161,7 @@ export function TransactionList() {
   );
 
   const accounts = accountsData?.accounts || [];
+  const categories = categoriesData?.categories || [];
 
   const incomeEUR = summary.income;
   const expensesEUR = summary.expenses;
@@ -377,7 +385,6 @@ export function TransactionList() {
     },
   ];
 
-  // Define filter fields (without date range - it's global now)
   const filterFields: FilterField[] = [
     createSearchFilter('search', filters.searchTerm, handleSearchChange, 'Search transactions...'),
     createSelectFilter(
@@ -403,6 +410,16 @@ export function TransactionList() {
         label: account.name,
       })),
       'accounts',
+    ),
+    createSelectFilter(
+      'category',
+      filters.categoryFilter,
+      value => handleCategoryFilterChange(value === 'all' ? undefined : value),
+      categories.map((category: { id: string; name: string }) => ({
+        value: category.id,
+        label: category.name,
+      })),
+      'categories',
     ),
   ];
 

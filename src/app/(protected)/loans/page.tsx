@@ -1,6 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { LoanForm } from '@/components/forms/LoanForm';
+import { AnimatedDiv } from '@/components/ui/animations';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import {
   Table,
   TableBody,
@@ -9,25 +15,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
-import { AnimatedDiv } from '@/components/ui/animations';
+import { RepayLoanDialog } from '@/features/finance/components/RepayLoanDialog';
+import { Loan, useDeleteLoan, useLoans, useUpdateLoan } from '@/features/finance/queries/loans';
 import { useToast } from '@/hooks/use-toast';
-import { LoanForm } from '@/components/forms/LoanForm';
-import { formatDisplayAmount, BASE_CURRENCY } from '@/lib/currency';
-import { Loan, useLoans, useDeleteLoan } from '@/features/finance/queries/loans';
+import { BASE_CURRENCY, formatDisplayAmount } from '@/lib/currency';
 import {
-  Plus,
-  Landmark,
-  Wallet,
-  CalendarClock,
   BadgeDollarSign,
-  Trash2,
+  Banknote,
+  CalendarClock,
+  Landmark,
   Pencil,
+  Plus,
+  Trash2,
+  Wallet,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const loanTypeLabels = {
   LOAN: 'Loan',
@@ -44,10 +46,12 @@ export default function LoansPage() {
   const [showPaid, setShowPaid] = useState(false);
   const { data, isLoading, error, refetch } = useLoans(showPaid);
   const deleteLoan = useDeleteLoan();
+  const updateLoan = useUpdateLoan();
 
   const [showForm, setShowForm] = useState(false);
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Loan | null>(null);
+  const [repayLoan, setRepayLoan] = useState<Loan | null>(null);
 
   useEffect(() => {
     if (error) {
@@ -114,6 +118,39 @@ export default function LoansPage() {
       });
     }
   };
+
+  const handleRepay = async (amount: number) => {
+    if (!repayLoan) return;
+
+    try {
+      await updateLoan.mutateAsync({
+        id: repayLoan.id,
+        paidAmount: repayLoan.paidAmount + amount,
+      });
+
+      toast({
+        title: 'Success',
+        description: `Repayed ${formatDisplayAmount(amount, repayLoan.currency, 'detailed')}`,
+      });
+
+      refetch();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to process repayment',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const sortedLoans = [...loans].sort((a, b) => {
+    // Sort by due date (nearest first), with nulls last
+    if (!a.dueDate && !b.dueDate) return 0;
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+  });
 
   const nearestDueDate = loans
     .filter(loan => loan.paidAmount < loan.totalAmount && loan.dueDate)
@@ -205,11 +242,11 @@ export default function LoansPage() {
                       <TableHead className="text-center">Progress</TableHead>
                       <TableHead className="text-center">Due Date</TableHead>
                       <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="w-[100px] text-right">Actions</TableHead>
+                      <TableHead className="w-[140px] text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {loans.map(loan => {
+                    {sortedLoans.map(loan => {
                       const status = getStatus(loan);
                       const remaining = loan.totalAmount - loan.paidAmount;
                       const progress =
@@ -263,7 +300,18 @@ export default function LoansPage() {
                             <Badge className={status.className}>{status.label}</Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-1">
+                              {remaining > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setRepayLoan(loan)}
+                                  className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                  title="Repay Loan"
+                                >
+                                  <Banknote className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -337,6 +385,15 @@ export default function LoansPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {repayLoan && (
+        <RepayLoanDialog
+          open={!!repayLoan}
+          onOpenChange={open => !open && setRepayLoan(null)}
+          loan={repayLoan!}
+          onConfirm={handleRepay}
+        />
+      )}
     </AnimatedDiv>
   );
 }

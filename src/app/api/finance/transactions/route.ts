@@ -167,16 +167,28 @@ export async function GET(request: NextRequest) {
           ...(dateToValue && { lte: dateToValue }),
         },
       }),
-      ...(search && {
+    };
+
+    // Use AND array to combine multiple OR conditions without overwriting each other
+    const andConditions: any[] = [];
+
+    if (search) {
+      andConditions.push({
         OR: [
           { description: { contains: search, mode: 'insensitive' } },
           { tags: { hasSome: [search] } },
         ],
-      }),
-    };
+      });
+    }
 
     if (accountId) {
-      where.OR = [{ accountId }, { transferToId: accountId }];
+      andConditions.push({
+        OR: [{ accountId }, { transferToId: accountId }],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     // Get transactions with pagination

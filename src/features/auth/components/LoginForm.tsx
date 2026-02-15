@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLogin } from '@/hooks/useLogin';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
-import { ROUTES } from '../constants';
+// import Link from 'next/link';
+// import { ROUTES } from '../constants';
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const { register, handleSubmit, errors, isSubmitting, onSubmit } = useLogin();
@@ -63,12 +63,12 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                 </Button>
               </div>
 
-              <div className="text-center text-sm">
-                Don't have an account?{' '}
+              {/* <div className="text-center text-sm">
+                Don&apos;t have an account?{' '}
                 <Link href={ROUTES.REGISTER.path} className="underline underline-offset-4">
                   Sign up
                 </Link>
-              </div>
+              </div> */}
             </div>
           </form>
         </CardContent>

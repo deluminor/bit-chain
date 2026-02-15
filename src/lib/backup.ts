@@ -6,7 +6,7 @@ import { BackupData, BackupOptions } from '@/types/backup';
 const prisma = new PrismaClient();
 
 export class BackupService {
-  private static readonly BACKUP_VERSION = '1.0.0';
+  private static readonly BACKUP_VERSION = '1.1.0';
   private static readonly BACKUP_DIR = path.join(process.cwd(), 'backups');
 
   static async ensureBackupDir(): Promise<void> {
@@ -29,15 +29,10 @@ export class BackupService {
         ? await prisma.category.findMany({ where: { userId } })
         : await prisma.category.findMany();
 
-      // Export trades
+      // Export trades (categories are exported separately, trade has categoryId as FK)
       const trades = userId
-        ? await prisma.trade.findMany({
-            where: { userId },
-            include: { category: true },
-          })
-        : await prisma.trade.findMany({
-            include: { category: true },
-          });
+        ? await prisma.trade.findMany({ where: { userId } })
+        : await prisma.trade.findMany();
 
       // Export screenshots
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -77,6 +72,14 @@ export class BackupService {
         ? await prisma.financialGoal.findMany({ where: { userId } })
         : await prisma.financialGoal.findMany();
 
+      // Export loans
+      const loans = userId
+        ? await prisma.loan.findMany({ where: { userId } })
+        : await prisma.loan.findMany();
+
+      // NOTE: Integration/IntegrationAccount intentionally excluded — contain sensitive tokens.
+      // Users must re-authenticate integrations after restore.
+
       const totalRecords =
         users.length +
         categories.length +
@@ -87,7 +90,8 @@ export class BackupService {
         transactionCategories.length +
         budgets.length +
         budgetCategories.length +
-        financialGoals.length;
+        financialGoals.length +
+        loans.length;
 
       const backupData: BackupData = {
         users,
@@ -100,6 +104,7 @@ export class BackupService {
         budgets,
         budgetCategories,
         financialGoals,
+        loans,
         metadata: {
           version: this.BACKUP_VERSION,
           timestamp: new Date().toISOString(),
@@ -119,7 +124,14 @@ export class BackupService {
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupFilename = filename || `backup_${timestamp}.json`;
-    const filePath = path.join(this.BACKUP_DIR, backupFilename);
+
+    // Security: prevent path traversal
+    const sanitized = path.basename(backupFilename);
+    if (sanitized !== backupFilename) {
+      throw new Error('Invalid filename');
+    }
+
+    const filePath = path.join(this.BACKUP_DIR, sanitized);
 
     try {
       fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
@@ -132,7 +144,13 @@ export class BackupService {
   }
 
   static async loadBackupFromFile(filename: string): Promise<BackupData> {
-    const filePath = path.join(this.BACKUP_DIR, filename);
+    // Security: prevent path traversal
+    const sanitized = path.basename(filename);
+    if (sanitized !== filename) {
+      throw new Error('Invalid filename');
+    }
+
+    const filePath = path.join(this.BACKUP_DIR, sanitized);
 
     try {
       if (!fs.existsSync(filePath)) {
@@ -159,6 +177,7 @@ export class BackupService {
       if (!backupData.budgets) backupData.budgets = [];
       if (!backupData.budgetCategories) backupData.budgetCategories = [];
       if (!backupData.financialGoals) backupData.financialGoals = [];
+      if (!backupData.loans) backupData.loans = [];
 
       return backupData;
     } catch (error) {
@@ -202,6 +221,9 @@ export class BackupService {
           await tx.transactionCategory.deleteMany({
             where: { userId },
           });
+          await tx.loan.deleteMany({
+            where: { userId },
+          });
           await tx.category.deleteMany({
             where: { userId },
           });
@@ -215,6 +237,7 @@ export class BackupService {
           await tx.financialGoal.deleteMany();
           await tx.financeAccount.deleteMany();
           await tx.transactionCategory.deleteMany();
+          await tx.loan.deleteMany();
           await tx.category.deleteMany();
           await tx.user.deleteMany();
         }
@@ -256,9 +279,14 @@ export class BackupService {
           });
         }
 
-        // Import screenshots
+        // Import screenshots (filter by trades belonging to user)
         if (backupData.screenshots && backupData.screenshots.length > 0) {
-          for (const screenshot of backupData.screenshots) {
+          const userTradeIds = new Set(tradesToImport.map(t => t.id));
+          const screenshotsToImport = userId
+            ? backupData.screenshots.filter(s => userTradeIds.has(s.tradeId))
+            : backupData.screenshots;
+
+          for (const screenshot of screenshotsToImport) {
             await tx.screenshot.upsert({
               where: { id: screenshot.id },
               update: screenshot,
@@ -349,6 +377,19 @@ export class BackupService {
             create: goal,
           });
         }
+
+        // Import loans (filter by userId if provided)
+        const loansToImport = userId
+          ? (backupData.loans || []).filter(loan => loan.userId === userId)
+          : backupData.loans || [];
+
+        for (const loan of loansToImport) {
+          await tx.loan.upsert({
+            where: { id: loan.id },
+            update: loan,
+            create: loan,
+          });
+        }
       });
 
       console.log(`Successfully imported ${backupData.metadata.totalRecords} records`);
@@ -392,6 +433,28 @@ export class BackupService {
     }
   }
 
+  /**
+   * Delete a backup file from disk.
+   *
+   * @param filename - Name of the backup file to delete (must be in BACKUP_DIR)
+   * @throws {Error} If filename contains path traversal or file doesn't exist
+   */
+  static async deleteBackupFile(filename: string): Promise<void> {
+    // Security: prevent path traversal
+    const sanitized = path.basename(filename);
+    if (sanitized !== filename) {
+      throw new Error('Invalid filename');
+    }
+
+    const filePath = path.join(this.BACKUP_DIR, sanitized);
+
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Backup file not found: ${filename}`);
+    }
+
+    fs.unlinkSync(filePath);
+  }
+
   static async getBackupInfo(filename: string): Promise<{
     filename: string;
     metadata: BackupData['metadata'];
@@ -406,6 +469,7 @@ export class BackupService {
       budgets: number;
       budgetCategories: number;
       financialGoals: number;
+      loans: number;
     };
   } | null> {
     try {
@@ -424,6 +488,7 @@ export class BackupService {
           budgets: backupData.budgets.length,
           budgetCategories: backupData.budgetCategories.length,
           financialGoals: backupData.financialGoals.length,
+          loans: backupData.loans.length,
         },
       };
     } catch (error) {

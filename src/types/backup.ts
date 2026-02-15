@@ -9,6 +9,7 @@ import {
   Budget,
   BudgetCategory,
   FinancialGoal,
+  Loan,
 } from '@/generated/prisma/index';
 
 export interface BackupData {
@@ -23,6 +24,7 @@ export interface BackupData {
   budgets: Budget[];
   budgetCategories: BudgetCategory[];
   financialGoals: FinancialGoal[];
+  loans: Loan[];
   metadata: {
     version: string;
     timestamp: string;

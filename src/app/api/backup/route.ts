@@ -20,12 +20,19 @@ export async function GET(request: NextRequest) {
       case 'list':
         const files = await BackupService.listBackupFiles();
         // Filter files to show only current user's backups
-        const filteredFiles = files.filter(filename => filename.includes(`user_${currentUserId}_`));
-        return NextResponse.json({ files: filteredFiles });
+        const filteredFiles = files.filter(f => f.includes(`user_${currentUserId}_`));
+        // Return files with info inline to avoid N+1 API calls from client
+        const filesWithInfo = await Promise.all(
+          filteredFiles.map(f => BackupService.getBackupInfo(f)),
+        );
+        return NextResponse.json({ files: filesWithInfo.filter(Boolean) });
 
       case 'info':
         if (!filename) {
           return NextResponse.json({ error: 'Filename required' }, { status: 400 });
+        }
+        if (!filename.includes(`user_${currentUserId}_`)) {
+          return NextResponse.json({ error: 'Access denied to this backup' }, { status: 403 });
         }
         const info = await BackupService.getBackupInfo(filename);
         return NextResponse.json({ info });
@@ -83,6 +90,23 @@ export async function POST(request: NextRequest) {
           success: true,
           message: 'Personal data imported successfully',
         });
+
+      case 'delete': {
+        const deleteFilename = body.filename;
+        if (!deleteFilename) {
+          return NextResponse.json({ error: 'Filename required' }, { status: 400 });
+        }
+
+        if (!deleteFilename.includes(`user_${currentUserId}_`)) {
+          return NextResponse.json({ error: 'Access denied to this backup' }, { status: 403 });
+        }
+
+        await BackupService.deleteBackupFile(deleteFilename);
+        return NextResponse.json({
+          success: true,
+          message: 'Backup deleted successfully',
+        });
+      }
 
       case 'restore':
         const { filename } = body;

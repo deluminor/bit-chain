@@ -22,6 +22,7 @@ import {
   AlertTriangleIcon,
   FileIcon,
   CalendarIcon,
+  Trash2Icon,
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -43,12 +44,14 @@ interface BackupFile {
     budgets: number;
     budgetCategories: number;
     financialGoals: number;
+    loans: number;
   };
 }
 
 export function BackupManager() {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
+  const [isListLoading, setIsListLoading] = useState(true);
   const [backupFiles, setBackupFiles] = useState<BackupFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -57,23 +60,10 @@ export function BackupManager() {
   const loadBackupFiles = useCallback(async () => {
     if (!session?.user?.id) return;
 
+    setIsListLoading(true);
     try {
-      const response = await axios.get(`/api/backup?action=list&userId=${session.user.id}`);
-
-      // Get info for each backup file
-      const filesWithInfo = await Promise.all(
-        response.data.files.map(async (filename: string) => {
-          try {
-            const infoResponse = await axios.get(`/api/backup?action=info&filename=${filename}`);
-            return { filename, ...infoResponse.data.info };
-          } catch (error) {
-            console.error(`Error getting info for ${filename}:`, error);
-            return { filename, error: 'Failed to load info' };
-          }
-        }),
-      );
-
-      setBackupFiles(filesWithInfo);
+      const response = await axios.get('/api/backup?action=list');
+      setBackupFiles(response.data.files || []);
     } catch (error) {
       console.error('Error loading backup files:', error);
       toast({
@@ -81,6 +71,8 @@ export function BackupManager() {
         description: 'Failed to load backup files',
         variant: 'destructive',
       });
+    } finally {
+      setIsListLoading(false);
     }
   }, [session?.user?.id, toast]);
 
@@ -236,6 +228,33 @@ export function BackupManager() {
     }
   };
 
+  const deleteBackup = async (filename: string) => {
+    setIsLoading(true);
+    try {
+      const response = await axios.post('/api/backup', {
+        action: 'delete',
+        filename,
+      });
+
+      if (response.data.success) {
+        toast({
+          title: 'Success',
+          description: 'Backup deleted successfully',
+        });
+        await loadBackupFiles();
+      }
+    } catch {
+      console.error('Error deleting backup:');
+      toast({
+        title: 'Error',
+        description: 'Failed to delete backup',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const formatTimestamp = (timestamp: string) => {
     return new Date(timestamp).toLocaleString();
   };
@@ -299,7 +318,16 @@ export function BackupManager() {
         </CardContent>
       </Card>
 
-      {backupFiles.length > 0 && (
+      {isListLoading ? (
+        <Card>
+          <CardContent className="py-8">
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <DatabaseIcon className="h-4 w-4 animate-spin" />
+              <span>Loading backup history...</span>
+            </div>
+          </CardContent>
+        </Card>
+      ) : backupFiles.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>My Backup History</CardTitle>
@@ -342,59 +370,97 @@ export function BackupManager() {
                           <span>{backup.recordCounts.budgets} budgets</span>
                           <span>•</span>
                           <span>{backup.recordCounts.financialGoals} goals</span>
+                          <span>•</span>
+                          <span>{backup.recordCounts.loans} loans</span>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        Restore
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Restore Backup</DialogTitle>
-                        <DialogDescription>
-                          This will restore data from {backup.filename}. Choose how to handle
-                          existing data.
-                        </DialogDescription>
-                      </DialogHeader>
-
-                      <Alert>
-                        <AlertTriangleIcon className="h-4 w-4" />
-                        <AlertTitle>Warning</AlertTitle>
-                        <AlertDescription>
-                          Restoring will modify your current data. Make sure to create a backup of
-                          your current state first.
-                        </AlertDescription>
-                      </Alert>
-
-                      <div className="flex gap-3">
-                        <Button
-                          onClick={() => restoreFromFile(backup.filename, false)}
-                          disabled={isLoading}
-                          variant="outline"
-                        >
-                          Merge with existing
+                  <div className="flex items-center gap-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          Restore
                         </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Restore Backup</DialogTitle>
+                          <DialogDescription>
+                            This will restore data from {backup.filename}. Choose how to handle
+                            existing data.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <Alert>
+                          <AlertTriangleIcon className="h-4 w-4" />
+                          <AlertTitle>Warning</AlertTitle>
+                          <AlertDescription>
+                            Restoring will modify your current data. Make sure to create a backup of
+                            your current state first.
+                          </AlertDescription>
+                        </Alert>
+
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={() => restoreFromFile(backup.filename, false)}
+                            disabled={isLoading}
+                            variant="outline"
+                          >
+                            Merge with existing
+                          </Button>
+                          <Button
+                            onClick={() => restoreFromFile(backup.filename, true)}
+                            disabled={isLoading}
+                            variant="destructive"
+                          >
+                            Replace all data
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Dialog>
+                      <DialogTrigger asChild>
                         <Button
-                          onClick={() => restoreFromFile(backup.filename, true)}
-                          disabled={isLoading}
-                          variant="destructive"
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
                         >
-                          Replace all data
+                          <Trash2Icon className="h-4 w-4" />
                         </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Delete Backup</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to delete {backup.filename}? This action cannot be
+                            undone.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="flex gap-3 justify-end">
+                          <DialogTrigger asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogTrigger>
+                          <Button
+                            onClick={() => deleteBackup(backup.filename)}
+                            disabled={isLoading}
+                            variant="destructive"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
         <DialogContent>

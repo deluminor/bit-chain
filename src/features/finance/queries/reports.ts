@@ -1,172 +1,57 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 
-export interface ReportData {
-  title: string;
-  period: string;
-  data: unknown;
-  generatedAt: string;
+export interface ComprehensiveReportParams {
+  dateFrom?: string;
+  dateTo?: string;
+  format: 'json' | 'markdown';
 }
 
-export interface ReportParams {
-  type:
-    | 'income-expenses'
-    | 'category-analysis'
-    | 'cash-flow'
-    | 'budget-performance'
-    | 'account-summary'
-    | 'goal-progress';
-  period?: 'weekly' | 'monthly' | 'yearly';
-  format?: 'json' | 'csv' | 'pdf';
-}
-
-// Generate report
-export const useGenerateReport = () => {
-  const queryClient = useQueryClient();
-
+/**
+ * Mutation hook to generate and download a comprehensive financial report.
+ *
+ * Fetches all financial data for the given period from the API and triggers
+ * a file download in the selected format (JSON or Markdown).
+ *
+ * @example
+ * ```tsx
+ * const generateReport = useGenerateComprehensiveReport();
+ *
+ * generateReport.mutate({
+ *   dateFrom: '2025-01-01T00:00:00.000Z',
+ *   dateTo: '2025-01-31T23:59:59.999Z',
+ *   format: 'json',
+ * });
+ * ```
+ */
+export function useGenerateComprehensiveReport() {
   return useMutation({
-    mutationFn: async (params: ReportParams) => {
-      const searchParams = new URLSearchParams({
-        type: params.type,
-        period: params.period || 'monthly',
-        format: params.format || 'json',
-      });
+    mutationFn: async (params: ComprehensiveReportParams) => {
+      const searchParams = new URLSearchParams();
+      if (params.dateFrom) searchParams.set('dateFrom', params.dateFrom);
+      if (params.dateTo) searchParams.set('dateTo', params.dateTo);
+      searchParams.set('format', params.format);
 
-      const response = await fetch(`/api/reports?${searchParams.toString()}`);
+      const response = await fetch(`/api/reports/comprehensive?${searchParams.toString()}`);
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({ error: 'Failed to generate report' }));
         throw new Error(error.error || 'Failed to generate report');
       }
 
-      // Handle CSV/PDF downloads
-      if (params.format === 'csv') {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${params.type}-report-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        return { success: true, message: 'Report downloaded successfully' };
-      }
-
-      const result = await response.json();
-      return result as ReportData;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reports'] });
-    },
-  });
-};
-
-// Preview report data
-export const usePreviewReport = (params: ReportParams) => {
-  return useQuery({
-    queryKey: ['report-preview', params.type, params.period],
-    queryFn: async () => {
-      const searchParams = new URLSearchParams({
-        type: params.type,
-        period: params.period || 'monthly',
-        format: 'json',
-      });
-
-      const response = await fetch(`/api/reports?${searchParams.toString()}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to preview report');
-      }
-
-      return (await response.json()) as ReportData;
-    },
-    enabled: !!params.type,
-  });
-};
-
-// Export report in different formats
-export const useExportReport = () => {
-  return useMutation({
-    mutationFn: async (params: ReportParams & { format: 'csv' | 'pdf' }) => {
-      const searchParams = new URLSearchParams({
-        type: params.type,
-        period: params.period || 'monthly',
-        format: params.format,
-      });
-
-      const response = await fetch(`/api/reports?${searchParams.toString()}`);
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to export report');
-      }
-
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const ext = params.format === 'markdown' ? 'md' : 'json';
+      const fileName = `financial-report-${new Date().toISOString().split('T')[0]}.${ext}`;
+
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-
-      const fileExtension = params.format === 'csv' ? 'csv' : 'pdf';
-      const fileName = `${params.type}-report-${new Date().toISOString().split('T')[0]}.${fileExtension}`;
       link.download = fileName;
-
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url);
 
-      return {
-        success: true,
-        message: `Report exported as ${fileExtension.toUpperCase()} successfully`,
-      };
+      return { success: true, fileName };
     },
   });
-};
-
-// Get available report types
-export const getReportTypes = () =>
-  [
-    {
-      id: 'income-expenses',
-      name: 'Income vs Expenses',
-      description: 'Monthly comparison of your income and spending',
-      icon: 'BarChart3',
-    },
-    {
-      id: 'category-analysis',
-      name: 'Category Analysis',
-      description: 'Detailed breakdown of spending by category',
-      icon: 'PieChart',
-    },
-    {
-      id: 'cash-flow',
-      name: 'Cash Flow Statement',
-      description: 'Comprehensive cash flow analysis',
-      icon: 'Activity',
-    },
-    {
-      id: 'budget-performance',
-      name: 'Budget Performance',
-      description: "How well you're sticking to your budgets",
-      icon: 'TrendingUp',
-    },
-    {
-      id: 'account-summary',
-      name: 'Account Summary',
-      description: 'Overview of all accounts and balances',
-      icon: 'DollarSign',
-    },
-    {
-      id: 'goal-progress',
-      name: 'Goal Progress Report',
-      description: 'Track progress towards your financial goals',
-      icon: 'Target',
-    },
-  ] as const;
-
-// Helper function to get report status (mock for now)
-export const getReportStatus = (_type: string) => {
-  // In a real app, this would check actual generation status
-  const isGenerating = Math.random() < 0.2; // 20% chance of being in generating state
-  return isGenerating ? 'generating' : 'ready';
-};
+}

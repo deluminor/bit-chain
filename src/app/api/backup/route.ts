@@ -11,33 +11,31 @@ export async function GET(request: NextRequest) {
     }
 
     const currentUserId = session.user.id;
-
     const searchParams = request.nextUrl.searchParams;
     const action = searchParams.get('action');
     const filename = searchParams.get('filename');
 
     switch (action) {
-      case 'list':
-        const files = await BackupService.listBackupFiles();
-        // Filter files to show only current user's backups
-        const filteredFiles = files.filter(f => f.includes(`user_${currentUserId}_`));
-        // Return files with info inline to avoid N+1 API calls from client
+      case 'list': {
+        const backups = await BackupService.listBackups(currentUserId);
         const filesWithInfo = await Promise.all(
-          filteredFiles.map(f => BackupService.getBackupInfo(f)),
+          backups.map(b => BackupService.getBackupInfo(b.filename, currentUserId)),
         );
         return NextResponse.json({ files: filesWithInfo.filter(Boolean) });
+      }
 
-      case 'info':
+      case 'info': {
         if (!filename) {
           return NextResponse.json({ error: 'Filename required' }, { status: 400 });
         }
-        if (!filename.includes(`user_${currentUserId}_`)) {
-          return NextResponse.json({ error: 'Access denied to this backup' }, { status: 403 });
+        const info = await BackupService.getBackupInfo(filename, currentUserId);
+        if (!info) {
+          return NextResponse.json({ error: 'Backup not found' }, { status: 404 });
         }
-        const info = await BackupService.getBackupInfo(filename);
         return NextResponse.json({ info });
+      }
 
-      case 'export':
+      case 'export': {
         const backupData = await BackupService.exportAllData({
           userId: currentUserId,
           includeScreenshots: true,
@@ -49,6 +47,7 @@ export async function GET(request: NextRequest) {
             'Content-Type': 'application/json',
           },
         });
+      }
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
@@ -67,65 +66,54 @@ export async function POST(request: NextRequest) {
     }
 
     const currentUserId = session.user.id;
-
     const body = await request.json();
     const { action, overwrite = false, data } = body;
 
     switch (action) {
-      case 'create':
-        const backupPath = await BackupService.createFullBackup(currentUserId);
+      case 'create': {
+        const backupFilename = await BackupService.createFullBackup(currentUserId);
         return NextResponse.json({
           success: true,
           message: 'Personal backup created successfully',
-          path: backupPath,
+          filename: backupFilename,
         });
+      }
 
-      case 'import':
+      case 'import': {
         if (!data) {
           return NextResponse.json({ error: 'Backup data required' }, { status: 400 });
         }
-
         await BackupService.importData(data, { overwrite, userId: currentUserId });
         return NextResponse.json({
           success: true,
           message: 'Personal data imported successfully',
         });
+      }
 
       case 'delete': {
         const deleteFilename = body.filename;
         if (!deleteFilename) {
           return NextResponse.json({ error: 'Filename required' }, { status: 400 });
         }
-
-        if (!deleteFilename.includes(`user_${currentUserId}_`)) {
-          return NextResponse.json({ error: 'Access denied to this backup' }, { status: 403 });
-        }
-
-        await BackupService.deleteBackupFile(deleteFilename);
+        await BackupService.deleteBackup(deleteFilename, currentUserId);
         return NextResponse.json({
           success: true,
           message: 'Backup deleted successfully',
         });
       }
 
-      case 'restore':
+      case 'restore': {
         const { filename } = body;
         if (!filename) {
           return NextResponse.json({ error: 'Filename required' }, { status: 400 });
         }
-
-        // Verify user can access this backup file
-        if (!filename.includes(`user_${currentUserId}_`)) {
-          return NextResponse.json({ error: 'Access denied to this backup' }, { status: 403 });
-        }
-
-        const backupData = await BackupService.loadBackupFromFile(filename);
+        const backupData = await BackupService.loadBackupFromDb(filename, currentUserId);
         await BackupService.importData(backupData, { overwrite, userId: currentUserId });
-
         return NextResponse.json({
           success: true,
           message: 'Personal backup restored successfully',
         });
+      }
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

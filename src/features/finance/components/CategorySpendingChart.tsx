@@ -20,9 +20,10 @@ import { useTransactions } from '../queries/transactions';
 
 interface CategorySpendingChartProps {
   type?: 'INCOME' | 'EXPENSE';
+  className?: string;
 }
 
-export function CategorySpendingChart({ type = 'EXPENSE' }: CategorySpendingChartProps) {
+export function CategorySpendingChart({ type = 'EXPENSE', className }: CategorySpendingChartProps) {
   const { selectedDateRange } = useStore();
 
   // Use global date filter
@@ -163,6 +164,7 @@ export function CategorySpendingChart({ type = 'EXPENSE' }: CategorySpendingChar
         title={`${type === 'INCOME' ? 'Income' : 'Expense'} Categories`}
         description="Top categories for selected period"
         isLoading={false}
+        className={className}
       >
         <div className="text-center text-muted-foreground py-8">
           <PieChartIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -177,6 +179,7 @@ export function CategorySpendingChart({ type = 'EXPENSE' }: CategorySpendingChar
       title={`${type === 'INCOME' ? 'Income' : 'Expense'} Categories`}
       description="Top categories for selected period"
       isLoading={isLoading}
+      className={className}
     >
       <div className="space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

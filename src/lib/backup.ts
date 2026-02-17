@@ -1,462 +1,376 @@
-import { PrismaClient } from '@/generated/prisma';
-import fs from 'fs';
-import path from 'path';
+import { Prisma, PrismaClient } from '@/generated/prisma';
 import { BackupData, BackupOptions } from '@/types/backup';
 
 const prisma = new PrismaClient();
 
+/**
+ * Service for database backup operations.
+ * Stores backups as JSON in PostgreSQL instead of the filesystem,
+ * making it compatible with serverless deployments (Vercel).
+ */
 export class BackupService {
   private static readonly BACKUP_VERSION = '1.1.0';
-  private static readonly BACKUP_DIR = path.join(process.cwd(), 'backups');
 
-  static async ensureBackupDir(): Promise<void> {
-    if (!fs.existsSync(this.BACKUP_DIR)) {
-      fs.mkdirSync(this.BACKUP_DIR, { recursive: true });
-    }
-  }
-
+  /**
+   * Export all user data from the database.
+   *
+   * @param options - Export options including userId filter and screenshot inclusion
+   * @returns Complete backup data object with metadata
+   */
   static async exportAllData(options: BackupOptions = {}): Promise<BackupData> {
     const { includeScreenshots = true, userId } = options;
 
-    try {
-      // Export users
-      const users = userId
-        ? await prisma.user.findMany({ where: { id: userId } })
-        : await prisma.user.findMany();
+    const users = userId
+      ? await prisma.user.findMany({ where: { id: userId } })
+      : await prisma.user.findMany();
 
-      // Export categories
-      const categories = userId
-        ? await prisma.category.findMany({ where: { userId } })
-        : await prisma.category.findMany();
+    const categories = userId
+      ? await prisma.category.findMany({ where: { userId } })
+      : await prisma.category.findMany();
 
-      // Export trades (categories are exported separately, trade has categoryId as FK)
-      const trades = userId
-        ? await prisma.trade.findMany({ where: { userId } })
-        : await prisma.trade.findMany();
+    const trades = userId
+      ? await prisma.trade.findMany({ where: { userId } })
+      : await prisma.trade.findMany();
 
-      // Export screenshots
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let screenshots: any[] = [];
-      if (includeScreenshots) {
-        screenshots = userId
-          ? await prisma.screenshot.findMany({
-              where: { trade: { userId } },
-            })
-          : await prisma.screenshot.findMany();
-      }
-
-      // Export financial data
-      const financeAccounts = userId
-        ? await prisma.financeAccount.findMany({ where: { userId } })
-        : await prisma.financeAccount.findMany();
-
-      const transactions = userId
-        ? await prisma.transaction.findMany({ where: { userId } })
-        : await prisma.transaction.findMany();
-
-      const transactionCategories = userId
-        ? await prisma.transactionCategory.findMany({ where: { userId } })
-        : await prisma.transactionCategory.findMany();
-
-      const budgets = userId
-        ? await prisma.budget.findMany({ where: { userId } })
-        : await prisma.budget.findMany();
-
-      const budgetCategories = userId
-        ? await prisma.budgetCategory.findMany({
-            where: { budget: { userId } },
-          })
-        : await prisma.budgetCategory.findMany();
-
-      const financialGoals = userId
-        ? await prisma.financialGoal.findMany({ where: { userId } })
-        : await prisma.financialGoal.findMany();
-
-      // Export loans
-      const loans = userId
-        ? await prisma.loan.findMany({ where: { userId } })
-        : await prisma.loan.findMany();
-
-      // NOTE: Integration/IntegrationAccount intentionally excluded — contain sensitive tokens.
-      // Users must re-authenticate integrations after restore.
-
-      const totalRecords =
-        users.length +
-        categories.length +
-        trades.length +
-        screenshots.length +
-        financeAccounts.length +
-        transactions.length +
-        transactionCategories.length +
-        budgets.length +
-        budgetCategories.length +
-        financialGoals.length +
-        loans.length;
-
-      const backupData: BackupData = {
-        users,
-        categories,
-        trades,
-        screenshots,
-        financeAccounts,
-        transactions,
-        transactionCategories,
-        budgets,
-        budgetCategories,
-        financialGoals,
-        loans,
-        metadata: {
-          version: this.BACKUP_VERSION,
-          timestamp: new Date().toISOString(),
-          totalRecords,
-        },
-      };
-
-      return backupData;
-    } catch (error) {
-      console.error('Error exporting data:', error);
-      throw new Error('Failed to export database data');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let screenshots: any[] = [];
+    if (includeScreenshots) {
+      screenshots = userId
+        ? await prisma.screenshot.findMany({ where: { trade: { userId } } })
+        : await prisma.screenshot.findMany();
     }
+
+    const financeAccounts = userId
+      ? await prisma.financeAccount.findMany({ where: { userId } })
+      : await prisma.financeAccount.findMany();
+
+    const transactions = userId
+      ? await prisma.transaction.findMany({ where: { userId } })
+      : await prisma.transaction.findMany();
+
+    const transactionCategories = userId
+      ? await prisma.transactionCategory.findMany({ where: { userId } })
+      : await prisma.transactionCategory.findMany();
+
+    const budgets = userId
+      ? await prisma.budget.findMany({ where: { userId } })
+      : await prisma.budget.findMany();
+
+    const budgetCategories = userId
+      ? await prisma.budgetCategory.findMany({ where: { budget: { userId } } })
+      : await prisma.budgetCategory.findMany();
+
+    const financialGoals = userId
+      ? await prisma.financialGoal.findMany({ where: { userId } })
+      : await prisma.financialGoal.findMany();
+
+    const loans = userId
+      ? await prisma.loan.findMany({ where: { userId } })
+      : await prisma.loan.findMany();
+
+    const totalRecords =
+      users.length +
+      categories.length +
+      trades.length +
+      screenshots.length +
+      financeAccounts.length +
+      transactions.length +
+      transactionCategories.length +
+      budgets.length +
+      budgetCategories.length +
+      financialGoals.length +
+      loans.length;
+
+    return {
+      users,
+      categories,
+      trades,
+      screenshots,
+      financeAccounts,
+      transactions,
+      transactionCategories,
+      budgets,
+      budgetCategories,
+      financialGoals,
+      loans,
+      metadata: {
+        version: this.BACKUP_VERSION,
+        timestamp: new Date().toISOString(),
+        totalRecords,
+      },
+    };
   }
 
-  static async saveBackupToFile(data: BackupData, filename?: string): Promise<string> {
-    await this.ensureBackupDir();
+  /**
+   * Save backup data to the database.
+   *
+   * @param data - Backup data to save
+   * @param filename - Backup filename identifier
+   * @param userId - Owner of the backup
+   * @returns The filename of the saved backup
+   */
+  static async saveBackupToDb(data: BackupData, filename: string, userId: string): Promise<string> {
+    const jsonString = JSON.stringify(data);
+    const size = Buffer.byteLength(jsonString, 'utf-8');
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFilename = filename || `backup_${timestamp}.json`;
+    await prisma.backup.upsert({
+      where: { userId_filename: { userId, filename } },
+      update: { data: data as unknown as Prisma.InputJsonValue, size },
+      create: { userId, filename, data: data as unknown as Prisma.InputJsonValue, size },
+    });
 
-    // Security: prevent path traversal
-    const sanitized = path.basename(backupFilename);
-    if (sanitized !== backupFilename) {
-      throw new Error('Invalid filename');
-    }
-
-    const filePath = path.join(this.BACKUP_DIR, sanitized);
-
-    try {
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-      console.log(`Backup saved to: ${filePath}`);
-      return filePath;
-    } catch (error) {
-      console.error('Error saving backup file:', error);
-      throw new Error('Failed to save backup file');
-    }
+    return filename;
   }
 
-  static async loadBackupFromFile(filename: string): Promise<BackupData> {
-    // Security: prevent path traversal
-    const sanitized = path.basename(filename);
-    if (sanitized !== filename) {
-      throw new Error('Invalid filename');
+  /**
+   * Load backup data from the database.
+   *
+   * @param filename - Backup filename identifier
+   * @param userId - Owner of the backup
+   * @returns Parsed backup data
+   * @throws {Error} If backup not found or invalid structure
+   */
+  static async loadBackupFromDb(filename: string, userId: string): Promise<BackupData> {
+    const backup = await prisma.backup.findUnique({
+      where: { userId_filename: { userId, filename } },
+    });
+
+    if (!backup) {
+      throw new Error(`Backup not found: ${filename}`);
     }
 
-    const filePath = path.join(this.BACKUP_DIR, sanitized);
+    const backupData = backup.data as unknown as BackupData;
 
-    try {
-      if (!fs.existsSync(filePath)) {
-        throw new Error(`Backup file not found: ${filename}`);
-      }
-
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
-      const backupData: BackupData = JSON.parse(fileContent);
-
-      // Validate backup structure
-      if (
-        !backupData.metadata ||
-        !backupData.users ||
-        !backupData.categories ||
-        !backupData.trades
-      ) {
-        throw new Error('Invalid backup file structure');
-      }
-
-      // Set default values for financial data if not present (backwards compatibility)
-      if (!backupData.financeAccounts) backupData.financeAccounts = [];
-      if (!backupData.transactions) backupData.transactions = [];
-      if (!backupData.transactionCategories) backupData.transactionCategories = [];
-      if (!backupData.budgets) backupData.budgets = [];
-      if (!backupData.budgetCategories) backupData.budgetCategories = [];
-      if (!backupData.financialGoals) backupData.financialGoals = [];
-      if (!backupData.loans) backupData.loans = [];
-
-      return backupData;
-    } catch (error) {
-      console.error('Error loading backup file:', error);
-      throw new Error(`Failed to load backup file: ${filename}`);
+    if (!backupData.metadata || !backupData.users || !backupData.categories || !backupData.trades) {
+      throw new Error('Invalid backup file structure');
     }
+
+    if (!backupData.financeAccounts) backupData.financeAccounts = [];
+    if (!backupData.transactions) backupData.transactions = [];
+    if (!backupData.transactionCategories) backupData.transactionCategories = [];
+    if (!backupData.budgets) backupData.budgets = [];
+    if (!backupData.budgetCategories) backupData.budgetCategories = [];
+    if (!backupData.financialGoals) backupData.financialGoals = [];
+    if (!backupData.loans) backupData.loans = [];
+
+    return backupData;
   }
 
+  /**
+   * Import backup data into the database, optionally overwriting existing data.
+   *
+   * @param backupData - Data to import
+   * @param options - Import options (overwrite flag and userId scope)
+   */
   static async importData(
     backupData: BackupData,
     options: { overwrite?: boolean; userId?: string } = {},
   ): Promise<void> {
     const { overwrite = false, userId } = options;
 
-    try {
-      await prisma.$transaction(async tx => {
-        // If overwrite is true, clear existing data for the user
-        if (overwrite && userId) {
-          // Delete in correct order to avoid foreign key constraints
-          await tx.screenshot.deleteMany({
-            where: { trade: { userId } },
-          });
-          await tx.budgetCategory.deleteMany({
-            where: { budget: { userId } },
-          });
-          await tx.transaction.deleteMany({
-            where: { userId },
-          });
-          await tx.trade.deleteMany({
-            where: { userId },
-          });
-          await tx.budget.deleteMany({
-            where: { userId },
-          });
-          await tx.financialGoal.deleteMany({
-            where: { userId },
-          });
-          await tx.financeAccount.deleteMany({
-            where: { userId },
-          });
-          await tx.transactionCategory.deleteMany({
-            where: { userId },
-          });
-          await tx.loan.deleteMany({
-            where: { userId },
-          });
-          await tx.category.deleteMany({
-            where: { userId },
-          });
-        } else if (overwrite) {
-          // Full overwrite (admin only)
-          await tx.screenshot.deleteMany();
-          await tx.budgetCategory.deleteMany();
-          await tx.transaction.deleteMany();
-          await tx.trade.deleteMany();
-          await tx.budget.deleteMany();
-          await tx.financialGoal.deleteMany();
-          await tx.financeAccount.deleteMany();
-          await tx.transactionCategory.deleteMany();
-          await tx.loan.deleteMany();
-          await tx.category.deleteMany();
-          await tx.user.deleteMany();
+    await prisma.$transaction(async tx => {
+      if (overwrite && userId) {
+        await tx.screenshot.deleteMany({ where: { trade: { userId } } });
+        await tx.budgetCategory.deleteMany({ where: { budget: { userId } } });
+        await tx.transaction.deleteMany({ where: { userId } });
+        await tx.trade.deleteMany({ where: { userId } });
+        await tx.budget.deleteMany({ where: { userId } });
+        await tx.financialGoal.deleteMany({ where: { userId } });
+        await tx.financeAccount.deleteMany({ where: { userId } });
+        await tx.transactionCategory.deleteMany({ where: { userId } });
+        await tx.loan.deleteMany({ where: { userId } });
+        await tx.category.deleteMany({ where: { userId } });
+      } else if (overwrite) {
+        await tx.screenshot.deleteMany();
+        await tx.budgetCategory.deleteMany();
+        await tx.transaction.deleteMany();
+        await tx.trade.deleteMany();
+        await tx.budget.deleteMany();
+        await tx.financialGoal.deleteMany();
+        await tx.financeAccount.deleteMany();
+        await tx.transactionCategory.deleteMany();
+        await tx.loan.deleteMany();
+        await tx.category.deleteMany();
+        await tx.user.deleteMany();
+      }
+
+      if (!userId) {
+        for (const user of backupData.users) {
+          await tx.user.upsert({ where: { id: user.id }, update: user, create: user });
         }
+      }
 
-        // Import users (only if no userId filter or user is in backup)
-        if (!userId) {
-          for (const user of backupData.users) {
-            await tx.user.upsert({
-              where: { id: user.id },
-              update: user,
-              create: user,
-            });
-          }
-        }
+      const categoriesToImport = userId
+        ? backupData.categories.filter(cat => cat.userId === userId)
+        : backupData.categories;
+      for (const category of categoriesToImport) {
+        await tx.category.upsert({
+          where: { id: category.id },
+          update: category,
+          create: category,
+        });
+      }
 
-        // Import categories (filter by userId if provided)
-        const categoriesToImport = userId
-          ? backupData.categories.filter(cat => cat.userId === userId)
-          : backupData.categories;
+      const tradesToImport = userId
+        ? backupData.trades.filter(trade => trade.userId === userId)
+        : backupData.trades;
+      for (const trade of tradesToImport) {
+        await tx.trade.upsert({ where: { id: trade.id }, update: trade, create: trade });
+      }
 
-        for (const category of categoriesToImport) {
-          await tx.category.upsert({
-            where: { id: category.id },
-            update: category,
-            create: category,
+      if (backupData.screenshots?.length) {
+        const userTradeIds = new Set(tradesToImport.map(t => t.id));
+        const screenshotsToImport = userId
+          ? backupData.screenshots.filter(s => userTradeIds.has(s.tradeId))
+          : backupData.screenshots;
+        for (const screenshot of screenshotsToImport) {
+          await tx.screenshot.upsert({
+            where: { id: screenshot.id },
+            update: screenshot,
+            create: screenshot,
           });
         }
+      }
 
-        // Import trades (filter by userId if provided)
-        const tradesToImport = userId
-          ? backupData.trades.filter(trade => trade.userId === userId)
-          : backupData.trades;
+      const financeAccountsToImport = userId
+        ? backupData.financeAccounts.filter(acc => acc.userId === userId)
+        : backupData.financeAccounts;
+      for (const account of financeAccountsToImport) {
+        await tx.financeAccount.upsert({
+          where: { id: account.id },
+          update: account,
+          create: account,
+        });
+      }
 
-        for (const trade of tradesToImport) {
-          await tx.trade.upsert({
-            where: { id: trade.id },
-            update: trade,
-            create: trade,
-          });
-        }
+      const transactionCategoriesToImport = userId
+        ? backupData.transactionCategories.filter(cat => cat.userId === userId)
+        : backupData.transactionCategories;
+      for (const category of transactionCategoriesToImport) {
+        await tx.transactionCategory.upsert({
+          where: { id: category.id },
+          update: category,
+          create: category,
+        });
+      }
 
-        // Import screenshots (filter by trades belonging to user)
-        if (backupData.screenshots && backupData.screenshots.length > 0) {
-          const userTradeIds = new Set(tradesToImport.map(t => t.id));
-          const screenshotsToImport = userId
-            ? backupData.screenshots.filter(s => userTradeIds.has(s.tradeId))
-            : backupData.screenshots;
+      const transactionsToImport = userId
+        ? backupData.transactions.filter(trans => trans.userId === userId)
+        : backupData.transactions;
+      for (const transaction of transactionsToImport) {
+        await tx.transaction.upsert({
+          where: { id: transaction.id },
+          update: transaction,
+          create: transaction,
+        });
+      }
 
-          for (const screenshot of screenshotsToImport) {
-            await tx.screenshot.upsert({
-              where: { id: screenshot.id },
-              update: screenshot,
-              create: screenshot,
-            });
-          }
-        }
+      const budgetsToImport = userId
+        ? backupData.budgets.filter(budget => budget.userId === userId)
+        : backupData.budgets;
+      for (const budget of budgetsToImport) {
+        await tx.budget.upsert({ where: { id: budget.id }, update: budget, create: budget });
+      }
 
-        // Import financial data
+      const budgetCategoriesToImport = userId
+        ? backupData.budgetCategories.filter(bc => {
+            const budget = backupData.budgets.find(b => b.id === bc.budgetId);
+            return budget && budget.userId === userId;
+          })
+        : backupData.budgetCategories;
+      for (const budgetCategory of budgetCategoriesToImport) {
+        await tx.budgetCategory.upsert({
+          where: { id: budgetCategory.id },
+          update: budgetCategory,
+          create: budgetCategory,
+        });
+      }
 
-        // Import finance accounts (filter by userId if provided)
-        const financeAccountsToImport = userId
-          ? backupData.financeAccounts.filter(acc => acc.userId === userId)
-          : backupData.financeAccounts;
+      const financialGoalsToImport = userId
+        ? backupData.financialGoals.filter(goal => goal.userId === userId)
+        : backupData.financialGoals;
+      for (const goal of financialGoalsToImport) {
+        await tx.financialGoal.upsert({ where: { id: goal.id }, update: goal, create: goal });
+      }
 
-        for (const account of financeAccountsToImport) {
-          await tx.financeAccount.upsert({
-            where: { id: account.id },
-            update: account,
-            create: account,
-          });
-        }
-
-        // Import transaction categories (filter by userId if provided)
-        const transactionCategoriesToImport = userId
-          ? backupData.transactionCategories.filter(cat => cat.userId === userId)
-          : backupData.transactionCategories;
-
-        for (const category of transactionCategoriesToImport) {
-          await tx.transactionCategory.upsert({
-            where: { id: category.id },
-            update: category,
-            create: category,
-          });
-        }
-
-        // Import transactions (filter by userId if provided)
-        const transactionsToImport = userId
-          ? backupData.transactions.filter(trans => trans.userId === userId)
-          : backupData.transactions;
-
-        for (const transaction of transactionsToImport) {
-          await tx.transaction.upsert({
-            where: { id: transaction.id },
-            update: transaction,
-            create: transaction,
-          });
-        }
-
-        // Import budgets (filter by userId if provided)
-        const budgetsToImport = userId
-          ? backupData.budgets.filter(budget => budget.userId === userId)
-          : backupData.budgets;
-
-        for (const budget of budgetsToImport) {
-          await tx.budget.upsert({
-            where: { id: budget.id },
-            update: budget,
-            create: budget,
-          });
-        }
-
-        // Import budget categories (filter by budget userId if provided)
-        const budgetCategoriesToImport = userId
-          ? backupData.budgetCategories.filter(bc => {
-              const budget = backupData.budgets.find(b => b.id === bc.budgetId);
-              return budget && budget.userId === userId;
-            })
-          : backupData.budgetCategories;
-
-        for (const budgetCategory of budgetCategoriesToImport) {
-          await tx.budgetCategory.upsert({
-            where: { id: budgetCategory.id },
-            update: budgetCategory,
-            create: budgetCategory,
-          });
-        }
-
-        // Import financial goals (filter by userId if provided)
-        const financialGoalsToImport = userId
-          ? backupData.financialGoals.filter(goal => goal.userId === userId)
-          : backupData.financialGoals;
-
-        for (const goal of financialGoalsToImport) {
-          await tx.financialGoal.upsert({
-            where: { id: goal.id },
-            update: goal,
-            create: goal,
-          });
-        }
-
-        // Import loans (filter by userId if provided)
-        const loansToImport = userId
-          ? (backupData.loans || []).filter(loan => loan.userId === userId)
-          : backupData.loans || [];
-
-        for (const loan of loansToImport) {
-          await tx.loan.upsert({
-            where: { id: loan.id },
-            update: loan,
-            create: loan,
-          });
-        }
-      });
-
-      console.log(`Successfully imported ${backupData.metadata.totalRecords} records`);
-    } catch (error) {
-      console.error('Error importing data:', error);
-      throw new Error('Failed to import backup data');
-    }
-  }
-
-  static async createFullBackup(userId?: string): Promise<string> {
-    try {
-      const backupData = await this.exportAllData({
-        includeScreenshots: true,
-        userId,
-      });
-
-      const filename = userId
-        ? `user_${userId}_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`
-        : `full_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-
-      return await this.saveBackupToFile(backupData, filename);
-    } catch (error) {
-      console.error('Error creating full backup:', error);
-      throw error;
-    }
-  }
-
-  static async listBackupFiles(): Promise<string[]> {
-    await this.ensureBackupDir();
-
-    try {
-      const files = fs
-        .readdirSync(this.BACKUP_DIR)
-        .filter(file => file.endsWith('.json') || file.endsWith('.gz'))
-        .sort((a, b) => b.localeCompare(a)); // Latest first
-
-      return files;
-    } catch (error) {
-      console.error('Error listing backup files:', error);
-      return [];
-    }
+      const loansToImport = userId
+        ? (backupData.loans || []).filter(loan => loan.userId === userId)
+        : backupData.loans || [];
+      for (const loan of loansToImport) {
+        await tx.loan.upsert({ where: { id: loan.id }, update: loan, create: loan });
+      }
+    });
   }
 
   /**
-   * Delete a backup file from disk.
+   * Create a full backup and store it in the database.
    *
-   * @param filename - Name of the backup file to delete (must be in BACKUP_DIR)
-   * @throws {Error} If filename contains path traversal or file doesn't exist
+   * @param userId - User to backup data for
+   * @returns The filename of the created backup
    */
-  static async deleteBackupFile(filename: string): Promise<void> {
-    // Security: prevent path traversal
-    const sanitized = path.basename(filename);
-    if (sanitized !== filename) {
-      throw new Error('Invalid filename');
-    }
+  static async createFullBackup(userId: string): Promise<string> {
+    const backupData = await this.exportAllData({
+      includeScreenshots: true,
+      userId,
+    });
 
-    const filePath = path.join(this.BACKUP_DIR, sanitized);
-
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`Backup file not found: ${filename}`);
-    }
-
-    fs.unlinkSync(filePath);
+    const filename = `user_${userId}_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    await this.saveBackupToDb(backupData, filename, userId);
+    return filename;
   }
 
-  static async getBackupInfo(filename: string): Promise<{
+  /**
+   * List all backup files for a user.
+   *
+   * @param userId - User whose backups to list
+   * @returns Array of backup records with metadata
+   */
+  static async listBackups(userId: string) {
+    return prisma.backup.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        filename: true,
+        size: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Delete a backup from the database.
+   *
+   * @param filename - Backup filename to delete
+   * @param userId - Owner of the backup
+   * @throws {Error} If backup not found
+   */
+  static async deleteBackup(filename: string, userId: string): Promise<void> {
+    const backup = await prisma.backup.findUnique({
+      where: { userId_filename: { userId, filename } },
+    });
+
+    if (!backup) {
+      throw new Error(`Backup not found: ${filename}`);
+    }
+
+    await prisma.backup.delete({ where: { id: backup.id } });
+  }
+
+  /**
+   * Get metadata about a specific backup without loading full data.
+   *
+   * @param filename - Backup filename
+   * @param userId - Owner of the backup
+   * @returns Backup info with record counts, or null if not found
+   */
+  static async getBackupInfo(
+    filename: string,
+    userId: string,
+  ): Promise<{
     filename: string;
+    size: number;
+    createdAt: Date;
     metadata: BackupData['metadata'];
     recordCounts: {
       users: number;
@@ -473,9 +387,16 @@ export class BackupService {
     };
   } | null> {
     try {
-      const backupData = await this.loadBackupFromFile(filename);
+      const backupData = await this.loadBackupFromDb(filename, userId);
+      const backup = await prisma.backup.findUnique({
+        where: { userId_filename: { userId, filename } },
+        select: { size: true, createdAt: true },
+      });
+
       return {
         filename,
+        size: backup?.size ?? 0,
+        createdAt: backup?.createdAt ?? new Date(),
         metadata: backupData.metadata,
         recordCounts: {
           users: backupData.users.length,
@@ -491,8 +412,7 @@ export class BackupService {
           loans: backupData.loans.length,
         },
       };
-    } catch (error) {
-      console.error('Error getting backup info:', error);
+    } catch {
       return null;
     }
   }

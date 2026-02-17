@@ -133,8 +133,7 @@ export default function GoalsPage() {
 
         {/* Goals Overview Stats Skeleton */}
         <div className="px-4 lg:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatCardSkeleton />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <StatCardSkeleton />
             <StatCardSkeleton />
             <StatCardSkeleton />
@@ -225,28 +224,28 @@ export default function GoalsPage() {
 
       {/* Goals Overview Stats */}
       <div className="px-4 lg:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-2 md:p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-purple-500/10 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-purple-500" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Card className="p-3 md:p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 bg-purple-500/10 rounded-lg">
+                <TrendingUp className="h-4 w-4 text-purple-500" />
               </div>
-              <h3 className="font-semibold">Total Target</h3>
+              <h3 className="font-semibold text-sm">Total Target</h3>
             </div>
-            <div className="text-2xl font-bold mb-1">
+            <div className="text-xl font-bold">
               {formatDisplayAmount(summary.totalTarget, BASE_CURRENCY, 'summary')}
             </div>
-            <p className="text-sm text-muted-foreground">Target amount</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Target amount</p>
           </Card>
 
-          <Card className="p-2 md:p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-orange-500/10 rounded-lg">
-                <Calendar className="h-5 w-5 text-orange-500" />
+          <Card className="p-3 md:p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 bg-orange-500/10 rounded-lg">
+                <Calendar className="h-4 w-4 text-orange-500" />
               </div>
-              <h3 className="font-semibold">Next Deadline</h3>
+              <h3 className="font-semibold text-sm">Next Deadline</h3>
             </div>
-            <div className="text-2xl font-bold mb-1">
+            <div className="text-xl font-bold">
               {goals.length > 0
                 ? Math.min(
                     ...(goals
@@ -256,17 +255,18 @@ export default function GoalsPage() {
                   )
                 : 0}
             </div>
-            <p className="text-sm text-muted-foreground">Days remaining</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Days remaining</p>
           </Card>
-          <Card className="p-2 md:p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Target className="h-5 w-5 text-blue-500" />
+
+          <Card className="p-3 md:p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                <Target className="h-4 w-4 text-blue-500" />
               </div>
-              <h3 className="font-semibold">Active Goals</h3>
+              <h3 className="font-semibold text-sm">Active Goals</h3>
             </div>
-            <div className="text-2xl font-bold mb-1">{summary.active}</div>
-            <p className="text-sm text-muted-foreground">In progress</p>
+            <div className="text-xl font-bold">{summary.active}</div>
+            <p className="text-xs text-muted-foreground mt-0.5">In progress</p>
           </Card>
         </div>
       </div>
@@ -411,31 +411,31 @@ export default function GoalsPage() {
             <CardDescription>Your progress and milestones</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-green-500/10 rounded-lg">
-                <div className="text-2xl font-bold text-green-500">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="text-center p-3 bg-green-500/10 rounded-lg">
+                <div className="text-xl font-bold text-green-500">
                   {summary.totalTarget > 0
                     ? Math.round((summary.totalCurrent / summary.totalTarget) * 100)
                     : 0}
                   %
                 </div>
-                <div className="text-sm text-muted-foreground">Overall Progress</div>
+                <div className="text-xs text-muted-foreground">Overall Progress</div>
               </div>
 
-              <div className="text-center p-4 bg-blue-500/10 rounded-lg">
-                <div className="text-2xl font-bold text-blue-500">
+              <div className="text-center p-3 bg-blue-500/10 rounded-lg">
+                <div className="text-xl font-bold text-blue-500">
                   {formatDisplayAmount(
                     summary.totalCurrent / Math.max(goals.length, 1),
                     BASE_CURRENCY,
                     'summary',
                   )}
                 </div>
-                <div className="text-sm text-muted-foreground">Avg per Goal</div>
+                <div className="text-xs text-muted-foreground">Avg per Goal</div>
               </div>
 
-              <div className="text-center p-4 bg-purple-500/10 rounded-lg">
-                <div className="text-2xl font-bold text-purple-500">{summary.completed}</div>
-                <div className="text-sm text-muted-foreground">Completed Goals</div>
+              <div className="text-center p-3 bg-purple-500/10 rounded-lg">
+                <div className="text-xl font-bold text-purple-500">{summary.completed}</div>
+                <div className="text-xs text-muted-foreground">Completed Goals</div>
               </div>
             </div>
           </CardContent>

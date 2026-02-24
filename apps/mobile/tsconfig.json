@@ -1,0 +1,30 @@
+{
+  "extends": "@bit-chain/tsconfig/react-native.json",
+  "compilerOptions": {
+    "jsx": "react-native",
+    "lib": [
+      "esnext"
+    ],
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "strict": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "~/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.d.ts",
+    "expo-env.d.ts",
+    ".expo/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

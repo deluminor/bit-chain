@@ -1,0 +1,408 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  password        String
+  createdAt       DateTime @default(now())
+  defaultCategory String   @default("solo") // Reference to the default category name
+
+  // Existing crypto trading relations
+  trades     Trade[]
+  categories Category[] // Trading categories
+
+  // New finance relations
+  financeAccounts       FinanceAccount[]
+  transactions          Transaction[]
+  transactionCategories TransactionCategory[]
+  budgets               Budget[]
+  financialGoals        FinancialGoal[]
+  loans                 Loan[]
+  integrations          Integration[]
+  backups               Backup[]
+  mobileSessions        MobileSession[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  trades    Trade[]
+  createdAt DateTime @default(now())
+
+  @@unique([userId, name]) // Ensure category names are unique per user
+}
+
+model Trade {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  categoryId   String
+  category     Category     @relation(fields: [categoryId], references: [id])
+  date         DateTime     @default(now())
+  symbol       String
+  side         TradeSide
+  entryPrice   Float
+  positionSize Float
+  stopLoss     Float
+  exitPrice    Float
+  commission   Float
+  riskPercent  Float
+  pnl          Float
+  result       TradeResult
+  leverage     Float?
+  investment   Float?
+  createdAt    DateTime     @default(now())
+  deposit      Float
+  isDemo       Boolean      @default(false)
+  comment      String?
+  screenshots  Screenshot[]
+}
+
+model Screenshot {
+  id        String   @id @default(cuid())
+  tradeId   String
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  imageData String   @db.Text // base64 encoded image data
+  createdAt DateTime @default(now())
+  order     Int      @default(0) // For ordering screenshots
+}
+
+enum TradeSide {
+  LONG
+  SHORT
+}
+
+enum TradeResult {
+  WIN
+  LOSS
+  PENDING
+}
+
+enum TradeCategory {
+  solo
+  radar
+  everest
+  cryptonite_radar
+  cryptonite_everest
+  humster
+}
+
+// === FINANCE SYSTEM MODELS ===
+
+model FinanceAccount {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String // "PrivatBank Main", "Cash Wallet"
+  type        AccountType
+  currency    String      @default("UAH")
+  balance     Float       @default(0)
+  isActive    Boolean     @default(true)
+  isDemo      Boolean     @default(false)
+  color       String? // Hex color for UI
+  icon        String? // Icon identifier
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  transactions        Transaction[]
+  transfersTo         Transaction[]        @relation("TransferTo")
+  integrationAccounts IntegrationAccount[]
+
+  @@unique([userId, name])
+}
+
+model Transaction {
+  id          String              @id @default(cuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     FinanceAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    TransactionCategory @relation(fields: [categoryId], references: [id])
+  type        TransactionType
+  amount      Float
+  currency    String              @default("UAH")
+  description String?
+  date        DateTime            @default(now())
+  tags        String[] // Array of tags for flexible organization
+  isDemo      Boolean             @default(false)
+
+  // Transfer specific fields
+  transferToId     String? // For transfer transactions
+  transferTo       FinanceAccount? @relation("TransferTo", fields: [transferToId], references: [id])
+  transferAmount   Float? // Amount received in destination account for transfers
+  transferCurrency String? // Currency of the amount received in destination account
+
+  // Recurring transaction info
+  isRecurring         Boolean           @default(false)
+  recurringPattern    RecurringPattern?
+  parentTransactionId String? // Reference to parent if this is a recurring transaction
+
+  // Integration metadata
+  source               IntegrationProvider?
+  externalId           String?
+  integrationAccountId String?
+  integrationAccount   IntegrationAccount?  @relation(fields: [integrationAccountId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([source, externalId])
+  @@index([userId, date])
+  @@index([accountId, date])
+  @@index([categoryId])
+}
+
+model Integration {
+  id           String              @id @default(cuid())
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     IntegrationProvider
+  status       IntegrationStatus   @default(CONNECTED)
+  token        String?             @db.Text // Encrypted or plain token
+  lastSyncedAt DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  accounts IntegrationAccount[]
+
+  @@unique([userId, provider])
+}
+
+model IntegrationAccount {
+  id                String                  @id @default(cuid())
+  integrationId     String
+  integration       Integration             @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  providerAccountId String
+  ownerType         IntegrationAccountOwner @default(PERSONAL)
+  ownerName         String?
+  name              String
+  maskedPan         String?
+  iban              String?
+  currency          String
+  balance           Float                   @default(0)
+  accountType       String
+  importEnabled     Boolean                 @default(false)
+  financeAccountId  String?
+  financeAccount    FinanceAccount?         @relation(fields: [financeAccountId], references: [id], onDelete: SetNull)
+  lastSyncedAt      DateTime?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  transactions Transaction[]
+
+  @@unique([integrationId, providerAccountId])
+}
+
+model TransactionCategory {
+  id        String                @id @default(cuid())
+  userId    String
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String // "Groceries", "Salary", "Entertainment"
+  type      TransactionType // INCOME or EXPENSE
+  parentId  String? // For hierarchical categories
+  parent    TransactionCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  TransactionCategory[] @relation("CategoryHierarchy")
+  color     String // Hex color
+  icon      String // Icon identifier
+  isDefault Boolean               @default(false)
+  isActive  Boolean               @default(true)
+  isDemo    Boolean               @default(false)
+  createdAt DateTime              @default(now())
+
+  // Relations
+  transactions     Transaction[]
+  budgetCategories BudgetCategory[]
+
+  @@unique([userId, name, type])
+  @@index([userId, type])
+}
+
+model Loan {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  type         LoanType
+  totalAmount  Float     @default(0) // Original loan/debt amount
+  paidAmount   Float     @default(0) // Amount paid/received so far
+  currency     String    @default("UAH")
+  startDate    DateTime?
+  dueDate      DateTime?
+  interestRate Float?
+  lender       String? // For LOAN: who you borrowed from. For DEBT: who owes you
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId, type])
+}
+
+model Budget {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String // "February 2025", "Annual Plan"
+  period       BudgetPeriod
+  startDate    DateTime
+  endDate      DateTime
+  currency     String       @default("UAH")
+  totalPlanned Float
+  totalActual  Float        @default(0)
+  isActive     Boolean      @default(true)
+  isDemo       Boolean      @default(false)
+
+  // Template functionality for recurring budgets
+  isTemplate       Boolean  @default(false) // If true, this is a budget template
+  templateName     String? // Name of the template ("Monthly Expenses", "Living Costs")
+  autoApply        Boolean  @default(false) // Automatically create budgets from template
+  parentTemplateId String? // Reference to template if this budget was created from template
+  parentTemplate   Budget?  @relation("BudgetTemplate", fields: [parentTemplateId], references: [id])
+  childBudgets     Budget[] @relation("BudgetTemplate")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  categories BudgetCategory[]
+
+  @@unique([userId, name])
+}
+
+model BudgetCategory {
+  id         String              @id @default(cuid())
+  budgetId   String
+  budget     Budget              @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   TransactionCategory @relation(fields: [categoryId], references: [id])
+  planned    Float
+  actual     Float               @default(0)
+
+  @@unique([budgetId, categoryId])
+}
+
+model FinancialGoal {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String // "Vacation in Mountains", "New MacBook"
+  description   String?
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  currency      String    @default("UAH")
+  deadline      DateTime?
+  color         String
+  icon          String
+  isActive      Boolean   @default(true)
+  isCompleted   Boolean   @default(false)
+  isDemo        Boolean   @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, name])
+}
+
+// === ENUMS FOR FINANCE SYSTEM ===
+
+enum AccountType {
+  CASH
+  BANK_CARD
+  SAVINGS
+  INVESTMENT
+}
+
+enum IntegrationProvider {
+  MONOBANK
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+}
+
+enum IntegrationAccountOwner {
+  PERSONAL
+  FOP
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum BudgetPeriod {
+  MONTHLY
+  YEARLY
+}
+
+enum RecurringPattern {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum LoanType {
+  LOAN
+  DEBT
+}
+
+// === MOBILE AUTH SESSIONS ===
+
+model MobileSession {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// SHA-256 hash of the refresh token. Plain text is never persisted.
+  tokenHash String @unique
+
+  /// Token family ID — invalidate all tokens in a family on reuse detection.
+  familyId String
+
+  /// Stable identifier per device install (UUID generated by the client).
+  deviceId String?
+
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model Backup {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename  String
+  data      Json
+  size      Int // Size in bytes
+  createdAt DateTime @default(now())
+
+  @@unique([userId, filename])
+  @@index([userId, createdAt])
+}

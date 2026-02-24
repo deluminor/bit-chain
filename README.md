@@ -1,10 +1,9 @@
 # 🚀 BitChain App
 
-**BitChain** is a comprehensive web platform for traders that combines cryptocurrency trading tracking with a complete personal finance management system. Built with modern technologies to provide the best user experience.
-
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
+[![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev/)
 [![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
@@ -41,8 +40,16 @@
 - **Income and expense categorization** with hierarchical structure
 - **Budget planning** with templates and automatic creation
 - **Financial goals** with progress tracking
-- **Multi-currency support** with UAH and other currencies
-- **Monobank integration** with opt-in account selection and transaction sync
+- **Multi-currency support** with flexible base currency selection and real-time FX conversions
+- **Monobank integration** with opt-in account selection and automated transaction sync
+
+### 📱 **Mobile Native Application**
+
+- **Cross-platform mobile app** built with React Native and Expo
+- **Sleek dark-themed dashboard** featuring a dynamic "Market Trend" SVG history chart starting from user's origin
+- **Fast, unified synchronization** for Monobank and backend data in a single swipe (pull-to-refresh)
+- **Secure Authentication** using custom JWE session management and ROPG flows
+- **Quick Actions** for instant on-the-go finance management
 
 ### 📈 **Analytics & Visualization**
 
@@ -61,36 +68,30 @@
 
 ## 🏗️ Architecture
 
-### **Frontend Architecture**
+### **Monorepo Structure**
 
-```
-src/
-├── app/                          # Next.js 14 App Router
-│   ├── (protected)/             # Protected routes with layout
-│   ├── (public)/               # Public routes (login/register)
-│   ├── api/                    # API Routes (Backend)
-│   └── globals.css             # Global styles
-├── components/                  # UI Components
-│   ├── ui/                     # Shadcn UI components
-│   ├── forms/                  # Forms with React Hook Form
-│   ├── layout/                 # Layout components
-│   └── backup/                 # Backup system
-├── features/                   # Feature-based architecture
-│   ├── auth/                   # Authentication
-│   └── finance/                # Finance system
-├── hooks/                      # Custom React hooks
-├── lib/                        # Utilities and configurations
-├── providers/                  # Context Providers
-├── store/                      # State Management
-├── styles/                     # Additional styles
-└── types/                      # TypeScript types
+```text
+bit-chain/
+├── apps/
+│   ├── web/                          # Next.js Web Application
+│   │   ├── src/app/                  # App Router & API Routes
+│   │   └── ...
+│   └── mobile/                       # Expo React Native App
+│       ├── app/                      # Expo Router (Tab Navigation)
+│       ├── src/components/           # Native UI components & SVG Charts
+│       └── ...
+├── packages/
+│   ├── api-contracts/                # Shared Zod schemas, types & API structures
+│   └── database/                     # Prisma schema and generated client
+└── ...
 ```
 
-### **Backend Architecture**
+### **Backend Architecture (apps/web/src/app/api)**
 
-```
+```text
 Backend (API Routes):
-├── /api/auth/[...nextauth]     # NextAuth.js endpoints
+├── /api/auth/[...nextauth]     # NextAuth.js endpoints for web
+├── /api/mobile/                # Dedicated mobile API with JWE auth
 ├── /api/backup                 # Backup system
 ├── /api/finance/               # Finance APIs
 │   ├── accounts/              # Account CRUD operations
@@ -125,18 +126,18 @@ erDiagram
 
 ## 🛠️ Tech Stack
 
-### **Frontend**
+### **Web & Mobile Frontend**
 
-| Technology          | Version | Purpose                                    |
-| ------------------- | ------- | ------------------------------------------ |
-| **Next.js**         | 14.x    | Full-stack React framework with App Router |
-| **React**           | 18.x    | UI library with hooks and suspense         |
-| **TypeScript**      | 5.x     | Type safety and better development         |
-| **TailwindCSS**     | 3.x     | Utility-first CSS framework                |
-| **Shadcn UI**       | Latest  | Customizable UI components                 |
-| **React Hook Form** | 7.x     | Efficient form management                  |
-| **React Query**     | 5.x     | Server state management                    |
-| **Recharts**        | 2.x     | Chart and visualization library            |
+| Technology              | Version | Purpose                                    |
+| ----------------------- | ------- | ------------------------------------------ |
+| **Next.js**             | 15.x    | Full-stack React framework with App Router |
+| **Expo / React Native** | Latest  | Mobile framework for iOS cross-platform    |
+| **TypeScript**          | 5.x     | Type safety and better development         |
+| **TailwindCSS**         | 3.x/4.x | Utility-first CSS framework                |
+| **Zustand**             | 4.x     | Lightweight client state management        |
+| **React Hook Form**     | 7.x     | Efficient form management                  |
+| **React Query**         | 5.x     | Server state and caching management        |
+| **React Native SVG**    | Latest  | Highly optimized custom data visualization |
 
 ### **Backend & Database**
 
@@ -467,11 +468,12 @@ npx prisma db seed
 ### **4. Development Run**
 
 ```bash
+# In the root monorepo directory:
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+
+# Or run mobile and web separately:
+cd apps/web && npm run dev
+cd apps/mobile && npx expo start
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -576,7 +578,7 @@ Development Workflow:
 
 1. **Connect GitHub repository** to Vercel
 2. **Configure environment variables:**
-   ```
+   ```env
    DATABASE_URL=your_production_database_url
    NEXTAUTH_SECRET=your_production_secret
    NEXTAUTH_URL=https://yourdomain.com
@@ -663,7 +665,7 @@ xl: 1280px  /* Large screens */
 
 ### **Commit Conventions**
 
-```
+```text
 feat: add new functionality
 fix: bug fixes
 docs: documentation updates
@@ -721,7 +723,7 @@ npm run coverage    # Coverage report
 
 ### **Authentication Endpoints**
 
-```
+```text
 POST /api/auth/register - User registration
 POST /api/auth/signin   - User login
 GET  /api/auth/session  - Get current session
@@ -729,7 +731,7 @@ GET  /api/auth/session  - Get current session
 
 ### **Trading Endpoints**
 
-```
+```text
 GET    /api/trades         - Get user trades
 POST   /api/trades         - Create new trade
 PUT    /api/trades/:id     - Update trade
@@ -738,7 +740,7 @@ DELETE /api/trades/:id     - Delete trade
 
 ### **Finance Endpoints**
 
-```
+```text
 GET    /api/finance/accounts     - Get accounts
 POST   /api/finance/accounts     - Create account
 GET    /api/finance/transactions - Get transactions

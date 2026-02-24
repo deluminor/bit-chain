@@ -1,4 +1,3 @@
-import { useLogin } from '~/src/hooks/useAuth';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -6,24 +5,23 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fontSize, fontWeight, radius, spacing } from '~/src/design/tokens';
-
+import { useLogin } from '~/src/hooks/useAuth';
 
 const ERROR_MESSAGES: Record<string, string> = {
   INVALID_CREDENTIALS: 'Invalid email or password.',
-  VALIDATION_ERROR:    'Please check your input.',
-  NETWORK_ERROR:       'Network error. Check your connection.',
+  VALIDATION_ERROR: 'Please check your input.',
+  NETWORK_ERROR: 'Network error. Check your connection.',
 };
 
-
 export default function LoginScreen() {
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { mutate: login, isPending } = useLogin();
 
@@ -38,12 +36,11 @@ export default function LoginScreen() {
     login(
       { email: trimmedEmail, password },
       {
-        onError: (error) => {
-          const message =
-            ERROR_MESSAGES[error.message] ?? 'Login failed. Please try again.';
+        onError: error => {
+          const message = ERROR_MESSAGES[error.message] ?? 'Login failed. Please try again.';
           Alert.alert('Login Failed', message);
         },
-      }
+      },
     );
   };
 
@@ -62,7 +59,6 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.form}>
-
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -102,12 +98,12 @@ export default function LoginScreen() {
             onPress={handleLogin}
             disabled={isPending}
           >
-            {isPending
-              ? <ActivityIndicator color={colors.white} />
-              : <Text style={styles.btnText}>Sign In</Text>
-            }
+            {isPending ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.btnText}>Sign In</Text>
+            )}
           </Pressable>
-
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -116,43 +112,43 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex:            1,
+    flex: 1,
     backgroundColor: colors.bgBase,
   },
   inner: {
-    flex:              1,
-    justifyContent:    'center',
+    flex: 1,
+    justifyContent: 'center',
     paddingHorizontal: spacing['2xl'],
   },
 
   // Header
   header: {
-    alignItems:   'center',
+    alignItems: 'center',
     marginBottom: spacing['4xl'],
   },
   logoWrap: {
-    width:           72,
-    height:          72,
-    borderRadius:    radius.xl,
+    width: 72,
+    height: 72,
+    borderRadius: radius.xl,
     backgroundColor: colors.brandSubtle,
-    alignItems:      'center',
-    justifyContent:  'center',
-    marginBottom:    spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
   logoIcon: {
-    fontSize:   32,
-    color:      colors.brand,
+    fontSize: 32,
+    color: colors.brand,
     fontWeight: fontWeight.bold,
   },
   title: {
-    fontSize:      fontSize['4xl'],
-    fontWeight:    fontWeight.bold,
-    color:         colors.textPrimary,
+    fontSize: fontSize['4xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.textPrimary,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize:  fontSize.base,
-    color:     colors.textMuted,
+    fontSize: fontSize.base,
+    color: colors.textMuted,
     marginTop: spacing.xs,
   },
 
@@ -164,36 +160,36 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   label: {
-    color:         colors.textMuted,
-    fontSize:      fontSize.sm,
-    fontWeight:    fontWeight.semibold,
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   input: {
-    height:            52,
-    borderRadius:      radius.lg,
-    borderWidth:       1,
-    borderColor:       colors.borderStrong,
-    backgroundColor:   colors.bgSurface,
+    height: 52,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.bgSurface,
     paddingHorizontal: spacing.base,
-    fontSize:          fontSize.md,
-    color:             colors.textPrimary,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
   },
 
   // Button
   btn: {
-    height:          52,
-    borderRadius:    radius.lg,
+    height: 52,
+    borderRadius: radius.lg,
     backgroundColor: colors.brand,
-    alignItems:      'center',
-    justifyContent:  'center',
-    marginTop:       spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xs,
   },
   btnDisabled: { opacity: 0.6 },
   btnText: {
-    color:      colors.white,
-    fontSize:   fontSize.lg,
+    color: colors.white,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
   },
 });

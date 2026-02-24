@@ -19,8 +19,8 @@ import { useCurrencyStore } from '~/src/lib/currency';
 import { PERIOD_OPTIONS, usePeriodStore } from '~/src/lib/period';
 import { usePrivacyStore } from '~/src/lib/privacy';
 import { formatRelativeDate } from '~/src/utils/format';
-import { styles } from './styles';
-import type { SettingsRowProps } from './types';
+import { styles } from './_styles';
+import type { SettingsRowProps } from './_types';
 
 function SettingsRow({
   label,

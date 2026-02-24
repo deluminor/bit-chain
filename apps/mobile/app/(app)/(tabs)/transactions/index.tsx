@@ -32,9 +32,9 @@ import {
 import { useCurrencyStore } from '~/src/lib/currency';
 import { getPeriodLabel, getPeriodRange, usePeriodStore } from '~/src/lib/period';
 import { formatCurrency, formatRelativeDate } from '~/src/utils/format';
-import { PAGE_SIZE } from './constants';
-import { styles } from './styles';
-import type { TransactionSection } from './types';
+import { PAGE_SIZE } from './_constants';
+import { styles } from './_styles';
+import type { TransactionSection } from './_types';
 
 function groupByDate(transactions: TransactionRowData[]): TransactionSection[] {
   const map = new Map<string, TransactionRowData[]>();

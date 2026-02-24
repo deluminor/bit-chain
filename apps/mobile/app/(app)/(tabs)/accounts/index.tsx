@@ -11,9 +11,9 @@ import { useAccounts } from '~/src/hooks/useAccounts';
 import { useMonobankSync } from '~/src/hooks/useMonobank';
 import { convertCurrency, useCurrencyStore } from '~/src/lib/currency';
 import { formatCurrency } from '~/src/utils/format';
-import { ACCOUNT_FILTERS } from './constants';
-import { styles } from './styles';
-import type { FilterKey } from './types';
+import { ACCOUNT_FILTERS } from './_constants';
+import { styles } from './_styles';
+import type { FilterKey } from './_types';
 
 function SyncButton({ isSyncing, onPress }: { isSyncing: boolean; onPress: () => void }) {
   return (

@@ -44,3 +44,17 @@ export function useDashboard(filters?: DashboardFilters) {
     staleTime: QUERY_CONFIG.STALE_TIME_DASHBOARD,
   });
 }
+
+export const DASHBOARD_HISTORY_QUERY_KEY = ['dashboard', 'history'] as const;
+
+export function useDashboardHistory() {
+  return useQuery({
+    queryKey: DASHBOARD_HISTORY_QUERY_KEY,
+    queryFn: async (): Promise<any> => {
+      const { data } = await api.get<ApiResponse<any>>('/dashboard/history');
+      if (!data.ok) throw new Error(data.error.code);
+      return data.data;
+    },
+    staleTime: QUERY_CONFIG.STALE_TIME_DASHBOARD,
+  });
+}

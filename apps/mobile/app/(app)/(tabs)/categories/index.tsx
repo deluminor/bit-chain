@@ -15,9 +15,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Badge, ErrorScreen, LoadingScreen, Separator, SummaryCard } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
 import { useCategories as useCategoriesHook } from '~/src/hooks/useCategories';
-import { CATEGORY_FILTERS } from './constants';
-import { rowStyles, styles } from './styles';
-import type { CategoryFilter, CategoryItem, CategoryRowProps } from './types';
+import { CATEGORY_FILTERS } from './_constants';
+import { rowStyles, styles } from './_styles';
+import type { CategoryFilter, CategoryItem, CategoryRowProps } from './_types';
 
 function CategoryRow({ category: cat }: CategoryRowProps) {
   const isIncome = cat.type === 'INCOME';

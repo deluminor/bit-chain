@@ -71,3 +71,18 @@ export const DashboardSummarySchema = z.object({
 });
 
 export type DashboardSummary = z.infer<typeof DashboardSummarySchema>;
+
+/** GET /api/mobile/dashboard/history — response data */
+export const DashboardHistoryPointSchema = z.object({
+  date: z.string().datetime(),
+  balances: z.record(z.string(), z.number()),
+});
+
+export type DashboardHistoryPoint = z.infer<typeof DashboardHistoryPointSchema>;
+
+export const DashboardHistoryResponseSchema = z.object({
+  history: z.array(DashboardHistoryPointSchema),
+  generatedAt: z.string().datetime(),
+});
+
+export type DashboardHistoryResponse = z.infer<typeof DashboardHistoryResponseSchema>;

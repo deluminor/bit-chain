@@ -1,4 +1,4 @@
-import type { CategoryFilter } from './types';
+import type { CategoryFilter } from './_types';
 
 export const CATEGORY_FILTERS: ReadonlyArray<{ key: CategoryFilter; label: string }> = [
   { key: 'ALL',     label: 'All'      },

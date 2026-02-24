@@ -1,25 +1,21 @@
-/**
- * Monobank Connect screen — enter a personal API token to link the integration.
- */
-
-import { useMonobankConnect } from '~/src/hooks/useMonobank';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
-  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '~/src/components/ui';
 import { colors, fontSize, fontWeight, radius, spacing } from '~/src/design/tokens';
+import { useMonobankConnect } from '~/src/hooks/useMonobank';
 
 const STEPS = [
   'Open the Monobank app on your phone',
@@ -28,9 +24,9 @@ const STEPS = [
 ] as const;
 
 export default function MonobankConnectScreen() {
-  const [token, setToken]               = useState('');
-  const { mutate: connect, isPending }  = useMonobankConnect();
-  const router                          = useRouter();
+  const [token, setToken] = useState('');
+  const { mutate: connect, isPending } = useMonobankConnect();
+  const router = useRouter();
 
   const handleConnect = () => {
     const trimmed = token.trim();
@@ -42,7 +38,7 @@ export default function MonobankConnectScreen() {
     connect(
       { token: trimmed },
       {
-        onSuccess: (result) => {
+        onSuccess: result => {
           Alert.alert(
             'Connected ✓',
             `Found ${result.accountsFound} account${result.accountsFound === 1 ? '' : 's'}.\nChoose which ones to import.`,
@@ -56,18 +52,18 @@ export default function MonobankConnectScreen() {
                 style: 'cancel',
                 onPress: () => router.replace('/(app)/(tabs)/dashboard'),
               },
-            ]
+            ],
           );
         },
-        onError: (error) => {
+        onError: error => {
           Alert.alert(
             'Connection failed',
             error.message === 'INVALID_TOKEN'
               ? 'The token you entered is invalid. Please check and try again.'
-              : 'Could not connect to Monobank. Please try again later.'
+              : 'Could not connect to Monobank. Please try again later.',
           );
         },
-      }
+      },
     );
   };
 
@@ -82,7 +78,6 @@ export default function MonobankConnectScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-
           {/* ── How to get the token ─────────────────── */}
           <Card padding="base">
             <Text style={styles.cardTitle}>How to get your token</Text>
@@ -123,12 +118,12 @@ export default function MonobankConnectScreen() {
             onPress={handleConnect}
             disabled={isPending}
           >
-            {isPending
-              ? <ActivityIndicator color={colors.white} />
-              : <Text style={styles.btnText}>Connect Monobank</Text>
-            }
+            {isPending ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.btnText}>Connect Monobank</Text>
+            )}
           </Pressable>
-
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -137,91 +132,91 @@ export default function MonobankConnectScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex:            1,
+    flex: 1,
     backgroundColor: colors.bgBase,
   },
   flex: { flex: 1 },
   scroll: {
-    padding:       spacing.base,
-    gap:           spacing.lg,
+    padding: spacing.base,
+    gap: spacing.lg,
     paddingBottom: spacing['5xl'],
   },
 
   // How-to card
   cardTitle: {
-    color:        colors.textPrimary,
-    fontSize:     fontSize.md,
-    fontWeight:   fontWeight.semibold,
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
     marginBottom: spacing.md,
   },
   step: {
     flexDirection: 'row',
-    alignItems:    'flex-start',
-    gap:           spacing.md,
-    marginBottom:  spacing.sm,
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    marginBottom: spacing.sm,
   },
   stepBadge: {
-    width:           24,
-    height:          24,
-    borderRadius:    12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: colors.brandSubtle,
-    alignItems:      'center',
-    justifyContent:  'center',
-    flexShrink:      0,
-    marginTop:       1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 1,
   },
   stepNumber: {
-    color:      colors.brand,
-    fontSize:   fontSize.xs,
+    color: colors.brand,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
   },
   stepText: {
-    color:      colors.textSecondary,
-    fontSize:   fontSize.base,
-    flex:       1,
+    color: colors.textSecondary,
+    fontSize: fontSize.base,
+    flex: 1,
     lineHeight: fontSize.base * 1.5,
   },
 
   // Input
   inputGroup: { gap: spacing.sm },
   label: {
-    color:         colors.textMuted,
-    fontSize:      fontSize.sm,
-    fontWeight:    fontWeight.semibold,
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   input: {
-    backgroundColor:   colors.bgSurface,
-    borderRadius:      radius.lg,
+    backgroundColor: colors.bgSurface,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.base,
-    paddingVertical:   spacing.md,
-    color:             colors.textPrimary,
-    fontSize:          fontSize.md,
-    borderWidth:       1,
-    borderColor:       colors.borderStrong,
-    fontFamily:        Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    paddingVertical: spacing.md,
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   inputEmpty: {
     borderColor: colors.border,
   },
   hint: {
-    color:    colors.textDisabled,
+    color: colors.textDisabled,
     fontSize: fontSize.sm,
   },
 
   // Button
   btn: {
     backgroundColor: colors.brand,
-    borderRadius:    radius.lg,
-    height:          52,
-    alignItems:      'center',
-    justifyContent:  'center',
+    borderRadius: radius.lg,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   btnDisabled: { opacity: 0.55 },
   btnText: {
-    color:      colors.white,
-    fontSize:   fontSize.lg,
+    color: colors.white,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
   },
 });

@@ -8,8 +8,6 @@ import {
   type TransactionRowData,
 } from '~/src/components/transaction/TransactionRow';
 import {
-  ArcGauge,
-  BarChartWidget,
   Card,
   ErrorScreen,
   LineChartWidget,
@@ -20,13 +18,13 @@ import {
 } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
 import { useConvertedStats } from '~/src/hooks/useConvertedStats';
-import { useDashboard } from '~/src/hooks/useDashboard';
+import { useDashboard, useDashboardHistory } from '~/src/hooks/useDashboard';
 import { useMonobankSync } from '~/src/hooks/useMonobank';
 import { convertCurrency, useCurrencyStore } from '~/src/lib/currency';
 import { getPeriodLabel, getPeriodRange, usePeriodStore } from '~/src/lib/period';
 import { formatCurrency, formatRelativeDate } from '~/src/utils/format';
-import { QUICK_ACTIONS } from './constants';
-import { styles } from './styles';
+import { QUICK_ACTIONS } from './_constants';
+import { styles } from './_styles';
 
 function toRowData(tx: RecentTransaction): TransactionRowData {
   return {
@@ -73,10 +71,12 @@ export default function DashboardScreen() {
     dateFrom: dateRange.dateFrom,
     dateTo: dateRange.dateTo,
   });
+  const { data: historyData, refetch: refetchHistory } = useDashboardHistory();
   const { mutate: sync, isPending: isSyncing } = useMonobankSync();
   const router = useRouter();
   const baseCurrency = useCurrencyStore(s => s.baseCurrency);
   const [totalInBase, setTotalInBase] = useState<number | null>(null);
+  const [sparklineData, setSparklineData] = useState<number[]>([0, 0]);
 
   const convertedStats = useConvertedStats(data?.periodStats ?? null);
   const insets = useSafeAreaInsets();
@@ -105,8 +105,9 @@ export default function DashboardScreen() {
 
   const refetchCb = useCallback(() => {
     refetch();
+    refetchHistory();
     sync({}, { onError: () => {} }); // trigger sync silently
-  }, [refetch, sync]);
+  }, [refetch, refetchHistory, sync]);
 
   // Recalculate total balance across all currencies using FX rates so that
   // the hero Total Balance matches the same logic as on the web.
@@ -137,43 +138,50 @@ export default function DashboardScreen() {
     };
   }, [data, baseCurrency]);
 
+  // Recalculate historical balances into base currency for Market Trend
+  useEffect(() => {
+    let isMounted = true;
+
+    const recomputeHistory = async () => {
+      if (!historyData?.history || historyData.history.length === 0) {
+        if (isMounted) setSparklineData([0, 0]);
+        return;
+      }
+
+      const pts: number[] = [];
+      for (const point of historyData.history) {
+        let total = 0;
+        for (const [curr, balance] of Object.entries(point.balances || {})) {
+          total += (await convertCurrency(balance as number, curr, baseCurrency)) || 0;
+        }
+        pts.push(total);
+      }
+
+      if (isMounted) {
+        // Ensure it starts from 0 based on user request to show the full growth from nothing
+        if (pts.length > 0 && pts[0] !== 0) {
+          pts.unshift(0);
+        }
+        // LineChartWidget needs at least 2 points
+        setSparklineData(pts.length > 1 ? pts : [0, ...pts]);
+      }
+    };
+
+    void recomputeHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [historyData, baseCurrency]);
+
   if (isLoading && !data) return <LoadingScreen />;
   if (error && !data) return <ErrorScreen message="Failed to load dashboard." onRetry={refetch} />;
 
   const totalBalance = totalInBase != null ? formatCurrency(totalInBase, baseCurrency) : '—';
 
   // Stats are already converted to baseCurrency by useConvertedStats
-  const incomeVal = convertedStats.income || 0;
-  const expensesVal = convertedStats.expenses || 0;
   const netFlowValue = convertedStats.netFlow || 0;
   const netFlow = data?.periodStats ? formatCurrency(netFlowValue, baseCurrency) : '—';
-
-  // Chart Data Preparation
-  const barChartData = [
-    { label: 'Inc', value: incomeVal },
-    { label: 'Exp', value: expensesVal },
-    { label: 'Net', value: Math.max(0, netFlowValue) },
-  ];
-
-  const totalArc = incomeVal + expensesVal || 1;
-  const arcSegments: { value: number; color: string; label: string }[] = [
-    { value: incomeVal, color: colors.income, label: 'Income' },
-    { value: expensesVal, color: colors.expense, label: 'Expenses' },
-  ].filter(s => s.value > 0);
-
-  // Fallback for empty state
-  if (arcSegments.length === 0) {
-    arcSegments.push({ value: 1, color: colors.bgMuted, label: 'No Data' });
-  }
-
-  // Mock static sparkline data based on netflow trend
-  const sparklineData =
-    netFlowValue > 0
-      ? [20, 35, 25, 60, 45, 80, 75]
-      : netFlowValue < 0
-        ? [80, 60, 75, 45, 30, 40, 20]
-        : [40, 40, 40, 40, 40, 40, 40];
-  const netTrend: 'up' | 'down' | 'neutral' = netFlowValue >= 0 ? 'up' : 'down';
 
   const lastSync = data?.monobank.lastSyncAt ? formatRelativeDate(data.monobank.lastSyncAt) : null;
 
@@ -212,32 +220,11 @@ export default function DashboardScreen() {
           </Text>
         </Card>
 
-        {/* Portfolio Performance */}
+        {/* Market Trend */}
         <Card padding="md">
-          <Text style={[styles.heroLabel, { marginBottom: 16 }]}>Portfolio Performance</Text>
-          <BarChartWidget data={barChartData} height={120} barColor={colors.brand} />
+          <Text style={[styles.heroLabel, { marginBottom: 16 }]}>Total Value Trend</Text>
+          <LineChartWidget data={sparklineData} height={120} lineColor={colors.brand} />
         </Card>
-
-        {/* Asset Allocation & Market Update Row */}
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Card padding="md" style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={[styles.heroLabel, { marginBottom: 12, alignSelf: 'flex-start' }]}>
-              Cash Flow
-            </Text>
-            <ArcGauge
-              segments={arcSegments}
-              size={130}
-              strokeWidth={12}
-              title={netFlow}
-              subtitle="Net Flow"
-            />
-          </Card>
-
-          <Card padding="md" style={{ flex: 1 }}>
-            <Text style={[styles.heroLabel, { marginBottom: 12 }]}>Market Trend</Text>
-            <LineChartWidget data={sparklineData} height={100} lineColor={colors.income} />
-          </Card>
-        </View>
 
         <View>
           <SectionHeader title="Quick Actions" />

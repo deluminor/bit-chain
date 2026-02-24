@@ -1,4 +1,4 @@
-import type { FilterKey } from './types';
+import type { FilterKey } from './_types';
 
 export const ACCOUNT_FILTERS: ReadonlyArray<{ key: FilterKey; label: string }> = [
   { key: 'ALL',        label: 'All'        },

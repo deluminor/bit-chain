@@ -37,8 +37,11 @@ export function LineChartWidget({
     const min = Math.min(...data, 0);
     const range = max - min;
 
+    const paddingX = 6;
+    const innerWidth = Math.max(0, width - paddingX * 2);
+
     const points: Point[] = data.map((d, i) => ({
-      x: (i / Math.max(data.length - 1, 1)) * width,
+      x: paddingX + (i / Math.max(data.length - 1, 1)) * innerWidth,
       y: height - ((d - min) / (range || 1)) * height * 0.8 - 10, // 10px padding top/bottom
     }));
 

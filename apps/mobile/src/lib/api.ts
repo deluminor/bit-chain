@@ -1,15 +1,11 @@
-import axios, {
-  AxiosError,
-  type AxiosInstance,
-  type InternalAxiosRequestConfig,
-} from 'axios';
-import { API_BASE_URL } from './constants';
-import { useAuthStore, getStoredRefreshToken } from './auth';
 import type { ApiResponse, TokenResponse } from '@bit-chain/api-contracts';
+import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
+import { getStoredRefreshToken, useAuthStore } from './auth';
+import { API_BASE_URL } from './constants';
 
 const api: AxiosInstance = axios.create({
   baseURL: `${API_BASE_URL}/api/mobile`,
-  timeout: 15_000,
+  timeout: 30_000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -39,7 +35,7 @@ const processQueue = (error: unknown, token: string | null) => {
 };
 
 api.interceptors.response.use(
-  (response) => response,
+  response => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
@@ -59,7 +55,7 @@ api.interceptors.response.use(
       // Queue subsequent 401s until refresh completes
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
-      }).then((token) => {
+      }).then(token => {
         originalRequest.headers['Authorization'] = `Bearer ${token}`;
         return api(originalRequest);
       });
@@ -74,7 +70,7 @@ api.interceptors.response.use(
 
       const { data } = await axios.post<ApiResponse<TokenResponse>>(
         `${API_BASE_URL}/api/mobile/auth/refresh`,
-        { refreshToken }
+        { refreshToken },
       );
 
       if (!data.ok) {
@@ -100,7 +96,7 @@ api.interceptors.response.use(
     } finally {
       isRefreshing = false;
     }
-  }
+  },
 );
 
 export default api;

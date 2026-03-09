@@ -60,6 +60,7 @@ export const balanceEffectSelect = {
   type: true,
   amount: true,
   accountId: true,
+  categoryId: true,
   transferToId: true,
   transferAmount: true,
 } satisfies Prisma.TransactionSelect;

@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 export const createTransactionSchema = z.object({
   accountId: z.string().cuid('Invalid account ID'),
-  categoryId: z.string().cuid('Invalid category ID'),
+  categoryId: z.string().cuid('Invalid category ID').optional(),
   type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']),
   amount: z.number().positive('Amount must be positive'),
   currency: z.string().min(3).max(3).optional(),

@@ -157,6 +157,79 @@ const screenStyles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.xs,
   },
+  expensesTrendHeader: {
+    marginBottom: spacing.sm,
+  },
+  expensesTrendTitle: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  expensesTrendSubtitle: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginTop: 2,
+  },
+  expensesTrendValues: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  expensesTrendCurrentValue: {
+    color: colors.textPrimary,
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
+  },
+  expensesTrendDelta: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  expensesTrendMeta: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginBottom: spacing.xs,
+  },
+  expensesTrendHint: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginBottom: spacing.sm,
+  },
+  expensesTrendLegendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginTop: spacing.sm,
+  },
+  expensesTrendLegendGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.base,
+  },
+  expensesTrendLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  expensesTrendLegendLineCurrent: {
+    width: 18,
+    height: 2.5,
+    borderRadius: radius.full,
+    backgroundColor: colors.expense,
+  },
+  expensesTrendLegendLinePrevious: {
+    width: 18,
+    height: 0,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.textDisabled,
+    borderStyle: 'dashed',
+  },
+  expensesTrendLegendLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+  },
 });
 
 export const styles = {

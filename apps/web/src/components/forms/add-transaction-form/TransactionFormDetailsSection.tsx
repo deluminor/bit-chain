@@ -45,7 +45,7 @@ interface TransactionFormDetailsSectionProps {
   accounts: FinanceAccount[];
   transferAccounts: FinanceAccount[];
   categories: TransactionCategory[];
-  transactionTypes: TransactionTypeOption[];
+  transactionTypes: ReadonlyArray<TransactionTypeOption>;
 }
 
 export function TransactionFormDetailsSection({

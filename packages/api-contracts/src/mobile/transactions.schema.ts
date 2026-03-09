@@ -22,6 +22,10 @@ export const TransactionListItemSchema = z.object({
   categoryName: z.string().nullable(),
   /** Hex color of the category, e.g. "#22c55e" */
   categoryColor: z.string().nullable(),
+  transferToId: z.string().nullable().optional(),
+  transferToAccountName: z.string().nullable().optional(),
+  transferAmount: z.number().nullable().optional(),
+  transferCurrency: z.string().nullable().optional(),
 });
 
 export type TransactionListItem = z.infer<typeof TransactionListItemSchema>;
@@ -51,6 +55,13 @@ export const TransactionsListResponseSchema = z.object({
 });
 
 export type TransactionsListResponse = z.infer<typeof TransactionsListResponseSchema>;
+
+/** GET /api/mobile/transactions/:id — single transaction payload */
+export const TransactionByIdResponseSchema = z.object({
+  transaction: TransactionListItemSchema,
+});
+
+export type TransactionByIdResponse = z.infer<typeof TransactionByIdResponseSchema>;
 
 /** Query params for GET /api/mobile/transactions */
 export const TransactionsQuerySchema = z.object({

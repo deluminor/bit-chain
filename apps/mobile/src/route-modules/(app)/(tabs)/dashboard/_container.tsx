@@ -8,7 +8,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TransactionRow } from '~/src/components/transaction/TransactionRow';
 import {
   type ActiveLineChartPoint,
+  type ActiveComparisonLineChartPoint,
   Card,
+  type ComparisonLineChartPoint,
+  ComparisonLineChartWidget,
   ErrorScreen,
   type LineChartPoint,
   LineChartWidget,
@@ -20,7 +23,11 @@ import {
 } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
 import { useConvertedStats } from '~/src/hooks/useConvertedStats';
-import { useDashboard, useDashboardHistory } from '~/src/hooks/useDashboard';
+import {
+  useDashboard,
+  useDashboardExpensesTrend,
+  useDashboardHistory,
+} from '~/src/hooks/useDashboard';
 import { useMonobankSync } from '~/src/hooks/useMonobank';
 import { convertCurrency, useCurrencyStore } from '~/src/lib/currency';
 import { getPeriodLabel, getPeriodRange, usePeriodStore } from '~/src/lib/period';
@@ -64,6 +71,10 @@ function prependZeroAnchor(points: ReadonlyArray<LineChartPoint>): LineChartPoin
   ];
 }
 
+function roundToCents(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 export default function DashboardScreen() {
   const period = usePeriodStore(s => s.period);
   const dateRange = useMemo(() => getPeriodRange(period), [period]);
@@ -74,11 +85,18 @@ export default function DashboardScreen() {
     dateTo: dateRange.dateTo,
   });
   const { data: historyData, refetch: refetchHistory } = useDashboardHistory();
+  const { data: expensesTrendData, refetch: refetchExpensesTrend } = useDashboardExpensesTrend();
   const { mutate: sync, isPending: isSyncing } = useMonobankSync();
   const router = useRouter();
   const baseCurrency = useCurrencyStore(s => s.baseCurrency);
   const [totalInBase, setTotalInBase] = useState<number | null>(null);
   const [trendPoints, setTrendPoints] = useState<LineChartPoint[]>([]);
+  const [expenseComparisonPoints, setExpenseComparisonPoints] = useState<
+    ComparisonLineChartPoint[]
+  >([]);
+  const [activeExpensePoint, setActiveExpensePoint] = useState<ActiveComparisonLineChartPoint | null>(
+    null,
+  );
   const [activeTrendPoint, setActiveTrendPoint] = useState<ActiveLineChartPoint | null>(null);
   const [isTrendDragging, setIsTrendDragging] = useState(false);
 
@@ -110,8 +128,9 @@ export default function DashboardScreen() {
   const refetchCb = useCallback(() => {
     refetch();
     refetchHistory();
+    refetchExpensesTrend();
     sync({}, { onError: () => {} }); // trigger sync silently
-  }, [refetch, refetchHistory, sync]);
+  }, [refetch, refetchHistory, refetchExpensesTrend, sync]);
 
   useEffect(() => {
     let isMounted = true;
@@ -127,7 +146,7 @@ export default function DashboardScreen() {
         sum += await convertCurrency(b.totalBalance, b.currency, baseCurrency);
       }
 
-      if (isMounted) setTotalInBase(Math.round(sum * 100) / 100);
+      if (isMounted) setTotalInBase(roundToCents(sum));
     };
 
     void recompute();
@@ -185,7 +204,7 @@ export default function DashboardScreen() {
         }
 
         if (Number.isFinite(eurValue)) {
-          const converted = Math.round(eurValue * factor * 100) / 100;
+          const converted = roundToCents(eurValue * factor);
           if (Number.isFinite(converted)) {
             normalized.push({
               value: converted,
@@ -214,7 +233,7 @@ export default function DashboardScreen() {
 
       const currentValue =
         totalInBase !== null && Number.isFinite(totalInBase)
-          ? Math.round(totalInBase * 100) / 100
+          ? roundToCents(totalInBase)
           : normalized[normalized.length - 1]!.value;
       const latestPoint = normalized[normalized.length - 1]!;
       const withCurrent: LineChartPoint[] = [
@@ -251,6 +270,43 @@ export default function DashboardScreen() {
     };
   }, [historyData, baseCurrency, totalInBase]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const recomputeExpenseTrend = async () => {
+      if (!expensesTrendData?.points || expensesTrendData.points.length === 0) {
+        if (isMounted) {
+          setExpenseComparisonPoints([]);
+          setActiveExpensePoint(null);
+        }
+        return;
+      }
+
+      const factor =
+        baseCurrency === 'EUR' ? 1 : await convertCurrency(1, 'EUR', baseCurrency).catch(() => 1);
+      const todayDay = new Date().getUTCDate();
+
+      const normalized: ComparisonLineChartPoint[] = expensesTrendData.points
+        .map(point => ({
+          day: point.day,
+          label: point.label,
+          currentValue:
+            point.day <= todayDay ? roundToCents(point.currentExpenseEUR * factor) : null,
+          previousValue: roundToCents(point.previousExpenseEUR * factor),
+        }));
+
+      if (!isMounted) return;
+      setExpenseComparisonPoints(normalized);
+      setActiveExpensePoint(null);
+    };
+
+    void recomputeExpenseTrend();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [expensesTrendData, baseCurrency]);
+
   const trendStats = useMemo(() => {
     const series = trendPoints.map(point => point.value).filter(Number.isFinite);
     const firstVal = series[0] ?? 0;
@@ -281,6 +337,43 @@ export default function DashboardScreen() {
       activeLabel: activeTrendPoint?.label ?? 'All time',
     };
   }, [trendPoints, totalInBase, activeTrendPoint]);
+
+  const expenseTrendStats = useMemo(() => {
+    const latestCurrentPoint = [...expenseComparisonPoints].reverse().find(
+      point => typeof point.currentValue === 'number' && Number.isFinite(point.currentValue),
+    );
+    const fallbackCurrentTotal = latestCurrentPoint?.currentValue ?? 0;
+    const fallbackDay = latestCurrentPoint?.day ?? new Date().getUTCDate();
+    const fallbackPreviousValue = expenseComparisonPoints.find(point => point.day === fallbackDay)
+      ?.previousValue;
+    const fallbackPreviousTotal =
+      typeof fallbackPreviousValue === 'number' && Number.isFinite(fallbackPreviousValue)
+        ? fallbackPreviousValue
+        : 0;
+
+    const currentTotal = activeExpensePoint?.current?.value ?? fallbackCurrentTotal;
+    const previousTotal = activeExpensePoint?.previous?.value ?? fallbackPreviousTotal;
+    const currentDay = activeExpensePoint?.current?.day ?? fallbackDay;
+    const currentPointLabel = activeExpensePoint?.current?.label ?? String(currentDay);
+    const previousPointLabel = activeExpensePoint?.previous?.label ?? String(currentDay);
+    const delta = roundToCents(currentTotal - previousTotal);
+    const deltaPct = previousTotal > 0 ? (delta / previousTotal) * 100 : null;
+
+    return {
+      currentTotal,
+      previousTotal,
+      currentDay,
+      currentPointLabel,
+      previousPointLabel,
+      delta,
+      deltaPct,
+      isHigherThanPrevious: delta > 0,
+      hasData: expenseComparisonPoints.length > 0,
+      currentMonthLabel: expensesTrendData?.currentMonthLabel ?? 'Current month',
+      previousMonthLabel: expensesTrendData?.previousMonthLabel ?? 'Previous month',
+      comparedDays: expensesTrendData?.comparedDays ?? expenseComparisonPoints.length,
+    };
+  }, [expenseComparisonPoints, expensesTrendData, activeExpensePoint]);
 
   // Stats are already converted to baseCurrency by useConvertedStats
   const netFlowValue = convertedStats.netFlow || 0;
@@ -389,6 +482,78 @@ export default function DashboardScreen() {
               <Text style={styles.trendMinMax}>
                 {formatCurrency(trendStats.latestVal, baseCurrency)}
               </Text>
+            </View>
+          )}
+        </Card>
+
+        <Card padding="md">
+          <View style={styles.expensesTrendHeader}>
+            <Text style={styles.expensesTrendTitle}>Monthly Expenses Trend</Text>
+            <Text style={styles.expensesTrendSubtitle}>
+              {expenseTrendStats.currentMonthLabel} vs {expenseTrendStats.previousMonthLabel}
+            </Text>
+          </View>
+
+          <View style={styles.expensesTrendValues}>
+            <PrivacyAmount
+              value={formatCurrency(expenseTrendStats.currentTotal, baseCurrency)}
+              style={styles.expensesTrendCurrentValue}
+            />
+            {expenseTrendStats.hasData && expenseTrendStats.delta !== 0 && (
+              <Text
+                style={[
+                  styles.expensesTrendDelta,
+                  {
+                    color: expenseTrendStats.isHigherThanPrevious ? colors.expense : colors.income,
+                  },
+                ]}
+              >
+                {expenseTrendStats.isHigherThanPrevious ? '+' : '-'}
+                {formatCurrency(Math.abs(expenseTrendStats.delta), baseCurrency)}
+                {expenseTrendStats.deltaPct !== null &&
+                  ` (${Math.abs(expenseTrendStats.deltaPct).toFixed(1)}%)`}
+              </Text>
+            )}
+          </View>
+
+          <Text style={styles.expensesTrendMeta}>
+            {expenseTrendStats.currentMonthLabel} ({expenseTrendStats.currentPointLabel}):{' '}
+            {formatCurrency(expenseTrendStats.currentTotal, baseCurrency)} ·{' '}
+            {expenseTrendStats.previousMonthLabel} ({expenseTrendStats.previousPointLabel}):{' '}
+            {formatCurrency(expenseTrendStats.previousTotal, baseCurrency)}
+          </Text>
+
+          <Text style={styles.expensesTrendHint}>
+            Solid line: this month. Dashed line: previous month.
+          </Text>
+
+          {expenseTrendStats.hasData ? (
+            <ComparisonLineChartWidget
+              points={expenseComparisonPoints}
+              height={150}
+              onActivePointChange={setActiveExpensePoint}
+              onInteractionChange={setIsTrendDragging}
+            />
+          ) : (
+            <Text style={styles.emptyText}>No expense trend data yet</Text>
+          )}
+
+          {expenseTrendStats.hasData && (
+            <View style={styles.expensesTrendLegendRow}>
+              <View style={styles.expensesTrendLegendGroup}>
+                <View style={styles.expensesTrendLegendItem}>
+                  <View style={styles.expensesTrendLegendLineCurrent} />
+                  <Text style={styles.expensesTrendLegendLabel}>
+                    {expenseTrendStats.currentMonthLabel}
+                  </Text>
+                </View>
+                <View style={styles.expensesTrendLegendItem}>
+                  <View style={styles.expensesTrendLegendLinePrevious} />
+                  <Text style={styles.expensesTrendLegendLabel}>
+                    {expenseTrendStats.previousMonthLabel}
+                  </Text>
+                </View>
+              </View>
             </View>
           )}
         </Card>

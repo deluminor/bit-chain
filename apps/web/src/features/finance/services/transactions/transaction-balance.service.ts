@@ -1,16 +1,26 @@
 import type { Prisma } from '@/generated/prisma';
 import type { BalanceEffectTransaction, TransactionType } from './transaction-domain.shared';
 
+const MONOBANK_PROVIDER = 'MONOBANK' as const;
+const CONNECTED_STATUS = 'CONNECTED' as const;
+
 async function isIntegratedAccount(
   tx: Prisma.TransactionClient,
   accountId: string,
 ): Promise<boolean> {
-  const account = await tx.financeAccount.findUnique({
-    where: { id: accountId },
-    include: { integrationAccounts: true },
+  const linkedIntegrationAccount = await tx.integrationAccount.findFirst({
+    where: {
+      financeAccountId: accountId,
+      importEnabled: true,
+      integration: {
+        provider: MONOBANK_PROVIDER,
+        status: CONNECTED_STATUS,
+      },
+    },
+    select: { id: true },
   });
 
-  return (account?.integrationAccounts.length ?? 0) > 0;
+  return Boolean(linkedIntegrationAccount);
 }
 
 function resolveTransferAmount(amount: number, transferAmount: number | null | undefined): number {
@@ -30,14 +40,11 @@ export async function applyBalanceEffects(
     transferAmount: number | null | undefined;
   },
 ): Promise<void> {
-  const sourceIntegrated = await isIntegratedAccount(tx, transaction.accountId);
-
-  if (sourceIntegrated) {
-    return;
-  }
-
   switch (transaction.type) {
     case 'INCOME': {
+      const sourceIntegrated = await isIntegratedAccount(tx, transaction.accountId);
+      if (sourceIntegrated) return;
+
       await tx.financeAccount.update({
         where: { id: transaction.accountId },
         data: { balance: { increment: transaction.amount } },
@@ -46,6 +53,9 @@ export async function applyBalanceEffects(
     }
 
     case 'EXPENSE': {
+      const sourceIntegrated = await isIntegratedAccount(tx, transaction.accountId);
+      if (sourceIntegrated) return;
+
       await tx.financeAccount.update({
         where: { id: transaction.accountId },
         data: { balance: { decrement: transaction.amount } },
@@ -54,19 +64,18 @@ export async function applyBalanceEffects(
     }
 
     case 'TRANSFER': {
-      if (!transaction.transferToId) {
-        return;
-      }
+      if (!transaction.transferToId) return;
 
-      await tx.financeAccount.update({
-        where: { id: transaction.accountId },
-        data: { balance: { decrement: transaction.amount } },
-      });
+      const sourceIntegrated = await isIntegratedAccount(tx, transaction.accountId);
+      if (!sourceIntegrated) {
+        await tx.financeAccount.update({
+          where: { id: transaction.accountId },
+          data: { balance: { decrement: transaction.amount } },
+        });
+      }
 
       const destinationIntegrated = await isIntegratedAccount(tx, transaction.transferToId);
-      if (destinationIntegrated) {
-        return;
-      }
+      if (destinationIntegrated) return;
 
       await tx.financeAccount.update({
         where: { id: transaction.transferToId },
@@ -88,14 +97,13 @@ export async function revertBalanceEffects(
   tx: Prisma.TransactionClient,
   transaction: BalanceEffectTransaction,
 ): Promise<void> {
-  const sourceIntegrated = await isIntegratedAccount(tx, transaction.accountId);
-
-  if (sourceIntegrated) {
-    return;
-  }
-
   switch (transaction.type) {
     case 'INCOME': {
+      const sourceIntegrated = await isIntegratedAccount(tx, transaction.accountId);
+      if (sourceIntegrated) {
+        return;
+      }
+
       await tx.financeAccount.update({
         where: { id: transaction.accountId },
         data: { balance: { decrement: transaction.amount } },
@@ -104,6 +112,11 @@ export async function revertBalanceEffects(
     }
 
     case 'EXPENSE': {
+      const sourceIntegrated = await isIntegratedAccount(tx, transaction.accountId);
+      if (sourceIntegrated) {
+        return;
+      }
+
       await tx.financeAccount.update({
         where: { id: transaction.accountId },
         data: { balance: { increment: transaction.amount } },
@@ -116,10 +129,13 @@ export async function revertBalanceEffects(
         return;
       }
 
-      await tx.financeAccount.update({
-        where: { id: transaction.accountId },
-        data: { balance: { increment: transaction.amount } },
-      });
+      const sourceIntegrated = await isIntegratedAccount(tx, transaction.accountId);
+      if (!sourceIntegrated) {
+        await tx.financeAccount.update({
+          where: { id: transaction.accountId },
+          data: { balance: { increment: transaction.amount } },
+        });
+      }
 
       const destinationIntegrated = await isIntegratedAccount(tx, transaction.transferToId);
       if (destinationIntegrated) {

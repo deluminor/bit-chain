@@ -154,9 +154,15 @@ export async function deleteWebAccount(userId: string, input: DeleteWebAccountIn
   };
 }
 
-export async function listMobileAccounts(userId: string) {
+export async function listMobileAccounts(userId: string, options?: { includeInactive?: boolean }) {
+  const includeInactive = options?.includeInactive ?? false;
+
   const accounts = await prisma.financeAccount.findMany({
-    where: { userId, isActive: true, isDemo: false },
+    where: {
+      userId,
+      isDemo: false,
+      ...(includeInactive ? {} : { isActive: true }),
+    },
     select: {
       id: true,
       name: true,
@@ -192,6 +198,6 @@ export async function listMobileAccounts(userId: string) {
     })),
     totalBalance: accounts.reduce((sum, account) => sum + account.balance, 0),
     totalAccounts: accounts.length,
-    activeAccounts: accounts.length,
+    activeAccounts: accounts.filter(account => account.isActive).length,
   };
 }

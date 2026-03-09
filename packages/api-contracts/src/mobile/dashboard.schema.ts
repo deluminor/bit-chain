@@ -65,3 +65,22 @@ export const DashboardHistoryResponseSchema = z.object({
 });
 
 export type DashboardHistoryResponse = z.infer<typeof DashboardHistoryResponseSchema>;
+
+export const DashboardExpenseTrendPointSchema = z.object({
+  day: z.number().int().positive(),
+  label: z.string(),
+  currentExpenseEUR: z.number(),
+  previousExpenseEUR: z.number(),
+});
+
+export type DashboardExpenseTrendPoint = z.infer<typeof DashboardExpenseTrendPointSchema>;
+
+export const DashboardExpensesTrendResponseSchema = z.object({
+  points: z.array(DashboardExpenseTrendPointSchema),
+  currentMonthLabel: z.string(),
+  previousMonthLabel: z.string(),
+  comparedDays: z.number().int().positive(),
+  generatedAt: z.string().datetime(),
+});
+
+export type DashboardExpensesTrendResponse = z.infer<typeof DashboardExpensesTrendResponseSchema>;

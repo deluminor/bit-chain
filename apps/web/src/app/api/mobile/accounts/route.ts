@@ -23,7 +23,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const payload: AccountsListResponse = await listMobileAccounts(user.id);
+    const { searchParams } = new URL(request.url);
+    const includeInactive = searchParams.get('includeInactive') === 'true';
+    const payload: AccountsListResponse = await listMobileAccounts(user.id, { includeInactive });
     return NextResponse.json(ok(payload), { status: 200 });
   } catch (error) {
     console.error('[mobile/accounts] fetch error:', error);

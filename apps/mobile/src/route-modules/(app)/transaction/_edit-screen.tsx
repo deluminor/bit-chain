@@ -9,7 +9,7 @@ import {
   type UpdateTransactionPayload,
   useCreateTransaction,
   useDeleteTransaction,
-  useTransactions,
+  useTransactionById,
   useUpdateTransaction,
 } from '~/src/hooks/useTransactions';
 import { styles } from './_styles';
@@ -18,7 +18,7 @@ export default function EditTransactionScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { data: transactionsData, isLoading } = useTransactions({});
+  const { data: transactionById, isLoading } = useTransactionById(id);
   const { mutate: createTx, isPending: isCreating } = useCreateTransaction();
   const { mutate: updateTx, isPending: isUpdating } = useUpdateTransaction();
   const { mutate: deleteTx, isPending: isDeleting } = useDeleteTransaction();
@@ -27,9 +27,9 @@ export default function EditTransactionScreen() {
   const isSubmitting = isCreating || isUpdating || isDeleting;
 
   const existingTransaction = useMemo(() => {
-    if (!id || !transactionsData) return null;
-    return transactionsData.transactions.find(transaction => transaction.id === id) ?? null;
-  }, [id, transactionsData]);
+    if (!id || !transactionById) return null;
+    return transactionById;
+  }, [id, transactionById]);
 
   if (isEditing && isLoading) {
     return <LoadingScreen label="Loading transaction..." />;
@@ -51,7 +51,11 @@ export default function EditTransactionScreen() {
         amount: existingTransaction.amount.toString(),
         accountId: existingTransaction.accountId,
         categoryId: existingTransaction.categoryId || '',
-        transferToId: '',
+        transferToId: existingTransaction.transferToId || '',
+        transferAmount:
+          typeof existingTransaction.transferAmount === 'number'
+            ? existingTransaction.transferAmount.toString()
+            : '',
         description: existingTransaction.description || '',
         date: new Date(existingTransaction.date),
       }

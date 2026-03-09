@@ -64,8 +64,10 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const firstIssue = error.errors[0];
+      const path = firstIssue && firstIssue.path.length > 0 ? `${firstIssue.path.join('.')}: ` : '';
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: `${path}${firstIssue?.message ?? 'Validation error'}`, details: error.errors },
         { status: 400 },
       );
     }
@@ -98,8 +100,10 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const firstIssue = error.errors[0];
+      const path = firstIssue && firstIssue.path.length > 0 ? `${firstIssue.path.join('.')}: ` : '';
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: `${path}${firstIssue?.message ?? 'Validation error'}`, details: error.errors },
         { status: 400 },
       );
     }

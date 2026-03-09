@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -21,14 +21,14 @@ import type { TransactionFormProps, TransactionFormValues } from './_types';
 export type { TransactionFormValues } from './_types';
 
 export function TransactionForm({
-  initialValues,
   onSubmit,
+  onDelete,
+  initialValues,
   isSubmitting = false,
   submitLabel = 'Save Transaction',
-  onDelete,
   isDeleting = false,
 }: TransactionFormProps) {
-  const { data: accountsData } = useAccounts();
+  const { data: accountsData } = useAccounts({ includeInactive: Boolean(initialValues?.id) });
   const { data: categoriesData } = useCategories();
 
   const accounts = accountsData?.accounts ?? [];
@@ -58,17 +58,34 @@ export function TransactionForm({
     !!fromAccount &&
     toAccount.currency !== fromAccount.currency;
 
+  useEffect(() => {
+    if (availableCategories.length === 0) {
+      if (categoryId) setCategoryId('');
+      return;
+    }
+
+    const stillValid = availableCategories.some(category => category.id === categoryId);
+    if (!stillValid) {
+      setCategoryId(availableCategories[0]!.id);
+    }
+  }, [availableCategories, categoryId]);
+
+  const parseAmountInput = (raw: string): number => {
+    const normalized = raw.replace(/\s+/g, '').replace(',', '.');
+    return parseFloat(normalized);
+  };
+
   const handleSubmit = () => {
     // Validate with Zod
     const parsedTransferAmount = transferAmount.trim()
-      ? parseFloat(transferAmount.replace(/,/, '.'))
+      ? parseAmountInput(transferAmount)
       : undefined;
 
     const payload = {
       type,
-      amount: parseFloat(amount.replace(/,/, '.')),
+      amount: parseAmountInput(amount),
       accountId: accountId || defaultAccountId,
-      categoryId: type !== 'TRANSFER' ? categoryId : undefined,
+      categoryId: type === 'TRANSFER' ? undefined : categoryId || undefined,
       transferToId: type === 'TRANSFER' ? transferToId : undefined,
       transferAmount: parsedTransferAmount,
       transferCurrency: parsedTransferAmount ? toAccount?.currency : undefined,
@@ -146,7 +163,7 @@ export function TransactionForm({
           </ScrollView>
         </View>
 
-        {/* Transfer Destination or Category */}
+        {/* Transfer Destination */}
         {type === 'TRANSFER' ? (
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>To Account</Text>
@@ -172,7 +189,9 @@ export function TransactionForm({
                 ))}
             </ScrollView>
           </View>
-        ) : (
+        ) : null}
+
+        {type !== 'TRANSFER' ? (
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Category</Text>
             <ScrollView
@@ -196,7 +215,7 @@ export function TransactionForm({
               )}
             </ScrollView>
           </View>
-        )}
+        ) : null}
 
         {isCrossCurrency && (
           <View style={styles.fieldGroup}>

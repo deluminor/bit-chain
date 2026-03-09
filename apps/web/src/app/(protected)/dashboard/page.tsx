@@ -1,15 +1,15 @@
 'use client';
 
-import { CryptoNewsSection } from '@/features/crypto/components/CryptoNewsSection';
 import { CategoryChart } from '@/components/layout/charts/CategoryChart';
 import { ChartAreaInteractive } from '@/components/layout/charts/ChartAreaInteractive';
 import { ChartLoader } from '@/components/layout/charts/ChartLoader';
 import { CurrencyDistributionChart } from '@/components/layout/charts/CurrencyDistributionChart';
 import { SectionCards } from '@/components/layout/statistics/SectionCards';
+import { AnimatedDiv } from '@/components/ui/animations';
+import { CryptoNewsSection } from '@/features/crypto/components/CryptoNewsSection';
 import { FinanceDashboard } from '@/features/finance/components/FinanceDashboard';
 import { useDashboardMode } from '@/store/dashboard-mode';
 import { useEffect, useState } from 'react';
-import { AnimatedDiv } from '@/components/ui/animations';
 
 export default function Dashboard() {
   const { mode } = useDashboardMode();
@@ -19,7 +19,6 @@ export default function Dashboard() {
     setIsClient(true);
   }, []);
 
-  // Show loading state until hydrated
   if (!isClient) {
     return (
       <div className="flex flex-col gap-3 py-4 min-h-screen">
@@ -42,20 +41,16 @@ export default function Dashboard() {
     <div className="flex flex-col gap-3 py-4 min-h-screen">
       {mode === 'crypto' ? (
         <AnimatedDiv variant="slideUp" className="space-y-3">
-          {/* Crypto Trading Dashboard */}
           <SectionCards />
 
-          {/* Crypto & News Section */}
           <CryptoNewsSection />
 
-          {/* PnL Growth Chart */}
           <div className="px-4 lg:px-6">
             <ChartLoader>
               <ChartAreaInteractive />
             </ChartLoader>
           </div>
 
-          {/* Trading Categories and Win/Loss Stats */}
           <div className="px-4 lg:px-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <ChartLoader>
               <CategoryChart />
@@ -68,7 +63,6 @@ export default function Dashboard() {
         </AnimatedDiv>
       ) : (
         <>
-          {/* Personal Finance Dashboard */}
           <div className="px-4 lg:px-6">
             <FinanceDashboard />
           </div>

@@ -133,7 +133,7 @@ export async function issueTokenPair(
   userId: string,
   email: string,
   familyId: string,
-  deviceId?: string
+  deviceId?: string,
 ): Promise<TokenPair> {
   const [accessToken, { token: refreshToken, tokenHash }] = await Promise.all([
     issueAccessToken(userId, email),
@@ -174,7 +174,7 @@ export interface RotateResult {
  */
 export async function rotateRefreshToken(
   refreshToken: string,
-  deviceId?: string
+  deviceId?: string,
 ): Promise<RotateResult> {
   const tokenHash = hashToken(refreshToken);
 

@@ -50,6 +50,22 @@ export interface ExchangeRate {
   timestamp: number;
 }
 
+function isCurrencyCode(code: unknown): code is CurrencyCode {
+  return typeof code === 'string' && SUPPORTED_CURRENCIES.some(currency => currency === code);
+}
+
+function isRatesPayload(
+  value: unknown,
+): value is { base?: string; rates?: Record<string, number> } {
+  if (typeof value !== 'object' || value === null) return false;
+  if (!('rates' in value)) return false;
+
+  const ratesValue = value.rates;
+  if (typeof ratesValue !== 'object' || ratesValue === null) return false;
+
+  return Object.values(ratesValue).every(rate => typeof rate === 'number');
+}
+
 let cachedRates: ExchangeRate | null = null;
 let lastFetch = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -74,7 +90,7 @@ export async function getExchangeRates(force = false): Promise<ExchangeRate> {
     ];
 
     let response: Response | undefined;
-    let data: any;
+    let data: unknown;
 
     for (const apiUrl of apis) {
       try {
@@ -96,8 +112,14 @@ export async function getExchangeRates(force = false): Promise<ExchangeRate> {
       throw new Error('All exchange rate APIs failed');
     }
 
+    if (!isRatesPayload(data)) {
+      throw new Error('Invalid exchange rates payload');
+    }
+
+    const baseCurrency = isCurrencyCode(data.base) ? data.base : BASE_CURRENCY;
+
     cachedRates = {
-      base: (data.base as CurrencyCode | undefined) ?? BASE_CURRENCY,
+      base: baseCurrency,
       rates: data.rates ?? {},
       timestamp: now,
     };
@@ -120,10 +142,6 @@ export async function getExchangeRates(force = false): Promise<ExchangeRate> {
   }
 }
 
-/**
- * Converts an amount from `fromCurrency` into the shared base currency (EUR),
- * using the same rate semantics as the web `currencyService`.
- */
 export async function convertToBaseCurrency(amount: number, fromCurrency: string): Promise<number> {
   if (fromCurrency === BASE_CURRENCY) {
     return amount;
@@ -133,18 +151,12 @@ export async function convertToBaseCurrency(amount: number, fromCurrency: string
   const rate = rates.rates[fromCurrency];
 
   if (!rate) {
-    // No rate available — fall back to 1:1 to avoid NaN
     return amount;
   }
 
-  // API returns how many units of `fromCurrency` one EUR buys,
-  // so to convert X fromCurrency → EUR we divide by the rate.
   return amount / rate;
 }
 
-/**
- * Converts an amount from the shared base currency (EUR) into `toCurrency`.
- */
 export async function convertFromBaseCurrency(
   amount: number,
   toCurrency: CurrencyCode,
@@ -164,9 +176,6 @@ export async function convertFromBaseCurrency(
   return amount * rate;
 }
 
-/**
- * Converts an amount between arbitrary currencies via the base currency (EUR).
- */
 export async function convertCurrency(
   amount: number,
   fromCurrency: string,

@@ -199,10 +199,10 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ budget: createdBudget });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error applying budget template:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to apply budget template' },
+      { error: error instanceof Error ? error.message : 'Failed to apply budget template' },
       { status: 500 },
     );
   }

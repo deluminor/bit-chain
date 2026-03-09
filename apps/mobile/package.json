@@ -7,7 +7,9 @@
     "start": "expo start",
     "ios": "expo run:ios",
     "android": "expo run:android",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "arch:guardrails": "node scripts/architecture-guardrails.mjs",
+    "validate": "pnpm run type-check && pnpm run arch:guardrails"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.6",

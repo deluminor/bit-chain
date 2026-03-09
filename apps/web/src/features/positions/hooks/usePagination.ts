@@ -1,37 +1,46 @@
-import { useMemo, useState } from 'react';
+import { ReadonlyURLSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Trade } from '../types/position';
 
 interface UsePaginationResult {
+  currentPage: number;
+  pageSize: number;
   totalPages: number;
   paginatedTrades: Trade[];
   handlePageChange: (page: number) => void;
-  handlePageSizeChange: (size: number) => void;
+  handlePageSizeChange: (value: string) => void;
 }
 
 export function usePagination(
   trades: Trade[],
-  currentPage: number,
-  pageSize: number,
+  searchParams: ReadonlyURLSearchParams,
 ): UsePaginationResult {
-  const [page, setPage] = useState(currentPage);
-  const [size, setSize] = useState(pageSize);
+  const pageParam = Number(searchParams.get('page')) || 1;
+  const pageSizeParam = Number(searchParams.get('pageSize')) || 10;
 
-  const totalPages = Math.ceil(trades.length / size);
-  const paginatedTrades = useMemo(() => {
-    const startIndex = (page - 1) * size;
-    return trades.slice(startIndex, startIndex + size);
-  }, [trades, page, size]);
+  const [currentPage, setCurrentPage] = useState(pageParam);
+  const [pageSize, setPageSize] = useState(pageSizeParam);
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-  };
+  useEffect(() => {
+    const maxPage = Math.max(Math.ceil(trades.length / pageSize), 1);
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage);
+    }
+  }, [trades, pageSize, currentPage]);
 
-  const handlePageSizeChange = (newSize: number) => {
-    setSize(newSize);
-    setPage(1);
+  const totalPages = Math.max(Math.ceil(trades.length / pageSize), 1);
+  const paginatedTrades = trades.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const handlePageChange = (page: number) => setCurrentPage(page);
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
   };
 
   return {
+    currentPage,
+    pageSize,
     totalPages,
     paginatedTrades,
     handlePageChange,

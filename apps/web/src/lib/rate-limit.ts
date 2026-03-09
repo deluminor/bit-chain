@@ -98,7 +98,7 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
       }
 
       // Slide the window: remove timestamps older than windowMs
-      entry.timestamps = entry.timestamps.filter((t) => t > windowStart);
+      entry.timestamps = entry.timestamps.filter(t => t > windowStart);
 
       if (entry.timestamps.length >= maxRequests) {
         // Oldest request in the current window — when it expires, a new slot opens

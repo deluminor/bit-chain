@@ -1,17 +1,20 @@
-// Performance monitoring and optimization utilities
+import React from 'react';
+import { logPerformanceMetric } from './performance.logging';
+import type { PerformanceMetrics } from './performance.types';
 
-interface PerformanceMetrics {
-  renderTime: number;
-  loadTime: number;
-  interactionTime: number;
-  memoryUsage?: number;
-}
+export { QueryOptimizer } from './performance.query-optimizer';
+export {
+  PERFORMANCE_THRESHOLDS,
+  checkPerformanceThresholds,
+  logPerformanceMetric,
+} from './performance.logging';
+export { initWebVitals } from './performance.web-vitals';
+export type { PerformanceMetrics } from './performance.types';
 
-// Performance measurement decorator
 export function measurePerformance(label: string) {
   return function <T extends (...args: unknown[]) => Promise<unknown>>(
-    target: object,
-    propertyName: string,
+    _target: object,
+    _propertyName: string,
     descriptor: TypedPropertyDescriptor<T>,
   ): TypedPropertyDescriptor<T> {
     const method = descriptor.value;
@@ -54,30 +57,6 @@ export function measurePerformance(label: string) {
   };
 }
 
-// Performance logging
-export function logPerformanceMetric(label: string, metrics: PerformanceMetrics) {
-  if (process.env.NODE_ENV === 'development') {
-    console.group(`🚀 Performance: ${label}`);
-    console.log(`⏱️ Duration: ${metrics.renderTime.toFixed(2)}ms`);
-    if (metrics.memoryUsage) {
-      console.log(`🧠 Memory: ${(metrics.memoryUsage / 1024 / 1024).toFixed(2)}MB`);
-    }
-    console.groupEnd();
-  }
-
-  // Send to analytics in production
-  if (process.env.NODE_ENV === 'production' && typeof window !== 'undefined') {
-    // You can integrate with services like Google Analytics, DataDog, etc.
-    sendAnalytics('performance', {
-      label,
-      duration: metrics.renderTime,
-      memory: metrics.memoryUsage,
-      timestamp: Date.now(),
-    });
-  }
-}
-
-// React performance hook
 export function usePerformanceMonitor(componentName: string) {
   const startTime = performance.now();
 
@@ -107,7 +86,6 @@ export function usePerformanceMonitor(componentName: string) {
   };
 }
 
-// Database query performance monitoring
 export async function measureDatabaseQuery<T>(
   queryName: string,
   queryFn: () => Promise<T>,
@@ -136,7 +114,6 @@ export async function measureDatabaseQuery<T>(
   }
 }
 
-// Chart rendering performance
 export function measureChartPerformance(chartName: string) {
   return {
     onAnimationStart: () => {
@@ -156,7 +133,6 @@ export function measureChartPerformance(chartName: string) {
   };
 }
 
-// Memory usage monitoring
 export function getMemoryUsage(): {
   used: number;
   total: number;
@@ -172,182 +148,33 @@ export function getMemoryUsage(): {
         };
       }
     ).memory;
+
     return {
       used: Math.round(memory.usedJSHeapSize / 1024 / 1024),
       total: Math.round(memory.totalJSHeapSize / 1024 / 1024),
       limit: Math.round(memory.jsHeapSizeLimit / 1024 / 1024),
     };
   }
+
   return null;
 }
 
-// Bundle size analysis
 export function analyzeBundleSize() {
-  if (process.env.NODE_ENV === 'development') {
-    const entries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-    const navigation = entries[0];
-
-    if (navigation) {
-      console.group('📦 Bundle Analysis');
-      console.log(`📥 Transfer Size: ${(navigation.transferSize / 1024).toFixed(2)}KB`);
-      console.log(`📄 Encoded Size: ${(navigation.encodedBodySize / 1024).toFixed(2)}KB`);
-      console.log(`🗜️ Decoded Size: ${(navigation.decodedBodySize / 1024).toFixed(2)}KB`);
-      console.log(`⏱️ Load Complete: ${navigation.loadEventEnd - navigation.loadEventStart}ms`);
-      console.groupEnd();
-    }
+  if (process.env.NODE_ENV !== 'development') {
+    return;
   }
+
+  const entries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+  const navigation = entries[0];
+
+  if (!navigation) {
+    return;
+  }
+
+  console.group('📦 Bundle Analysis');
+  console.log(`📥 Transfer Size: ${(navigation.transferSize / 1024).toFixed(2)}KB`);
+  console.log(`📄 Encoded Size: ${(navigation.encodedBodySize / 1024).toFixed(2)}KB`);
+  console.log(`🗜️ Decoded Size: ${(navigation.decodedBodySize / 1024).toFixed(2)}KB`);
+  console.log(`⏱️ Load Complete: ${navigation.loadEventEnd - navigation.loadEventStart}ms`);
+  console.groupEnd();
 }
-
-// Core Web Vitals monitoring
-export function initWebVitals() {
-  if (typeof window !== 'undefined') {
-    // Largest Contentful Paint
-    new PerformanceObserver(entryList => {
-      const entries = entryList.getEntries();
-      const lastEntry = entries[entries.length - 1];
-      if (lastEntry) {
-        const lcpEntry = lastEntry as PerformanceEntry & {
-          renderTime?: number;
-          loadTime?: number;
-        };
-        logPerformanceMetric('LCP', {
-          renderTime: lcpEntry.renderTime || 0,
-          loadTime: lcpEntry.loadTime || 0,
-          interactionTime: lastEntry.startTime,
-        });
-      }
-    }).observe({ entryTypes: ['largest-contentful-paint'] });
-
-    // First Input Delay
-    new PerformanceObserver(entryList => {
-      const entries = entryList.getEntries();
-      entries.forEach(entry => {
-        const fidEntry = entry as PerformanceEntry & { processingStart: number };
-        logPerformanceMetric('FID', {
-          renderTime: fidEntry.processingStart - entry.startTime,
-          loadTime: fidEntry.processingStart - entry.startTime,
-          interactionTime: fidEntry.processingStart - entry.startTime,
-        });
-      });
-    }).observe({ entryTypes: ['first-input'] });
-
-    // Cumulative Layout Shift
-    new PerformanceObserver(entryList => {
-      let clsValue = 0;
-      const entries = entryList.getEntries();
-      entries.forEach(entry => {
-        const clsEntry = entry as PerformanceEntry & { hadRecentInput: boolean; value: number };
-        if (!clsEntry.hadRecentInput) {
-          clsValue += clsEntry.value;
-        }
-      });
-
-      if (clsValue > 0) {
-        logPerformanceMetric('CLS', {
-          renderTime: clsValue,
-          loadTime: clsValue,
-          interactionTime: clsValue,
-        });
-      }
-    }).observe({ entryTypes: ['layout-shift'] });
-  }
-}
-
-// Analytics integration (placeholder)
-function sendAnalytics(event: string, data: Record<string, unknown>) {
-  // Integrate with your analytics service
-  // Example: Google Analytics, Mixpanel, DataDog, etc.
-
-  if (typeof window !== 'undefined' && 'gtag' in window) {
-    (
-      window.gtag as (
-        command: string,
-        eventName: string,
-        parameters: Record<string, unknown>,
-      ) => void
-    )('event', event, data);
-  }
-
-  // Or send to custom endpoint
-  // fetch('/api/analytics', {
-  //   method: 'POST',
-  //   body: JSON.stringify({ event, data })
-  // });
-}
-
-// React import (for useEffect hook)
-import React from 'react';
-
-// Performance warning thresholds
-export const PERFORMANCE_THRESHOLDS = {
-  COMPONENT_RENDER: 100, // ms
-  DATABASE_QUERY: 1000, // ms
-  CHART_RENDER: 500, // ms
-  API_REQUEST: 2000, // ms
-  MEMORY_USAGE: 50, // MB
-} as const;
-
-// Check if performance metrics exceed thresholds
-export function checkPerformanceThresholds(
-  label: string,
-  metrics: PerformanceMetrics,
-  threshold?: number,
-) {
-  const defaultThreshold = PERFORMANCE_THRESHOLDS.COMPONENT_RENDER;
-  const maxTime = threshold || defaultThreshold;
-
-  if (metrics.renderTime > maxTime) {
-    console.warn(
-      `⚠️ Performance Warning: ${label} took ${metrics.renderTime.toFixed(2)}ms ` +
-        `(threshold: ${maxTime}ms)`,
-    );
-  }
-
-  if (
-    metrics.memoryUsage &&
-    metrics.memoryUsage > PERFORMANCE_THRESHOLDS.MEMORY_USAGE * 1024 * 1024
-  ) {
-    console.warn(
-      `⚠️ Memory Warning: ${label} used ${(metrics.memoryUsage / 1024 / 1024).toFixed(2)}MB ` +
-        `(threshold: ${PERFORMANCE_THRESHOLDS.MEMORY_USAGE}MB)`,
-    );
-  }
-}
-
-// Query optimization utilities
-export const QueryOptimizer = {
-  // Debounce for search queries
-  debounce: <T extends (...args: unknown[]) => unknown>(func: T, wait: number): T => {
-    let timeout: NodeJS.Timeout;
-    return ((...args: Parameters<T>) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    }) as T;
-  },
-
-  // Cache for expensive calculations
-  memoize: <T extends (...args: unknown[]) => unknown>(func: T): T => {
-    const cache = new Map<string, ReturnType<T>>();
-    return ((...args: Parameters<T>) => {
-      const key = JSON.stringify(args);
-      if (cache.has(key)) {
-        return cache.get(key);
-      }
-      const result = func(...args) as ReturnType<T>;
-      cache.set(key, result);
-      return result;
-    }) as T;
-  },
-
-  // Pagination helper
-  paginate: <T>(items: T[], page: number, limit: number) => {
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    return {
-      items: items.slice(startIndex, endIndex),
-      totalPages: Math.ceil(items.length / limit),
-      currentPage: page,
-      totalItems: items.length,
-    };
-  },
-};

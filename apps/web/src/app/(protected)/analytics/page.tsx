@@ -1,13 +1,13 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CategoryChart } from '@/components/layout/charts/CategoryChart';
 import { ChartAreaInteractive } from '@/components/layout/charts/ChartAreaInteractive';
 import { ChartLoader } from '@/components/layout/charts/ChartLoader';
 import { CurrencyDistributionChart } from '@/components/layout/charts/CurrencyDistributionChart';
 import { SectionCards } from '@/components/layout/statistics/SectionCards';
-import { TrendingUp, BarChart3, PieChart, Activity } from 'lucide-react';
 import { AnimatedDiv } from '@/components/ui/animations';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Activity, BarChart3, PieChart, TrendingUp } from 'lucide-react';
 
 export default function AnalyticsPage() {
   return (
@@ -26,12 +26,9 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Trading Statistics Overview */}
       <SectionCards />
 
-      {/* Main Analytics Charts */}
       <div className="px-4 lg:px-6 space-y-6">
-        {/* PnL Growth Chart */}
         <ChartLoader>
           <div className="mb-4">
             <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -43,7 +40,6 @@ export default function AnalyticsPage() {
           <ChartAreaInteractive />
         </ChartLoader>
 
-        {/* Trading Categories and Distribution */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <ChartLoader>
             <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
@@ -76,7 +72,6 @@ export default function AnalyticsPage() {
           </ChartLoader>
         </div>
 
-        {/* Additional Analytics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="p-6 shadow-md rounded-lg hover:shadow-lg transition-shadow">
             <div className="flex items-center gap-3 mb-4">

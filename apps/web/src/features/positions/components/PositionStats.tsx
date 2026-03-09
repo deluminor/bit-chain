@@ -1,6 +1,6 @@
-import { formatCurrency } from '@/app/(protected)/journal/utils/formatters';
 import { Trade, TRADE_RESULTS } from '../types/position';
 import { calculateWinRate } from '../utils/calculations';
+import { formatCurrency } from '../utils/formatters';
 
 interface PositionStatsProps {
   trades: Trade[];

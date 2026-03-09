@@ -12,8 +12,8 @@ import { useTradingStats } from '@/hooks/useTradingStats';
 import { THEME, useStore } from '@/store';
 import { endOfDay, startOfDay } from 'date-fns';
 import { useMemo } from 'react';
+import { ChartAreaInteractiveFooter } from './ChartAreaInteractiveFooter';
 import { ChartWrapper } from './ChartWrapper';
-import { TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 
 export function ChartAreaInteractive() {
   const { selectedDateRange: dateRange, theme } = useStore();
@@ -154,25 +154,11 @@ export function ChartAreaInteractive() {
   const isPositiveTrend = trend >= 0;
 
   const footer = (
-    <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-1">
-        {isPositiveTrend ? (
-          <TrendingUp className="h-4 w-4 text-green-600" />
-        ) : (
-          <TrendingDown className="h-4 w-4 text-red-600" />
-        )}
-        <span className="text-muted-foreground">Trend:</span>
-        <span className={`font-medium ${isPositiveTrend ? 'text-green-600' : 'text-red-600'}`}>
-          {isPositiveTrend ? '+' : ''}
-          {trend.toFixed(2)}
-        </span>
-      </div>
-      <div className="flex items-center gap-1">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
-        <span className="text-muted-foreground">Data Points:</span>
-        <span className="font-medium">{filteredData.length}</span>
-      </div>
-    </div>
+    <ChartAreaInteractiveFooter
+      trend={trend}
+      isPositiveTrend={isPositiveTrend}
+      pointsCount={filteredData.length}
+    />
   );
 
   if (isLoading) {

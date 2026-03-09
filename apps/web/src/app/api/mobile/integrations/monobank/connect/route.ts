@@ -1,12 +1,17 @@
-import { err, ok, MonobankConnectRequestSchema, type MonobankConnectResponse } from '@bit-chain/api-contracts';
-import { getMobileUser } from '@/lib/mobile-auth';
-import { encrypt, decrypt, isEncrypted } from '@/lib/encryption';
-import { prisma } from '@/lib/prisma';
+import { decrypt, encrypt, isEncrypted } from '@/lib/encryption';
 import {
   fetchMonobankClientInfo,
   mapCurrencyCode,
   normalizeMonobankAmount,
 } from '@/lib/integrations/monobank';
+import { getMobileUser } from '@/lib/mobile-auth';
+import { prisma } from '@/lib/prisma';
+import {
+  err,
+  MonobankConnectRequestSchema,
+  ok,
+  type MonobankConnectResponse,
+} from '@bit-chain/api-contracts';
 import { NextRequest, NextResponse } from 'next/server';
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
@@ -25,7 +30,7 @@ const buildDefaultAccountName = (
   iban: string | null,
   currency: string,
   ownerType: 'PERSONAL' | 'FOP',
-  ownerName?: string | null
+  ownerName?: string | null,
 ): string => {
   const label = ACCOUNT_TYPE_LABELS[accountType] ?? 'Monobank Account';
   const details: string[] = [label];
@@ -79,7 +84,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!parsed.success) {
     return NextResponse.json(
       err('VALIDATION_ERROR', parsed.error.issues[0]?.message ?? 'Invalid request body'),
-      { status: 422 }
+      { status: 422 },
     );
   }
 
@@ -96,14 +101,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (!existing?.token) {
         return NextResponse.json(
           err('NO_TOKEN', 'Monobank token is required for initial connection'),
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       // Handle both encrypted and legacy plain-text tokens
-      activeToken = isEncrypted(existing.token)
-        ? await decrypt(existing.token)
-        : existing.token;
+      activeToken = isEncrypted(existing.token) ? await decrypt(existing.token) : existing.token;
     }
 
     // Validate token by calling Monobank API
@@ -113,7 +116,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } catch {
       return NextResponse.json(
         err('MONOBANK_API_ERROR', 'Failed to validate token with Monobank API'),
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -133,17 +136,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Upsert all accounts from Monobank response
     const accountEntries = [
-      ...clientInfo.accounts.map((account) => ({
+      ...clientInfo.accounts.map(account => ({
         account,
         ownerType: 'PERSONAL' as const,
         ownerName: clientInfo.name,
       })),
-      ...(clientInfo.managedClients ?? []).flatMap((managed) =>
-        managed.accounts.map((account) => ({
+      ...(clientInfo.managedClients ?? []).flatMap(managed =>
+        managed.accounts.map(account => ({
           account,
           ownerType: 'FOP' as const,
           ownerName: managed.name,
-        }))
+        })),
       ),
     ];
 
@@ -180,7 +183,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             iban,
             currency,
             entry.ownerType,
-            entry.ownerName
+            entry.ownerName,
           ),
           maskedPan,
           iban,
@@ -196,7 +199,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       include: { accounts: { orderBy: { createdAt: 'asc' } } },
     });
 
-    const accounts = updatedIntegration.accounts.map((a) => ({
+    const accounts = updatedIntegration.accounts.map(a => ({
       id: a.id,
       externalId: a.providerAccountId,
       name: a.name,

@@ -1,6 +1,6 @@
 'use client';
 
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import {
   ChartConfig,
@@ -8,12 +8,12 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { THEME, useStore } from '@/store';
-import { startOfDay, format } from 'date-fns';
-import { useEffect, useMemo, useState } from 'react';
-import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
-import { useTransactions } from '../queries/transactions';
 import { FINANCE_COLORS } from '@/constants/colors';
+import { THEME, useStore } from '@/store';
+import { format, startOfDay } from 'date-fns';
+import { useEffect, useMemo, useState } from 'react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { useTransactions } from '../queries/transactions';
 
 import { convertToBaseCurrencySafe, formatSummaryAmount } from '@/lib/currency';
 
@@ -217,10 +217,16 @@ export function IncomeExpenseChart() {
                       year: 'numeric',
                     });
                   }}
-                  formatter={(value: any, name: any) => [
-                    formatSummaryAmount(typeof value === 'number' ? value : Number(value)),
-                    name === 'income' ? 'Income' : 'Expenses',
-                  ]}
+                  formatter={(value, name) => {
+                    const normalizedValue = Array.isArray(value)
+                      ? Number(value[0] ?? 0)
+                      : Number(value);
+
+                    return [
+                      formatSummaryAmount(Number.isFinite(normalizedValue) ? normalizedValue : 0),
+                      name === 'income' ? 'Income' : 'Expenses',
+                    ];
+                  }}
                   indicator="line"
                 />
               }

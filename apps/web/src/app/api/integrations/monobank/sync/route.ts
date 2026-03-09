@@ -1,9 +1,7 @@
-import { PrismaClient } from '@/generated/prisma';
 import { syncMonobankAccounts } from '@/lib/integrations/monobank-sync';
+import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-
-const prisma = new PrismaClient();
 
 async function getUserFromSession() {
   const session = await getServerSession();

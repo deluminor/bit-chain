@@ -1,9 +1,9 @@
-import { TransactionTable } from './TransactionTable';
-import { TransactionFilters } from './TransactionFilters';
-import { useTransactionFilters } from '../hooks/useTransactionFilters';
-import { usePagination } from '../hooks/usePagination';
-import { useTransactions } from '../queries/transactions';
 import { useStore } from '@/store';
+import { usePagination } from '../hooks/usePagination';
+import { useTransactionFilters } from '../hooks/useTransactionFilters';
+import { useTransactions } from '../queries/transactions';
+import { TransactionFilters } from './TransactionFilters';
+import { TransactionTable } from './TransactionTable';
 
 export function TransactionContainer() {
   const { selectedDateRange } = useStore();
@@ -19,10 +19,8 @@ export function TransactionContainer() {
     handleMaxAmountChange,
   } = useTransactionFilters();
 
-  // Pagination
   const { currentPage, pageSize, handlePageChange, handlePageSizeChange } = usePagination();
 
-  // Fetch transactions with filters and pagination (using global date range)
   const {
     data: transactionsData,
     isLoading,

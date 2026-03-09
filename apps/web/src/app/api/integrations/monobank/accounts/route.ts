@@ -1,11 +1,9 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { PrismaClient } from '@/generated/prisma';
 import type { Prisma } from '@/generated/prisma';
-import { z } from 'zod';
 import { mapMonobankAccountType } from '@/lib/integrations/monobank';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const updateAccountsSchema = z.object({
   accounts: z

@@ -1,4 +1,3 @@
-import { useColumns } from '@/app/(protected)/journal/config/columns';
 import { Button } from '@/components/ui/button';
 import { DataTablePagination } from '@/components/ui/data-table/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { TableLoadingBar } from '@/components/ui/table-loading-bar';
 import { Pencil, Trash2 } from 'lucide-react';
+import { useColumns } from '../config/columns';
 import { Trade } from '../types/position';
 import { PositionModal } from './PositionModal';
 

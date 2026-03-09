@@ -1,7 +1,7 @@
-import { err, ok, RefreshRequestSchema, type TokenResponse } from '@bit-chain/api-contracts';
 import { rotateRefreshToken } from '@/lib/mobile-auth';
 import { createRateLimiter, getIpAddress } from '@/lib/rate-limit';
 import { getOrCreateRequestId } from '@/lib/request-id';
+import { err, ok, RefreshRequestSchema, type TokenResponse } from '@bit-chain/api-contracts';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -32,14 +32,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const rateCheck = refreshRateLimiter.check(ip);
   if (!rateCheck.allowed) {
     return NextResponse.json(
-      err('RATE_LIMITED', `Too many requests. Retry after ${rateCheck.retryAfterSeconds}s`, requestId),
+      err(
+        'RATE_LIMITED',
+        `Too many requests. Retry after ${rateCheck.retryAfterSeconds}s`,
+        requestId,
+      ),
       {
         status: 429,
         headers: {
           'Retry-After': String(rateCheck.retryAfterSeconds),
           'X-Request-Id': requestId,
         },
-      }
+      },
     );
   }
 
@@ -47,17 +51,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      err('INVALID_JSON', 'Request body must be valid JSON', requestId),
-      { status: 400, headers: { 'X-Request-Id': requestId } }
-    );
+    return NextResponse.json(err('INVALID_JSON', 'Request body must be valid JSON', requestId), {
+      status: 400,
+      headers: { 'X-Request-Id': requestId },
+    });
   }
 
   const parsed = RefreshRequestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       err('VALIDATION_ERROR', parsed.error.issues[0]?.message ?? 'Invalid request body', requestId),
-      { status: 422, headers: { 'X-Request-Id': requestId } }
+      { status: 422, headers: { 'X-Request-Id': requestId } },
     );
   }
 
@@ -76,8 +80,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       headers: { 'X-Request-Id': requestId },
     });
   } catch (error) {
-    const code =
-      error instanceof Error ? error.message : 'REFRESH_FAILED';
+    const code = error instanceof Error ? error.message : 'REFRESH_FAILED';
 
     const statusMap: Record<string, number> = {
       INVALID_REFRESH_TOKEN: 401,
@@ -85,12 +88,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       REFRESH_TOKEN_EXPIRED: 401,
     };
 
-    return NextResponse.json(
-      err(code, 'Refresh token is invalid or expired', requestId),
-      {
-        status: statusMap[code] ?? 401,
-        headers: { 'X-Request-Id': requestId },
-      }
-    );
+    return NextResponse.json(err(code, 'Refresh token is invalid or expired', requestId), {
+      status: statusMap[code] ?? 401,
+      headers: { 'X-Request-Id': requestId },
+    });
   }
 }

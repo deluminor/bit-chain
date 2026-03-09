@@ -1,4 +1,3 @@
-import { getRiskColorClass } from '@/app/(protected)/journal/utils/formatters';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,55 +10,41 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { UseFormReturn, useWatch } from 'react-hook-form';
+import { useWatch, type UseFormReturn } from 'react-hook-form';
 import { useCategories } from '../queries/categories';
 import { PositionFormValues, TRADE_SIDES, TRADE_SIDES_LIST } from '../types/position';
 import { calculateRiskPercent, parseFormattedNumber } from '../utils/calculations';
-import { HelpTooltip } from './HelpTooltip';
 import { ScreenshotsUploader } from './ScreenshotsUploader';
+import { PositionNumericField, type NumericFieldName } from './PositionNumericField';
+import { PositionRiskSummary } from './PositionRiskSummary';
+import { NUMERIC_FIELD_CONFIG } from './position-form.constants';
 
 interface PositionFormFieldsProps {
   form: UseFormReturn<PositionFormValues>;
 }
 
-// Helper function for handling numeric input with decimal support
 const handleDecimalInput = (value: string): string => {
-  // Allow only numbers, decimal points, and commas
   const cleanValue = value.replace(/[^\d.,]/g, '');
-
-  // If there are multiple commas, treat all but the last one as thousand separators
   const parts = cleanValue.split(/[.,]/);
   if (parts.length > 2) {
-    // Join all parts except the last one with dots (for decimal)
-    const integerPart = parts.slice(0, -1).join('');
-    const decimalPart = parts[parts.length - 1];
-    return `${integerPart}.${decimalPart}`;
+    return `${parts.slice(0, -1).join('')}.${parts[parts.length - 1]}`;
   }
-
-  // If there's only one separator, use it as decimal point
   if (parts.length === 2) {
     return `${parts[0]}.${parts[1]}`;
   }
-
   return parts[0] || '';
 };
 
-// Format a numeric string with spaces as thousand separators, preserving decimal part
 const formatWithSpaces = (value: string): string => {
   if (!value) return '';
   const parts = value.split('.');
   const integerPart = parts[0] || '0';
-  // Remove leading zeros except for '0.'
   const cleanedInteger = integerPart.replace(/^0+(?!$)/, '');
   const formattedInteger = cleanedInteger.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  if (parts.length > 1) {
-    return `${formattedInteger}.${parts[1]}`;
-  }
-  return formattedInteger;
+  return parts.length > 1 ? `${formattedInteger}.${parts[1]}` : formattedInteger;
 };
 
 export function PositionFormFields({ form }: PositionFormFieldsProps) {
-  // Track the raw text input values before parsing to numbers
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   const [riskPercent, setRiskPercent] = useState<number>(0);
 
@@ -84,7 +69,6 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
     setRiskPercent(risk);
   }, [watchedValues]);
 
-  // Set initial raw values when form values change
   useEffect(() => {
     const formValues = form.getValues();
     const initialRawInputs: Record<string, string> = {};
@@ -99,52 +83,28 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
     setRawInputs(prev => ({ ...prev, ...initialRawInputs }));
   }, [form]);
 
-  // Custom handling for numeric fields to preserve decimal point and format with spaces
-  const handleNumericFieldChange = (name: keyof PositionFormValues, value: string) => {
-    // Clean and format value
+  const handleNumericFieldChange = (name: NumericFieldName, value: string) => {
     const processedValue = handleDecimalInput(value);
     const formattedValue = formatWithSpaces(processedValue);
+
     setRawInputs(prev => ({ ...prev, [name]: formattedValue }));
-    // Parse number for form
+
     if (processedValue) {
-      const numericValue = parseFormattedNumber(processedValue);
-      form.setValue(name, numericValue);
+      form.setValue(name, parseFormattedNumber(processedValue));
     } else {
       form.setValue(name, undefined);
     }
   };
 
-  const handleBlur = (name: keyof PositionFormValues) => {
-    // Format the value with spaces when blurring
+  const handleBlur = (name: NumericFieldName) => {
     const rawValue = rawInputs[name] || '';
     if (rawValue) {
-      // Format with spaces on blur
-      const formattedValue = formatWithSpaces(rawValue);
-      setRawInputs(prev => ({ ...prev, [name]: formattedValue }));
+      setRawInputs(prev => ({ ...prev, [name]: formatWithSpaces(rawValue) }));
     }
   };
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      {/* <FormField
-        control={form.control}
-        name="date"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Date</FormLabel>
-            <FormControl>
-              <DatePicker
-                mode="default"
-                date={field.value}
-                onDateChange={field.onChange}
-                placeholder="All time"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      /> */}
-
       <FormField
         control={form.control}
         name="symbol"
@@ -184,208 +144,25 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
         )}
       />
 
-      <FormField
-        control={form.control}
-        name="entryPrice"
-        render={({ field }) => {
-          const fieldName = 'entryPrice';
-          const rawValue =
-            rawInputs[fieldName] !== undefined
-              ? rawInputs[fieldName]
-              : field.value !== undefined && field.value !== null
-                ? formatWithSpaces(String(field.value))
-                : '';
-          return (
-            <FormItem>
-              <FormLabel>Entry Price</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
-                  value={rawValue}
-                  onChange={e => handleNumericFieldChange(fieldName, e.target.value)}
-                  onBlur={() => handleBlur(fieldName)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
-
-      <FormField
-        control={form.control}
-        name="positionSize"
-        render={({ field }) => {
-          const fieldName = 'positionSize';
-          const rawValue =
-            rawInputs[fieldName] !== undefined
-              ? rawInputs[fieldName]
-              : field.value !== undefined && field.value !== null
-                ? String(field.value)
-                : '';
-
-          return (
-            <FormItem>
-              <div className="flex items-center gap-2">
-                <FormLabel>Position Size</FormLabel>
-                <HelpTooltip text="Enter the amount of cryptocurrency you bought (e.g., 0.32 BTC)" />
-              </div>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
-                  value={rawValue}
-                  onChange={e => {
-                    const processedValue = handleDecimalInput(e.target.value);
-                    handleNumericFieldChange(fieldName, processedValue);
-                  }}
-                  onBlur={() => handleBlur(fieldName)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
-
-      <FormField
-        control={form.control}
-        name="stopLoss"
-        render={({ field }) => {
-          const fieldName = 'stopLoss';
-          const rawValue =
-            rawInputs[fieldName] !== undefined
-              ? rawInputs[fieldName]
-              : field.value !== undefined && field.value !== null
-                ? String(field.value)
-                : '';
-
-          return (
-            <FormItem>
-              <FormLabel>Stop Loss</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
-                  value={rawValue}
-                  onChange={e => {
-                    const processedValue = handleDecimalInput(e.target.value);
-                    handleNumericFieldChange(fieldName, processedValue);
-                  }}
-                  onBlur={() => handleBlur(fieldName)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
-
-      <FormField
-        control={form.control}
-        name="leverage"
-        render={({ field }) => {
-          const fieldName = 'leverage';
-          const rawValue =
-            rawInputs[fieldName] !== undefined
-              ? rawInputs[fieldName]
-              : field.value !== undefined && field.value !== null
-                ? String(field.value)
-                : '';
-
-          return (
-            <FormItem>
-              <FormLabel>Leverage</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
-                  value={rawValue}
-                  onChange={e => {
-                    const processedValue = handleDecimalInput(e.target.value);
-                    handleNumericFieldChange(fieldName, processedValue);
-                  }}
-                  onBlur={() => handleBlur(fieldName)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
-
-      <FormField
-        control={form.control}
-        name="exitPrice"
-        render={({ field }) => {
-          const fieldName = 'exitPrice';
-          const rawValue =
-            rawInputs[fieldName] !== undefined
-              ? rawInputs[fieldName]
-              : field.value !== undefined && field.value !== null
-                ? String(field.value)
-                : '';
-
-          return (
-            <FormItem>
-              <FormLabel>Exit Price</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
-                  value={rawValue}
-                  onChange={e => {
-                    const processedValue = handleDecimalInput(e.target.value);
-                    handleNumericFieldChange(fieldName, processedValue);
-                  }}
-                  onBlur={() => handleBlur(fieldName)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
-
-      <FormField
-        control={form.control}
-        name="commission"
-        render={({ field }) => {
-          const fieldName = 'commission';
-          const rawValue =
-            rawInputs[fieldName] !== undefined
-              ? rawInputs[fieldName]
-              : field.value !== undefined && field.value !== null
-                ? String(field.value)
-                : '';
-
-          return (
-            <FormItem>
-              <FormLabel>Commission</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
-                  value={rawValue}
-                  onChange={e => {
-                    const processedValue = handleDecimalInput(e.target.value);
-                    handleNumericFieldChange(fieldName, processedValue);
-                  }}
-                  onBlur={() => handleBlur(fieldName)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
+      {NUMERIC_FIELD_CONFIG.map(config => (
+        <PositionNumericField
+          key={config.name}
+          form={form}
+          name={config.name}
+          label={config.label}
+          helpText={config.helpText}
+          formatInitialWithSpaces={config.formatInitialWithSpaces}
+          rawInputs={rawInputs}
+          onNumericChange={handleNumericFieldChange}
+          onNumericBlur={handleBlur}
+          formatWithSpaces={formatWithSpaces}
+        />
+      ))}
 
       <FormField
         control={form.control}
         name="category"
         render={({ field }) => {
-          // Handle category which can be either a string or an object with name property
           const categoryValue =
             typeof field.value === 'object' && field.value !== null
               ? (field.value as { name: string }).name
@@ -396,15 +173,8 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
               <FormLabel>Category</FormLabel>
               <Select
                 onValueChange={value => {
-                  // Find the selected category to get its ID
-                  const selectedCategory = categories?.find(cat => cat.name === value);
-                  if (selectedCategory) {
-                    // Pass the full category object with ID
-                    field.onChange(selectedCategory);
-                  } else {
-                    // If not found, just pass the name
-                    field.onChange(value);
-                  }
+                  const selectedCategory = categories?.find(category => category.name === value);
+                  field.onChange(selectedCategory ?? value);
                 }}
                 defaultValue={categoryValue}
               >
@@ -416,7 +186,7 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
                 <SelectContent>
                   {isCategoriesLoading ? (
                     <div className="flex items-center justify-center py-2">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       <span>Loading categories...</span>
                     </div>
                   ) : categories?.length ? (
@@ -436,56 +206,7 @@ export function PositionFormFields({ form }: PositionFormFieldsProps) {
         }}
       />
 
-      <FormField
-        control={form.control}
-        name="deposit"
-        render={({ field }) => {
-          const fieldName = 'deposit';
-          const rawValue =
-            rawInputs[fieldName] !== undefined
-              ? rawInputs[fieldName]
-              : field.value !== undefined && field.value !== null
-                ? String(field.value)
-                : '';
-
-          return (
-            <FormItem>
-              <div className="flex items-center gap-2">
-                <FormLabel>Total Deposit</FormLabel>
-                <HelpTooltip text="Enter your total account deposit to calculate risk percentage relative to stop loss" />
-              </div>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
-                  value={rawValue}
-                  onChange={e => {
-                    const processedValue = handleDecimalInput(e.target.value);
-                    handleNumericFieldChange(fieldName, processedValue);
-                  }}
-                  onBlur={() => handleBlur(fieldName)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
-
-      <div className="flex flex-col space-y-2 justify-end col-span-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Risk Percentage:</span>
-          <span className={`font-medium ${getRiskColorClass(riskPercent)}`}>{riskPercent}%</span>
-        </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-          <div
-            className={`h-2.5 rounded-full ${
-              riskPercent <= 10 ? 'bg-green-500' : riskPercent <= 20 ? 'bg-amber-500' : 'bg-red-500'
-            }`}
-            style={{ width: `${Math.min(riskPercent, 100)}%` }}
-          ></div>
-        </div>
-      </div>
+      <PositionRiskSummary riskPercent={riskPercent} />
 
       <FormField
         control={form.control}

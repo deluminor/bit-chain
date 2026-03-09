@@ -1,5 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { DataTablePagination } from '@/components/ui/data-table/pagination';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -10,14 +16,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { TableLoadingBar } from '@/components/ui/table-loading-bar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { type Transaction } from '@/features/finance/queries/transactions';
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useTransactionColumns } from '../config/transaction-columns';
 
 interface TransactionTableProps {
@@ -66,7 +66,6 @@ export function TransactionTable({
               </TableHeader>
               <TableBody>
                 {isLoading &&
-                  // Skeleton loader rows
                   Array.from({ length: 5 }).map((_, index) => (
                     <TableRow key={`skeleton-${index}`}>
                       {columns.map(column => (

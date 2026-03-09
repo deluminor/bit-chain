@@ -1,35 +1,30 @@
 'use client';
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { THEME, useStore } from '@/store';
-import { useMemo, useState, useEffect } from 'react';
-import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
-import { Target, AlertTriangle, CheckCircle } from 'lucide-react';
+import { BudgetCategory as ApiBudgetCategory, useBudgets } from '@/features/finance/queries/budget';
 import { formatSummaryAmount } from '@/lib/currency';
-import { useBudgets, BudgetCategory as ApiBudgetCategory } from '@/features/finance/queries/budget';
-
-interface BudgetCategory {
-  id: string;
-  name: string;
-  planned: number;
-  actual: number;
-  color: string;
-}
+import { THEME, useStore } from '@/store';
+import { CheckCircle, Target } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import {
+  BudgetCategoryDetailCard,
+  type BudgetCategoryDetail,
+} from './budget-performance/BudgetCategoryDetailCard';
 
 export function BudgetPerformanceChart() {
   const { theme } = useStore();
   const { data: budgetsResponse, isLoading } = useBudgets();
 
-  const [budgetData, setBudgetData] = useState<BudgetCategory[]>([]);
+  const [budgetData, setBudgetData] = useState<BudgetCategoryDetail[]>([]);
 
   useEffect(() => {
     const processBudgets = async () => {
@@ -225,51 +220,9 @@ export function BudgetPerformanceChart() {
         {/* Detailed Category Breakdown */}
         <div className="space-y-3">
           <h4 className="text-lg font-semibold mb-3">Category Details</h4>
-          {budgetData.map(category => {
-            const percentage =
-              category.planned > 0 ? (category.actual / category.planned) * 100 : 0;
-            const isOverBudget = category.actual > category.planned;
-            const variance = category.actual - category.planned;
-
-            return (
-              <div key={category.id} className="p-3 rounded-lg border bg-card">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: category.color }}
-                    />
-                    <span className="font-medium">{category.name}</span>
-                    {isOverBudget ? (
-                      <AlertTriangle className="h-4 w-4 text-red-500" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold">{formatSummaryAmount(category.actual)}</div>
-                    <div className="text-sm text-muted-foreground">
-                      of {formatSummaryAmount(category.planned)}
-                    </div>
-                  </div>
-                </div>
-
-                <Progress value={Math.min(percentage, 100)} className="h-2 mb-2" />
-
-                <div className="flex items-center justify-between text-sm">
-                  <Badge variant={isOverBudget ? 'destructive' : 'default'} className="text-xs">
-                    {percentage.toFixed(1)}%
-                  </Badge>
-                  <span
-                    className={`font-medium ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}
-                  >
-                    {variance >= 0 ? '+' : ''}
-                    {formatSummaryAmount(variance)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+          {budgetData.map(category => (
+            <BudgetCategoryDetailCard key={category.id} category={category} />
+          ))}
         </div>
       </div>
     </ChartWrapper>

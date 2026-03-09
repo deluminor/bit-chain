@@ -14,7 +14,6 @@ interface NewsCardProps {
 }
 
 export function NewsCard({ title, source, url, date }: NewsCardProps) {
-  // Format the date to a readable format
   const formattedDate = new Date(date).toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'short',

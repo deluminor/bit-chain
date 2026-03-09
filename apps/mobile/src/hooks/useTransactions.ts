@@ -100,7 +100,7 @@ export const createTransactionSchema = z
     },
   );
 
-export type CreateTransactionPayload = z.infer<typeof createTransactionSchema>;
+export type CreateTransactionPayload = z.input<typeof createTransactionSchema>;
 
 export const updateTransactionSchema = createTransactionSchema.and(
   z.object({ id: z.string().min(1) }),
@@ -119,7 +119,7 @@ export function useCreateTransaction() {
         date: payload.date?.toISOString(),
       };
 
-      const { data } = await api.post<ApiResponse<any>>('/transactions', apiPayload);
+      const { data } = await api.post<ApiResponse<unknown>>('/transactions', apiPayload);
       if (data && 'error' in data && data.error) {
         throw new Error(
           typeof data.error === 'string' ? data.error : 'Failed to create transaction',
@@ -145,7 +145,7 @@ export function useUpdateTransaction() {
         date: payload.date?.toISOString(),
       };
 
-      const { data } = await api.put<ApiResponse<any>>('/transactions', apiPayload);
+      const { data } = await api.put<ApiResponse<unknown>>('/transactions', apiPayload);
       if (data && 'error' in data && data.error) {
         throw new Error(
           typeof data.error === 'string' ? data.error : 'Failed to update transaction',
@@ -166,7 +166,7 @@ export function useDeleteTransaction() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await api.delete<ApiResponse<any>>(`/transactions?id=${id}`);
+      const { data } = await api.delete<ApiResponse<unknown>>(`/transactions?id=${id}`);
       if (data && 'error' in data && data.error) {
         throw new Error(
           typeof data.error === 'string' ? data.error : 'Failed to delete transaction',

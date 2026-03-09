@@ -1,24 +1,24 @@
 'use client';
 
-import { useMemo } from 'react';
-import { startOfDay, endOfDay, format } from 'date-fns';
-import { Card, CardContent } from '@/components/ui/card';
+import { AnimatedDiv } from '@/components/ui/animations';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import {
-  Download,
-  FileText,
-  FileJson,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  Loader2,
-} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { useGenerateComprehensiveReport } from '@/features/finance/queries/reports';
 import { useTransactions } from '@/features/finance/queries/transactions';
-import { useStore, DATE_PRESET_LABELS } from '@/store';
-import { AnimatedDiv } from '@/components/ui/animations';
+import { useToast } from '@/hooks/use-toast';
 import { formatSummaryAmount } from '@/lib/currency';
+import { DATE_PRESET_LABELS, useStore } from '@/store';
+import { endOfDay, format, startOfDay } from 'date-fns';
+import {
+  Download,
+  FileJson,
+  FileText,
+  Loader2,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react';
+import { useMemo } from 'react';
 
 export default function ReportsPage() {
   const { toast } = useToast();
@@ -40,7 +40,6 @@ export default function ReportsPage() {
     return new Date().toISOString();
   }, [selectedDateRange?.to]);
 
-  // Fetch summary stats for the selected period
   const { data: transactionsData, isLoading: statsLoading } = useTransactions({
     dateFrom,
     dateTo,
@@ -85,7 +84,6 @@ export default function ReportsPage() {
     <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
         <div className="flex flex-col gap-3 md:gap-6">
-          {/* Header */}
           <div>
             <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">
               Financial Report
@@ -96,7 +94,6 @@ export default function ReportsPage() {
             </p>
           </div>
 
-          {/* Quick Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {statsLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
@@ -157,7 +154,6 @@ export default function ReportsPage() {
             )}
           </div>
 
-          {/* Report Info + Download */}
           <Card>
             <CardContent className="p-4 md:p-6">
               <div className="flex flex-col gap-4">

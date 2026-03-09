@@ -8,13 +8,23 @@ export type RawStats = Array<{
   currency: string;
 }>;
 
+function isRawStatsItem(value: unknown): value is RawStats[number] {
+  if (typeof value !== 'object' || value === null) return false;
+  if (!('income' in value) || !('expenses' in value)) return false;
+  if (!('netFlow' in value) || !('currency' in value)) return false;
+  return (
+    typeof value.income === 'number' &&
+    typeof value.expenses === 'number' &&
+    typeof value.netFlow === 'number' &&
+    typeof value.currency === 'string'
+  );
+}
+
 export interface ConvertedStats {
   income: number;
   expenses: number;
   netFlow: number;
-  /** The currency these values are expressed in (== baseCurrency) */
   currency: CurrencyCode;
-  /** True while the async FX conversion is in progress */
   isConverting: boolean;
 }
 
@@ -30,7 +40,7 @@ export interface ConvertedStats {
  * // converted.income / .expenses / .netFlow are already in baseCurrency
  * ```
  */
-export function useConvertedStats(statsInput: RawStats | any | null): ConvertedStats {
+export function useConvertedStats(statsInput: RawStats | unknown | null): ConvertedStats {
   const baseCurrency = useCurrencyStore(s => s.baseCurrency);
 
   const [result, setResult] = useState<ConvertedStats>({
@@ -44,8 +54,8 @@ export function useConvertedStats(statsInput: RawStats | any | null): ConvertedS
   useEffect(() => {
     // Normalize stats to an array to support legacy cached data (objects).
     const normalizedStats: RawStats = Array.isArray(statsInput)
-      ? statsInput
-      : statsInput
+      ? statsInput.filter(isRawStatsItem)
+      : isRawStatsItem(statsInput)
         ? [statsInput]
         : [];
 

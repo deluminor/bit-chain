@@ -1,45 +1,18 @@
 'use client';
 
-import { LoanForm } from '@/components/forms/LoanForm';
 import { AnimatedDiv } from '@/components/ui/animations';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
+import { LoansDialogs } from '@/features/finance/components/loans-page/LoansDialogs';
+import { LoansPageHeader } from '@/features/finance/components/loans-page/LoansPageHeader';
+import { LoansSummaryCards } from '@/features/finance/components/loans-page/LoansSummaryCards';
+import { LoansTable } from '@/features/finance/components/loans-page/LoansTable';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { RepayLoanDialog } from '@/features/finance/components/RepayLoanDialog';
+  getNearestDueDate,
+  sortLoansByDueDate,
+} from '@/features/finance/components/loans-page/loans-page.utils';
 import { Loan, useDeleteLoan, useLoans, useUpdateLoan } from '@/features/finance/queries/loans';
 import { useToast } from '@/hooks/use-toast';
-import { BASE_CURRENCY, formatDisplayAmount } from '@/lib/currency';
-import {
-  BadgeDollarSign,
-  Banknote,
-  CalendarClock,
-  Landmark,
-  Pencil,
-  Plus,
-  Trash2,
-  Wallet,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
-
-const loanTypeLabels = {
-  LOAN: 'Loan',
-  DEBT: 'Debt',
-};
-
-const loanTypeBadge = {
-  LOAN: 'bg-rose-100 text-rose-700',
-  DEBT: 'bg-emerald-100 text-emerald-700',
-};
+import { formatDisplayAmount } from '@/lib/currency';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function LoansPage() {
   const { toast } = useToast();
@@ -54,26 +27,34 @@ export default function LoansPage() {
   const [repayLoan, setRepayLoan] = useState<Loan | null>(null);
 
   useEffect(() => {
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load loans',
-        variant: 'destructive',
-      });
+    if (!error) {
+      return;
     }
+
+    toast({
+      title: 'Error',
+      description: 'Failed to load loans',
+      variant: 'destructive',
+    });
   }, [error, toast]);
 
-  const loans = data?.loans || [];
-  const summary = data?.summary || {
-    total: 0,
-    active: 0,
-    loanCount: 0,
-    debtCount: 0,
-    totalOutstandingBase: 0,
-  };
+  const loans = useMemo(() => data?.loans ?? [], [data?.loans]);
+
+  const summary =
+    data?.summary ||
+    ({
+      total: 0,
+      active: 0,
+      loanCount: 0,
+      debtCount: 0,
+      totalOutstandingBase: 0,
+    } as const);
+
+  const sortedLoans = useMemo(() => sortLoansByDueDate(loans), [loans]);
+  const nearestDueDate = useMemo(() => getNearestDueDate(loans), [loans]);
 
   const handleFormSuccess = () => {
-    refetch();
+    void refetch();
     setEditingLoan(null);
   };
 
@@ -82,25 +63,10 @@ export default function LoansPage() {
     setEditingLoan(null);
   };
 
-  const getStatus = (loan: Loan) => {
-    const isPaid = loan.paidAmount >= loan.totalAmount;
-
-    if (isPaid) {
-      return { label: 'Paid', className: 'bg-emerald-100 text-emerald-700' };
-    }
-
-    if (loan.dueDate) {
-      const due = new Date(loan.dueDate);
-      if (due.getTime() < Date.now()) {
-        return { label: 'Overdue', className: 'bg-rose-100 text-rose-700' };
-      }
-    }
-
-    return { label: 'Active', className: 'bg-blue-100 text-blue-700' };
-  };
-
   const handleDelete = async () => {
-    if (!pendingDelete) return;
+    if (!pendingDelete) {
+      return;
+    }
 
     try {
       await deleteLoan.mutateAsync(pendingDelete.id);
@@ -109,18 +75,20 @@ export default function LoansPage() {
         description: 'Loan deleted successfully',
       });
       setPendingDelete(null);
-      refetch();
-    } catch (deleteError: any) {
+      void refetch();
+    } catch (deleteError: unknown) {
       toast({
         title: 'Error',
-        description: deleteError?.message || 'Failed to delete loan',
+        description: deleteError instanceof Error ? deleteError.message : 'Failed to delete loan',
         variant: 'destructive',
       });
     }
   };
 
   const handleRepay = async (amount: number) => {
-    if (!repayLoan) return;
+    if (!repayLoan) {
+      return;
+    }
 
     try {
       await updateLoan.mutateAsync({
@@ -133,267 +101,65 @@ export default function LoansPage() {
         description: `Repayed ${formatDisplayAmount(amount, repayLoan.currency, 'detailed')}`,
       });
 
-      refetch();
-    } catch (error) {
+      void refetch();
+    } catch (repayError) {
       toast({
         title: 'Error',
         description: 'Failed to process repayment',
         variant: 'destructive',
       });
-      throw error;
+      throw repayError;
     }
   };
-
-  const sortedLoans = [...loans].sort((a, b) => {
-    // Sort by due date (nearest first), with nulls last
-    if (!a.dueDate && !b.dueDate) return 0;
-    if (!a.dueDate) return 1;
-    if (!b.dueDate) return -1;
-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-  });
-
-  const nearestDueDate = loans
-    .filter(loan => loan.paidAmount < loan.totalAmount && loan.dueDate)
-    .map(loan => new Date(loan.dueDate as string))
-    .sort((a, b) => a.getTime() - b.getTime())[0];
 
   return (
     <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 md:gap-0">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-primary shadow-sm">
-              <Landmark className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold">Loans & Debts</h1>
-              <p className="text-muted-foreground">Track what you owe and what is owed to you</p>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <div className="flex items-center gap-2 px-3 py-2 border rounded-lg">
-              <Switch checked={showPaid} onCheckedChange={setShowPaid} />
-              <span className="text-sm text-muted-foreground">Show paid</span>
-            </div>
-            <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              New Loan
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 lg:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-4 md:p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <BadgeDollarSign className="h-5 w-5 text-rose-500" />
-              <h3 className="font-semibold">Outstanding</h3>
-            </div>
-            <div className="text-2xl font-bold">
-              {formatDisplayAmount(summary.totalOutstandingBase, BASE_CURRENCY, 'summary')}
-            </div>
-            <p className="text-sm text-muted-foreground">Base currency total</p>
-          </Card>
-          <Card className="p-4 md:p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <Wallet className="h-5 w-5 text-emerald-500" />
-              <h3 className="font-semibold">Active</h3>
-            </div>
-            <div className="text-2xl font-bold">{summary.active}</div>
-            <p className="text-sm text-muted-foreground">Unpaid loans</p>
-          </Card>
-          <Card className="p-4 md:p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <Landmark className="h-5 w-5 text-blue-500" />
-              <h3 className="font-semibold">Loans vs Debts</h3>
-            </div>
-            <div className="text-2xl font-bold">
-              {summary.loanCount} / {summary.debtCount}
-            </div>
-            <p className="text-sm text-muted-foreground">Loans / Debts</p>
-          </Card>
-          <Card className="p-4 md:p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <CalendarClock className="h-5 w-5 text-orange-500" />
-              <h3 className="font-semibold">Next Due</h3>
-            </div>
-            <div className="text-2xl font-bold">
-              {nearestDueDate ? nearestDueDate.toLocaleDateString('en-GB') : '—'}
-            </div>
-            <p className="text-sm text-muted-foreground">Closest deadline</p>
-          </Card>
-        </div>
-      </div>
-
-      <div className="px-4 lg:px-6">
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-8 text-center text-muted-foreground">Loading loans...</div>
-            ) : loans.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Loan</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Remaining / Total</TableHead>
-                      <TableHead className="text-center">Progress</TableHead>
-                      <TableHead className="text-center">Due Date</TableHead>
-                      <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="w-[140px] text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedLoans.map(loan => {
-                      const status = getStatus(loan);
-                      const remaining = loan.totalAmount - loan.paidAmount;
-                      const progress =
-                        loan.totalAmount > 0 ? (loan.paidAmount / loan.totalAmount) * 100 : 0;
-
-                      return (
-                        <TableRow key={loan.id}>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="font-medium">{loan.name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {loan.lender || 'No lender'}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={loanTypeBadge[loan.type]}>
-                              {loanTypeLabels[loan.type]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="space-y-1">
-                              <div className="font-semibold">
-                                {formatDisplayAmount(remaining, loan.currency, 'detailed')}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                of{' '}
-                                {formatDisplayAmount(loan.totalAmount, loan.currency, 'detailed')}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="w-full bg-muted rounded-full h-2">
-                                <div
-                                  className="bg-primary h-2 rounded-full transition-all"
-                                  style={{ width: `${Math.min(progress, 100)}%` }}
-                                />
-                              </div>
-                              <div className="text-xs text-center text-muted-foreground">
-                                {progress.toFixed(1)}%
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {loan.dueDate
-                              ? new Date(loan.dueDate).toLocaleDateString('en-GB')
-                              : '—'}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge className={status.className}>{status.label}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              {remaining > 0 && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => setRepayLoan(loan)}
-                                  className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                                  title="Repay Loan"
-                                >
-                                  <Banknote className="h-4 w-4" />
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                  setEditingLoan(loan);
-                                  setShowForm(true);
-                                }}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setPendingDelete(loan)}
-                                className="h-8 w-8 p-0 text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-12">
-                <Landmark className="h-12 w-12 mx-auto mb-4" />
-                <p className="text-lg font-medium mb-2">No loans yet</p>
-                <p className="mb-4">Create your first loan or debt to start tracking.</p>
-                <Button onClick={() => setShowForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Loan
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingLoan ? 'Edit Loan' : 'Create New Loan'}</DialogTitle>
-          </DialogHeader>
-          <LoanForm
-            onClose={handleCloseForm}
-            onSuccess={handleFormSuccess}
-            loan={editingLoan || undefined}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!pendingDelete} onOpenChange={() => setPendingDelete(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Loan</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete {pendingDelete?.name}? This action cannot be undone.
-          </p>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setPendingDelete(null)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteLoan.isPending}>
-              {deleteLoan.isPending ? 'Deleting...' : 'Delete'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {repayLoan && (
-        <RepayLoanDialog
-          open={!!repayLoan}
-          onOpenChange={open => !open && setRepayLoan(null)}
-          loan={repayLoan!}
-          onConfirm={handleRepay}
+        <LoansPageHeader
+          showPaid={showPaid}
+          onToggleShowPaid={setShowPaid}
+          onCreateLoan={() => setShowForm(true)}
         />
-      )}
+      </div>
+
+      <div className="px-4 lg:px-6">
+        <LoansSummaryCards summary={summary} nearestDueDate={nearestDueDate} />
+      </div>
+
+      <div className="px-4 lg:px-6">
+        <LoansTable
+          isLoading={isLoading}
+          loans={sortedLoans}
+          onRepayLoan={loan => setRepayLoan(loan)}
+          onEditLoan={loan => {
+            setEditingLoan(loan);
+            setShowForm(true);
+          }}
+          onDeleteLoan={loan => setPendingDelete(loan)}
+          onCreateLoan={() => setShowForm(true)}
+        />
+      </div>
+
+      <LoansDialogs
+        showForm={showForm}
+        editingLoan={editingLoan}
+        pendingDelete={pendingDelete}
+        repayLoan={repayLoan}
+        isDeleting={deleteLoan.isPending}
+        onShowFormChange={setShowForm}
+        onCloseForm={handleCloseForm}
+        onFormSuccess={handleFormSuccess}
+        onClearPendingDelete={() => setPendingDelete(null)}
+        onConfirmDelete={() => {
+          void handleDelete();
+        }}
+        onRepayDialogChange={open => {
+          if (!open) {
+            setRepayLoan(null);
+          }
+        }}
+        onRepayConfirm={handleRepay}
+      />
     </AnimatedDiv>
   );
 }

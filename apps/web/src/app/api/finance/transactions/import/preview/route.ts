@@ -1,15 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { z } from 'zod';
-import { PrismaClient } from '@/generated/prisma';
-import { randomUUID } from 'crypto';
 import {
   createImportKey,
   parseTransactionsCsv,
   type ParsedCsvRow,
 } from '@/lib/finance/transaction-import';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { randomUUID } from 'crypto';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const previewSchema = z.object({
   accountId: z.string().cuid(),

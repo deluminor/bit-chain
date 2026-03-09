@@ -1,14 +1,14 @@
+import { decrypt, isEncrypted } from '@/lib/encryption';
+import { syncMonobankAccounts } from '@/lib/integrations/monobank-sync';
+import { getMobileUser } from '@/lib/mobile-auth';
+import { prisma } from '@/lib/prisma';
 import {
   err,
-  ok,
   MonobankSyncRequestSchema,
+  ok,
   type MonobankSyncResponse,
   type RateLimitResponse,
 } from '@bit-chain/api-contracts';
-import { getMobileUser } from '@/lib/mobile-auth';
-import { decrypt, isEncrypted } from '@/lib/encryption';
-import { prisma } from '@/lib/prisma';
-import { syncMonobankAccounts } from '@/lib/integrations/monobank-sync';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!parsed.success) {
     return NextResponse.json(
       err('VALIDATION_ERROR', parsed.error.issues[0]?.message ?? 'Invalid request body'),
-      { status: 422 }
+      { status: 422 },
     );
   }
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!integration?.token) {
       return NextResponse.json(
         err('NO_INTEGRATION', 'Monobank is not connected. Please connect first.'),
-        { status: 400 }
+        { status: 400 },
       );
     }
 

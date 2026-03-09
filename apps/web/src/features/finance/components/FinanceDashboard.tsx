@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 import { AccountBalanceTrendsChart } from '@/components/layout/charts/AccountBalanceTrendsChart';
 import { BudgetPerformanceChart } from '@/components/layout/charts/BudgetPerformanceChart';
-import { IncomeExpenseChart } from '@/components/layout/charts/IncomeExpenseChart';
 import { AnimatedDiv } from '@/components/ui/animations';
 import { ResponsiveGrid } from '@/components/ui/responsive-helpers';
 import { CashFlowSankeyChart } from '@/features/finance/components/CashFlowSankeyChart';
 import { CategorySpendingChart } from '@/features/finance/components/CategorySpendingChart';
+import { IncomeExpenseChart } from '@/features/finance/components/IncomeExpenseChart';
 import { NetWorthChart } from '@/features/finance/components/NetWorthChart';
 import { useAccounts } from '@/features/finance/queries/accounts';
 import { useTransactions } from '@/features/finance/queries/transactions';
@@ -72,7 +72,6 @@ export function FinanceDashboard() {
   const { data: accountsData, isLoading: accountsLoading } = useAccounts();
   const { selectedDateRange } = useStore();
 
-  // Use global date filter
   const dateFrom = useMemo(() => {
     if (selectedDateRange?.from) {
       return startOfDay(selectedDateRange.from).toISOString();
@@ -96,7 +95,7 @@ export function FinanceDashboard() {
   const [isConvertingBalances, setIsConvertingBalances] = useState(false);
   const isConvertingBalancesRef = useRef(false);
 
-  const accounts = accountsData?.accounts || [];
+  const accounts = useMemo(() => accountsData?.accounts || [], [accountsData?.accounts]);
   const summary = accountsData?.summary;
   const transactionSummary = transactionsData?.summary;
 
@@ -105,7 +104,6 @@ export function FinanceDashboard() {
   const incomeFrequency = transactionSummary?.incomeCount ?? 0;
   const expenseFrequency = transactionSummary?.expenseCount ?? 0;
 
-  // Convert all account balances and transactions to EUR
   useEffect(() => {
     const convertBalances = async () => {
       if (!accounts.length || isConvertingBalancesRef.current) return;
@@ -138,7 +136,6 @@ export function FinanceDashboard() {
   return (
     <AnimatedDiv variant="slideUp" className="space-y-4">
       <div className="container space-y-4">
-        {/* Quick Stats Grid */}
         <ResponsiveGrid cols={{ mobile: 1, tablet: 2, desktop: 4 }} gap={3}>
           <QuickStatCard
             title="Total Balance"
@@ -180,7 +177,6 @@ export function FinanceDashboard() {
           />
         </ResponsiveGrid>
 
-        {/* Financial Analytics Charts */}
         <AnimatedDiv variant="slideUp" delay={0.3} className="space-y-4">
           <div className="w-full animate-fade-in">
             <CashFlowSankeyChart />

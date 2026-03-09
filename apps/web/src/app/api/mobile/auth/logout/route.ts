@@ -1,6 +1,6 @@
-import { err, ok } from '@bit-chain/api-contracts';
 import { getMobileUser, revokeAllUserSessions, revokeSingleSession } from '@/lib/mobile-auth';
 import { getOrCreateRequestId } from '@/lib/request-id';
+import { err, ok } from '@bit-chain/api-contracts';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -21,10 +21,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     user = await getMobileUser(request);
   } catch {
-    return NextResponse.json(
-      err('UNAUTHORIZED', 'Invalid or missing access token', requestId),
-      { status: 401, headers: { 'X-Request-Id': requestId } }
-    );
+    return NextResponse.json(err('UNAUTHORIZED', 'Invalid or missing access token', requestId), {
+      status: 401,
+      headers: { 'X-Request-Id': requestId },
+    });
   }
 
   let body: Record<string, unknown> = {};

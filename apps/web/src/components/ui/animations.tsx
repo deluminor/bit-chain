@@ -1,72 +1,36 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence, Variants, HTMLMotionProps } from 'framer-motion';
+import { AnimatePresence, motion, type HTMLMotionProps } from 'framer-motion';
 import { forwardRef } from 'react';
+import {
+  bounceIn,
+  buttonPress,
+  cardHover,
+  fadeIn,
+  scaleIn,
+  slideDown,
+  slideLeft,
+  slideRight,
+  slideUp,
+  staggerContainer,
+  staggerItem,
+} from './animation-variants';
 
-// Base animation variants
-export const fadeIn: Variants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
+export {
+  bounceIn,
+  buttonPress,
+  cardHover,
+  fadeIn,
+  scaleIn,
+  slideDown,
+  slideLeft,
+  slideRight,
+  slideUp,
+  staggerContainer,
+  staggerItem,
 };
 
-export const slideUp: Variants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 },
-};
-
-export const slideDown: Variants = {
-  initial: { opacity: 0, y: -20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: 20 },
-};
-
-export const slideLeft: Variants = {
-  initial: { opacity: 0, x: 20 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -20 },
-};
-
-export const slideRight: Variants = {
-  initial: { opacity: 0, x: -20 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: 20 },
-};
-
-export const scaleIn: Variants = {
-  initial: { opacity: 0, scale: 0.9 },
-  animate: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.9 },
-};
-
-export const bounceIn: Variants = {
-  initial: { opacity: 0, scale: 0.3 },
-  animate: {
-    opacity: 1,
-    scale: 1,
-    transition: { type: 'spring', stiffness: 300, damping: 20 },
-  },
-  exit: { opacity: 0, scale: 0.3 },
-};
-
-// Stagger container for children animations
-export const staggerContainer: Variants = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-export const staggerItem: Variants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-};
-
-// Component wrappers with animations
 interface AnimatedDivProps extends HTMLMotionProps<'div'> {
   variant?:
     | 'fadeIn'
@@ -112,7 +76,6 @@ export const AnimatedDiv = forwardRef<HTMLDivElement, AnimatedDivProps>(
 
 AnimatedDiv.displayName = 'AnimatedDiv';
 
-// Page transition wrapper
 interface PageTransitionProps {
   children: React.ReactNode;
   className?: string;
@@ -132,7 +95,6 @@ export function PageTransition({ children, className }: PageTransitionProps) {
   );
 }
 
-// Modal/Dialog animation wrapper
 interface ModalTransitionProps {
   children: React.ReactNode;
   isOpen: boolean;
@@ -144,7 +106,6 @@ export function ModalTransition({ children, isOpen, className }: ModalTransition
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -152,7 +113,6 @@ export function ModalTransition({ children, isOpen, className }: ModalTransition
             className="fixed inset-0 bg-black/50 z-40"
           />
 
-          {/* Modal content */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -168,7 +128,6 @@ export function ModalTransition({ children, isOpen, className }: ModalTransition
   );
 }
 
-// List item animations
 interface AnimatedListProps {
   children: React.ReactNode[];
   className?: string;
@@ -197,16 +156,6 @@ export function AnimatedList({ children, className, itemClassName }: AnimatedLis
   );
 }
 
-// Card hover animations
-export const cardHover: Variants = {
-  rest: { scale: 1, boxShadow: '0 1px 3px rgb(0 0 0 / 0.1)' },
-  hover: {
-    scale: 1.02,
-    boxShadow: '0 10px 25px rgb(0 0 0 / 0.15)',
-    transition: { type: 'spring', stiffness: 300, damping: 30 },
-  },
-};
-
 interface AnimatedCardProps extends HTMLMotionProps<'div'> {
   children: React.ReactNode;
   enableHover?: boolean;
@@ -232,12 +181,6 @@ export const AnimatedCard = forwardRef<HTMLDivElement, AnimatedCardProps>(
 
 AnimatedCard.displayName = 'AnimatedCard';
 
-// Button press animation
-export const buttonPress = {
-  whileTap: { scale: 0.95 },
-  transition: { type: 'spring', stiffness: 400, damping: 30 },
-};
-
 interface AnimatedButtonProps extends HTMLMotionProps<'button'> {
   children: React.ReactNode;
 }
@@ -248,7 +191,7 @@ export const AnimatedButton = forwardRef<HTMLButtonElement, AnimatedButtonProps>
       <motion.button
         ref={ref}
         className={className}
-        whileTap={{ scale: 0.95 }}
+        whileTap={buttonPress.whileTap}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         {...props}
       >
@@ -260,7 +203,6 @@ export const AnimatedButton = forwardRef<HTMLButtonElement, AnimatedButtonProps>
 
 AnimatedButton.displayName = 'AnimatedButton';
 
-// Number counter animation
 interface CounterProps {
   from: number;
   to: number;
@@ -287,8 +229,8 @@ export function AnimatedCounter({
     >
       {prefix}
       <motion.span
-        initial={{ value: from } as any}
-        animate={{ value: to } as any}
+        initial={{ value: from } as Record<string, number>}
+        animate={{ value: to } as Record<string, number>}
         transition={{ duration, ease: 'easeOut' }}
       >
         {from}

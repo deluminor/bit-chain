@@ -7,21 +7,16 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '~/src/components/ui';
-import { colors, fontSize, fontWeight, radius, spacing } from '~/src/design/tokens';
+import { colors } from '~/src/design/tokens';
 import { useMonobankConnect } from '~/src/hooks/useMonobank';
-
-const STEPS = [
-  'Open the Monobank app on your phone',
-  'Go to Settings → Other → API',
-  'Copy your personal token and paste it below',
-] as const;
+import { MONOBANK_STEPS } from '@/route-modules/(app)/monobank/_constants';
+import { connectStyles as styles } from '@/route-modules/(app)/monobank/_styles';
 
 export default function MonobankConnectScreen() {
   const [token, setToken] = useState('');
@@ -78,10 +73,9 @@ export default function MonobankConnectScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── How to get the token ─────────────────── */}
           <Card padding="base">
             <Text style={styles.cardTitle}>How to get your token</Text>
-            {STEPS.map((step, idx) => (
+            {MONOBANK_STEPS.map((step, idx) => (
               <View key={idx} style={styles.step}>
                 <View style={styles.stepBadge}>
                   <Text style={styles.stepNumber}>{idx + 1}</Text>
@@ -91,7 +85,6 @@ export default function MonobankConnectScreen() {
             ))}
           </Card>
 
-          {/* ── Token input ──────────────────────────── */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>API Token</Text>
             <TextInput
@@ -112,7 +105,6 @@ export default function MonobankConnectScreen() {
             </Text>
           </View>
 
-          {/* ── Connect button ───────────────────────── */}
           <Pressable
             style={[styles.btn, isPending && styles.btnDisabled]}
             onPress={handleConnect}
@@ -129,94 +121,3 @@ export default function MonobankConnectScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bgBase,
-  },
-  flex: { flex: 1 },
-  scroll: {
-    padding: spacing.base,
-    gap: spacing.lg,
-    paddingBottom: spacing['5xl'],
-  },
-
-  // How-to card
-  cardTitle: {
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    marginBottom: spacing.md,
-  },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  stepBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.brandSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    marginTop: 1,
-  },
-  stepNumber: {
-    color: colors.brand,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-  },
-  stepText: {
-    color: colors.textSecondary,
-    fontSize: fontSize.base,
-    flex: 1,
-    lineHeight: fontSize.base * 1.5,
-  },
-
-  // Input
-  inputGroup: { gap: spacing.sm },
-  label: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  input: {
-    backgroundColor: colors.bgSurface,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.md,
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  inputEmpty: {
-    borderColor: colors.border,
-  },
-  hint: {
-    color: colors.textDisabled,
-    fontSize: fontSize.sm,
-  },
-
-  // Button
-  btn: {
-    backgroundColor: colors.brand,
-    borderRadius: radius.lg,
-    height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnDisabled: { opacity: 0.55 },
-  btnText: {
-    color: colors.white,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-  },
-});

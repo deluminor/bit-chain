@@ -4,73 +4,20 @@ import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
 import { useCashFlowSankey } from '@/features/finance/hooks/useCashFlowSankey';
 import { formatSummaryAmount } from '@/lib/currency';
-import { cn } from '@/lib/utils';
 import { THEME, useStore } from '@/store';
-import { endOfDay, startOfDay } from 'date-fns';
-import { Activity } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
-
-type SankeyNodePayload = {
-  name: string;
-  color: string;
-  isCenter?: boolean;
-  depth?: number;
-  value?: number;
-  isFreeCash?: boolean;
-};
-
-type CashFlowTarget = {
-  id: string;
-  name: string;
-  amount: number;
-  color: string;
-  isFreeCash?: boolean;
-};
-
-type SankeyNodeProps = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  payload: SankeyNodePayload;
-};
-
-type SankeyLinkPayload = {
-  color?: string;
-  id?: string;
-  sourceName?: string;
-  targetName?: string;
-};
-
-type SankeyLinkProps = {
-  sourceX: number;
-  targetX: number;
-  sourceY: number;
-  targetY: number;
-  sourceControlX: number;
-  targetControlX: number;
-  linkWidth: number;
-  payload: SankeyLinkPayload;
-};
+import {
+  CashFlowSankeyBreakdown,
+  CashFlowSankeyFooter,
+  SankeyTooltipContent,
+} from './cash-flow-sankey.parts';
+import type { CashFlowTarget, SankeyLinkProps, SankeyNodeProps } from './cash-flow-sankey.types';
+import { useCashFlowDateRange } from './use-cash-flow-date-range';
 
 export function CashFlowSankeyChart() {
   const { theme, selectedDateRange } = useStore();
-
-  // Use global date filter
-  const dateFrom = useMemo(() => {
-    if (selectedDateRange?.from) {
-      return startOfDay(selectedDateRange.from).toISOString();
-    }
-    return undefined;
-  }, [selectedDateRange?.from]);
-
-  const dateTo = useMemo(() => {
-    if (selectedDateRange?.to) {
-      return endOfDay(selectedDateRange.to).toISOString();
-    }
-    return new Date().toISOString();
-  }, [selectedDateRange?.to]);
+  const { dateFrom, dateTo } = useCashFlowDateRange(selectedDateRange);
 
   const { data, isLoading } = useCashFlowSankey({ dateFrom, dateTo });
   const [activeNode, setActiveNode] = useState<string | null>(null);
@@ -268,26 +215,7 @@ export function CashFlowSankeyChart() {
       title="Income Flow"
       description="Category flow for selected period (EUR)"
       footer={
-        <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-transfer" />
-            <span className="text-muted-foreground">Net Flow:</span>
-            <span className={cn(totals.net >= 0 ? 'text-income' : 'text-expense')}>
-              {totals.net >= 0 ? '+' : ''}
-              {formatSummaryAmount(totals.net)}
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-income" />
-              Income: {formatSummaryAmount(totals.income)}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-expense" />
-              Expenses: {formatSummaryAmount(totals.expenses)}
-            </span>
-          </div>
-        </div>
+        <CashFlowSankeyFooter income={totals.income} expenses={totals.expenses} net={totals.net} />
       }
     >
       <div className="px-4 pb-4">
@@ -303,74 +231,18 @@ export function CashFlowSankeyChart() {
                 link={renderLink}
               >
                 <Tooltip
-                  content={({ payload }) => {
-                    const entry = payload?.[0];
-                    if (!entry) return null;
-
-                    const linkPayload = entry.payload as SankeyLinkPayload & SankeyNodePayload;
-                    const value = entry.value ?? linkPayload.value;
-                    const from = linkPayload.sourceName;
-                    const to = linkPayload.targetName;
-                    const name = linkPayload.name ?? entry.name;
-
-                    if (value == null) return null;
-
-                    return (
-                      <div className="rounded-md border border-border/50 bg-background px-3 py-2 text-xs shadow-sm">
-                        {from && to ? (
-                          <div className="font-medium text-foreground">
-                            {from} {'->'} {to}
-                          </div>
-                        ) : (
-                          <div className="font-medium text-foreground">{name}</div>
-                        )}
-                        <div className="text-muted-foreground">
-                          {formatSummaryAmount(Number(value))}
-                        </div>
-                      </div>
-                    );
-                  }}
+                  content={({ payload }) => <SankeyTooltipContent payload={payload as never} />}
                 />
               </Sankey>
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 text-sm">
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              From (Income)
-            </div>
-            {data.sources.map(source => (
-              <div key={source.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: sankeyBase }}
-                  />
-                  <span className="text-foreground">{source.name}</span>
-                </div>
-                <span className="text-muted-foreground">{formatSummaryAmount(source.amount)}</span>
-              </div>
-            ))}
-          </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              To (Expenses)
-            </div>
-            {targetsWithFreeCash.map(target => (
-              <div key={target.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: target.isFreeCash ? freeCashColor : sankeyBase }}
-                  />
-                  <span className="text-foreground">{target.name}</span>
-                </div>
-                <span className="text-muted-foreground">{formatSummaryAmount(target.amount)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <CashFlowSankeyBreakdown
+          sources={data.sources}
+          targets={targetsWithFreeCash}
+          sankeyBase={sankeyBase}
+          freeCashColor={freeCashColor}
+        />
       </div>
     </ChartWrapper>
   );

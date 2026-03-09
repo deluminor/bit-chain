@@ -1,6 +1,6 @@
-import { err, ok, type MonobankStatusResponse } from '@bit-chain/api-contracts';
 import { getMobileUser } from '@/lib/mobile-auth';
 import { prisma } from '@/lib/prisma';
+import { err, ok, type MonobankStatusResponse } from '@bit-chain/api-contracts';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json(ok(response), { status: 200 });
     }
 
-    const accounts = integration.accounts.map((a) => ({
+    const accounts = integration.accounts.map(a => ({
       id: a.id,
       externalId: a.providerAccountId,
       name: a.name,
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       accounts,
       summary: {
         total: accounts.length,
-        enabled: accounts.filter((a) => a.importEnabled).length,
+        enabled: accounts.filter(a => a.importEnabled).length,
       },
     };
 

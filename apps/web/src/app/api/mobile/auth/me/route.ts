@@ -1,6 +1,6 @@
-import { err, ok } from '@bit-chain/api-contracts';
 import { getMobileUser } from '@/lib/mobile-auth';
 import { getOrCreateRequestId } from '@/lib/request-id';
+import { err, ok } from '@bit-chain/api-contracts';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -22,9 +22,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       headers: { 'X-Request-Id': requestId },
     });
   } catch {
-    return NextResponse.json(
-      err('UNAUTHORIZED', 'Invalid or missing access token', requestId),
-      { status: 401, headers: { 'X-Request-Id': requestId } }
-    );
+    return NextResponse.json(err('UNAUTHORIZED', 'Invalid or missing access token', requestId), {
+      status: 401,
+      headers: { 'X-Request-Id': requestId },
+    });
   }
 }

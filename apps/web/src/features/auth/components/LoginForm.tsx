@@ -6,8 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLogin } from '@/hooks/useLogin';
 import { cn } from '@/lib/utils';
-// import Link from 'next/link';
-// import { ROUTES } from '../constants';
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const { register, handleSubmit, errors, isSubmitting, onSubmit } = useLogin();

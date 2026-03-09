@@ -21,17 +21,43 @@ export interface FilterOption {
   disabled?: boolean;
 }
 
-export interface FilterField {
+interface FilterFieldBase {
   key: string;
-  type: 'search' | 'select' | 'date-range' | 'custom';
   label?: string;
   placeholder?: string;
-  value?: any;
-  options?: FilterOption[];
-  onChange: (value: any) => void;
   className?: string;
+}
+
+export interface SearchFilterField extends FilterFieldBase {
+  type: 'search';
+  value?: string;
+  onChange: (value: string) => void;
+}
+
+export interface SelectFilterField extends FilterFieldBase {
+  type: 'select';
+  value?: string;
+  options?: FilterOption[];
+  onChange: (value: string) => void;
+}
+
+export interface DateRangeFilterField extends FilterFieldBase {
+  type: 'date-range';
+  value?: DateRange;
+  onChange: (value: DateRange | undefined) => void;
+}
+
+export interface CustomFilterField extends FilterFieldBase {
+  type: 'custom';
+  onChange: (_value: undefined) => void;
   render?: () => ReactNode; // For custom filter fields
 }
+
+export type FilterField =
+  | SearchFilterField
+  | SelectFilterField
+  | DateRangeFilterField
+  | CustomFilterField;
 
 export interface TableFiltersProps {
   fields: FilterField[];

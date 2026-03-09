@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, forwardRef } from 'react';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -9,16 +9,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import {
   SUPPORTED_CURRENCIES,
+  formatCurrency,
   parseNumberInput,
   validateCurrencyInput,
-  formatCurrency,
 } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import React, { forwardRef, useEffect, useState } from 'react';
 
-interface CurrencyInputProps {
+interface CurrencyInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'value' | 'onChange' | 'min' | 'max'
+> {
   value?: number;
   currency?: string;
   onChange?: (value: number, currency: string) => void;
@@ -75,14 +78,14 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
       if (value !== parseNumberInput(inputValue)) {
         setInputValue(value !== 0 ? value.toString() : '');
       }
-    }, [value]);
+    }, [inputValue, value]);
 
     // Update currency when prop changes
     useEffect(() => {
       if (currency && currency !== selectedCurrency) {
         setSelectedCurrency(currency);
       }
-    }, [currency]);
+    }, [currency, selectedCurrency]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const rawValue = e.target.value;
@@ -142,7 +145,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
     return (
       <div className={cn('space-y-2', className)}>
         {label && (
-          <Label htmlFor={(props as any).id} className="text-sm font-medium">
+          <Label htmlFor={props.id} className="text-sm font-medium">
             {label}
             {required && <span className="text-red-500 ml-1">*</span>}
           </Label>

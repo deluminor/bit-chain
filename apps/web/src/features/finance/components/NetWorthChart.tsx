@@ -1,36 +1,27 @@
 'use client';
 
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ReferenceLine } from 'recharts';
+import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
-import { Badge } from '@/components/ui/badge';
 import {
-  ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  type ChartConfig,
 } from '@/components/ui/chart';
-import { THEME, useStore } from '@/store';
-import { format } from 'date-fns';
-import { useMemo, useState, useEffect } from 'react';
-import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
-import { useTransactions } from '../queries/transactions';
-import { useAccounts } from '../queries/accounts';
-import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
-import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
-import { convertToBaseCurrencySafe, formatSummaryAmount } from '@/lib/currency';
 import { FINANCE_COLORS } from '@/constants/colors';
-
-interface NetWorthDataPoint {
-  date: string;
-  netWorth: number;
-  totalAssets: number;
-  change: number;
-}
+import { formatSummaryAmount } from '@/lib/currency';
+import { THEME, useStore } from '@/store';
+import { useMemo } from 'react';
+import { Area, AreaChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
+import { useAccounts } from '../queries/accounts';
+import { useTransactions } from '../queries/transactions';
+import { NetWorthInsightsPanels } from './net-worth/NetWorthInsightsPanels';
+import { NetWorthSummaryCards } from './net-worth/NetWorthSummaryCards';
+import { useNetWorthChartData } from './net-worth/use-net-worth-chart-data';
+import { useNetWorthPerformance } from './net-worth/use-net-worth-performance';
 
 export function NetWorthChart() {
   const { theme, selectedDateRange } = useStore();
-  const [chartData, setChartData] = useState<NetWorthDataPoint[]>([]);
-  const [isConverting, setIsConverting] = useState(false);
 
   const { data: accountsData, isLoading: accountsLoading } = useAccounts();
   const canFetchTransactions = Boolean(selectedDateRange?.from && selectedDateRange?.to);
@@ -46,171 +37,13 @@ export function NetWorthChart() {
     [transactionsData?.transactions],
   );
 
-  // Calculate net worth trends over time with currency conversion
-  useEffect(() => {
-    const generateChartData = async () => {
-      if (!accounts.length || !canFetchTransactions || !transactions.length) {
-        // If no transactions, just show current net worth converted to EUR
-        setIsConverting(true);
-        let currentNetWorthEur = 0;
+  const { chartData, isConverting } = useNetWorthChartData({
+    accounts,
+    transactions,
+    canFetchTransactions,
+  });
 
-        try {
-          for (const acc of accounts) {
-            currentNetWorthEur += await convertToBaseCurrencySafe(acc.balance, acc.currency);
-          }
-
-          setChartData([
-            {
-              date: format(new Date(), 'yyyy-MM-dd'),
-              netWorth: currentNetWorthEur,
-              totalAssets: currentNetWorthEur,
-              change: 0,
-            },
-          ]);
-        } catch (error) {
-          console.error('Failed to convert currencies:', error);
-          setChartData([]);
-        } finally {
-          setIsConverting(false);
-        }
-        return;
-      }
-
-      setIsConverting(true);
-      try {
-        const dataMap = new Map<string, NetWorthDataPoint>();
-
-        // Initialize with current account balances converted to EUR
-        const currentBalances = new Map<string, number>();
-        for (const account of accounts) {
-          const balanceInEur = await convertToBaseCurrencySafe(account.balance, account.currency);
-          currentBalances.set(account.id, balanceInEur);
-        }
-
-        // Sort transactions by date (newest first to work backwards)
-        const sortedTransactions = [...transactions].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-        );
-
-        let previousNetWorth = 0;
-
-        // Calculate net worth for each day working backwards
-        for (let index = 0; index < sortedTransactions.length; index++) {
-          const transaction = sortedTransactions[index];
-          if (!transaction) continue;
-          const date = format(new Date(transaction.date), 'yyyy-MM-dd');
-
-          // Calculate current net worth
-          const currentNetWorth = Array.from(currentBalances.values()).reduce(
-            (sum, balance) => sum + balance,
-            0,
-          );
-
-          if (!dataMap.has(date)) {
-            const change = index === 0 ? 0 : currentNetWorth - previousNetWorth;
-            dataMap.set(date, {
-              date,
-              netWorth: currentNetWorth,
-              totalAssets: Math.max(currentNetWorth, 0), // Only positive assets
-              change,
-            });
-          }
-
-          // Convert transaction amount to EUR
-          const transactionAmountEur = await convertToBaseCurrencySafe(
-            transaction.amount,
-            transaction.currency,
-          );
-
-          // Update balances for previous day (working backwards)
-          if (transaction.type === 'INCOME') {
-            const currentBalance = currentBalances.get(transaction.account.id) || 0;
-            currentBalances.set(transaction.account.id, currentBalance - transactionAmountEur);
-          } else if (transaction.type === 'EXPENSE') {
-            const currentBalance = currentBalances.get(transaction.account.id) || 0;
-            currentBalances.set(transaction.account.id, currentBalance + transactionAmountEur);
-          } else if (transaction.type === 'TRANSFER') {
-            const fromBalance = currentBalances.get(transaction.account.id) || 0;
-            currentBalances.set(transaction.account.id, fromBalance + transactionAmountEur);
-
-            if (transaction.transferTo) {
-              const toBalance = currentBalances.get(transaction.transferTo.id) || 0;
-              currentBalances.set(transaction.transferTo.id, toBalance - transactionAmountEur);
-            }
-          }
-
-          previousNetWorth = currentNetWorth;
-        }
-
-        // Convert to array and sort by date
-        const sortedData = Array.from(dataMap.values()).sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-        );
-
-        // Calculate proper change values
-        const finalData = sortedData.map((item, index) => ({
-          ...item,
-          change: index === 0 ? 0 : item.netWorth - (sortedData[index - 1]?.netWorth || 0),
-        }));
-
-        setChartData(finalData);
-      } catch (error) {
-        console.error('Failed to generate net worth chart data:', error);
-        setChartData([]);
-      } finally {
-        setIsConverting(false);
-      }
-    };
-
-    generateChartData();
-  }, [accounts, transactions, canFetchTransactions]);
-
-  // Calculate performance metrics
-  const performance = useMemo(() => {
-    if (chartData.length < 2) {
-      const currentNetWorth = chartData[0]?.netWorth || 0;
-      return {
-        currentNetWorth,
-        startNetWorth: currentNetWorth,
-        totalChange: 0,
-        percentageChange: 0,
-        highestNetWorth: currentNetWorth,
-        lowestNetWorth: currentNetWorth,
-        averageChange: 0,
-      };
-    }
-
-    const current = chartData[chartData.length - 1]?.netWorth || 0;
-    const start = chartData[0]?.netWorth || 0;
-    const totalChange = current - start;
-    // Avoid extreme percentages when starting value is very small (close to zero)
-    const percentageChange =
-      Math.abs(start) > 1
-        ? (totalChange / start) * 100
-        : totalChange > 0
-          ? 100
-          : totalChange < 0
-            ? -100
-            : 0;
-
-    const values = chartData.map(d => d.netWorth);
-    const highest = Math.max(...values);
-    const lowest = Math.min(...values);
-
-    const changes = chartData.slice(1).map(d => d.change);
-    const averageChange =
-      changes.length > 0 ? changes.reduce((sum, change) => sum + change, 0) / changes.length : 0;
-
-    return {
-      currentNetWorth: current,
-      startNetWorth: start,
-      totalChange,
-      percentageChange,
-      highestNetWorth: highest,
-      lowestNetWorth: lowest,
-      averageChange,
-    };
-  }, [chartData]);
+  const performance = useNetWorthPerformance(chartData);
 
   const chartConfig = {
     netWorth: {
@@ -223,7 +56,9 @@ export function NetWorthChart() {
     },
   } satisfies ChartConfig;
 
-  if (accountsLoading || transactionsLoading || isConverting) return <ChartSkeleton />;
+  if (accountsLoading || transactionsLoading || isConverting) {
+    return <ChartSkeleton />;
+  }
 
   return (
     <ChartWrapper
@@ -231,53 +66,8 @@ export function NetWorthChart() {
       description="Your total wealth over time (converted to EUR)"
     >
       <div className="space-y-6">
-        {/* Performance Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <div className="text-2xl font-bold text-income">
-              <TotalBalanceDisplay size="lg" className="text-income" />
-            </div>
-            <div className="text-sm text-muted-foreground">Current Net Worth</div>
-          </div>
+        <NetWorthSummaryCards performance={performance} />
 
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <div
-              className={`text-2xl font-bold flex items-center justify-center gap-1 ${
-                performance.totalChange >= 0 ? 'text-income' : 'text-expense'
-              }`}
-            >
-              {performance.totalChange >= 0 ? (
-                <TrendingUp className="h-5 w-5" />
-              ) : (
-                <TrendingDown className="h-5 w-5" />
-              )}
-              {performance.totalChange >= 0 ? '+' : ''}
-              {formatSummaryAmount(performance.totalChange)}
-            </div>
-            <div className="text-sm text-muted-foreground">Total Change</div>
-          </div>
-
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <div
-              className={`text-2xl font-bold ${
-                performance.percentageChange >= 0 ? 'text-income' : 'text-expense'
-              }`}
-            >
-              {performance.percentageChange >= 0 ? '+' : ''}
-              {performance.percentageChange.toFixed(1)}%
-            </div>
-            <div className="text-sm text-muted-foreground">Growth Rate</div>
-          </div>
-
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <div className="text-2xl font-bold">
-              <TotalBalanceDisplay size="lg" />
-            </div>
-            <div className="text-sm text-muted-foreground">Peak Value</div>
-          </div>
-        </div>
-
-        {/* Chart */}
         <ChartContainer config={chartConfig} className="aspect-auto h-[400px] w-full">
           <AreaChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
             <defs>
@@ -289,13 +79,11 @@ export function NetWorthChart() {
             </defs>
             <CartesianGrid
               vertical={false}
-              horizontal={true}
+              horizontal
               stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}
               strokeDasharray="1 2"
               strokeWidth={0.5}
             />
-
-            {/* Zero reference line */}
             <ReferenceLine
               y={0}
               stroke={theme === THEME.DARK ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'}
@@ -344,7 +132,7 @@ export function NetWorthChart() {
                     });
                   }}
                   formatter={(value, name) => [
-                    formatSummaryAmount(Number(value)) + ' EUR',
+                    `${formatSummaryAmount(Number(value))} EUR`,
                     name === 'netWorth' ? 'Net Worth' : (name as string),
                   ]}
                   indicator="dot"
@@ -366,7 +154,7 @@ export function NetWorthChart() {
                 fill: theme === THEME.DARK ? '#000000' : '#ffffff',
                 opacity: 1,
               }}
-              isAnimationActive={true}
+              isAnimationActive
               animationDuration={800}
               animationBegin={150}
               animationEasing="ease-out"
@@ -374,66 +162,7 @@ export function NetWorthChart() {
           </AreaChart>
         </ChartContainer>
 
-        {/* Performance Insights */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 rounded-lg border bg-card">
-            <h4 className="font-semibold mb-2 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Growth Insights
-            </h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Average daily change:</span>
-                <span
-                  className={`font-medium ${
-                    performance.averageChange >= 0 ? 'text-income' : 'text-expense'
-                  }`}
-                >
-                  {performance.averageChange >= 0 ? '+' : ''}€{performance.averageChange.toFixed(0)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Peak net worth:</span>
-                <span className="font-medium">
-                  {formatSummaryAmount(performance.highestNetWorth)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Lowest point:</span>
-                <span className="font-medium">
-                  {formatSummaryAmount(performance.lowestNetWorth)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-lg border bg-card">
-            <h4 className="font-semibold mb-2 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Wealth Status
-            </h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Growth trend:</span>
-                <Badge variant={performance.totalChange >= 0 ? 'default' : 'destructive'}>
-                  {performance.totalChange >= 0 ? 'Positive' : 'Negative'}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Volatility:</span>
-                <Badge variant="outline">
-                  {Math.abs(performance.highestNetWorth - performance.lowestNetWorth) >= 10000
-                    ? 'High'
-                    : 'Low'}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Period analyzed:</span>
-                <span className="font-medium">{chartData.length} days</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <NetWorthInsightsPanels performance={performance} daysCount={chartData.length} />
       </div>
     </ChartWrapper>
   );

@@ -7,10 +7,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, RefreshCw, Search, X } from 'lucide-react';
-import { useTransactionCategories } from '@/features/finance/queries/transactions';
-import { useAccounts, FinanceAccount } from '@/features/finance/queries/accounts';
+import { FinanceAccount, useAccounts } from '@/features/finance/queries/accounts';
 import { TransactionCategory } from '@/features/finance/queries/categories';
+import { useTransactionCategories } from '@/features/finance/queries/transactions';
+import { Loader2, RefreshCw, Search, X } from 'lucide-react';
 
 interface TransactionFiltersProps {
   searchTerm: string;
@@ -70,7 +70,6 @@ export function TransactionFilters({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search and Refresh */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -106,9 +105,7 @@ export function TransactionFilters({
         </Button>
       </div>
 
-      {/* Filters Row */}
       <div className="flex flex-wrap gap-2">
-        {/* Transaction Type */}
         <Select
           value={typeFilter || ''}
           onValueChange={value =>
@@ -128,7 +125,6 @@ export function TransactionFilters({
           </SelectContent>
         </Select>
 
-        {/* Account Filter */}
         <Select
           value={accountFilter || ''}
           onValueChange={value => onAccountFilterChange(value || undefined)}
@@ -146,7 +142,6 @@ export function TransactionFilters({
           </SelectContent>
         </Select>
 
-        {/* Category Filter */}
         <Select
           value={categoryFilter || ''}
           onValueChange={value => onCategoryFilterChange(value || undefined)}
@@ -164,7 +159,6 @@ export function TransactionFilters({
           </SelectContent>
         </Select>
 
-        {/* Amount Range Filters */}
         <div className="flex gap-1 items-center">
           <Input
             type="number"
@@ -183,7 +177,6 @@ export function TransactionFilters({
           />
         </div>
 
-        {/* Limit Filter */}
         <Select
           value={limitFilter.toString()}
           onValueChange={value => onLimitFilterChange(Number(value))}
@@ -199,7 +192,6 @@ export function TransactionFilters({
           </SelectContent>
         </Select>
 
-        {/* Clear Filters */}
         {hasActiveFilters && (
           <Button variant="outline" size="sm" onClick={clearFilters}>
             Clear Filters

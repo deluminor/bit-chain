@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@/generated/prisma';
+import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { PrismaClient } from '@/generated/prisma';
-
-const prisma = new PrismaClient();
+import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
   params: Promise<{
@@ -104,7 +103,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
 
-    let updateData: any = {};
+    let updateData: Prisma.FinanceAccountUpdateInput = {};
     let message = '';
 
     switch (action) {

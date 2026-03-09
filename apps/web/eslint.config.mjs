@@ -34,12 +34,28 @@ const eslintConfig = [
       'react-hooks/exhaustive-deps': 'warn',
       'prettier/prettier': 'error',
       '@typescript-eslint/no-explicit-any': 'warn',
+      'max-lines': ['warn', { max: 250, skipBlankLines: true, skipComments: true }],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "NewExpression[callee.name='PrismaClient']",
+          message:
+            "Use the shared prisma singleton from '@/lib/prisma' instead of new PrismaClient().",
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/lib/prisma.ts'],
+    rules: {
+      'no-restricted-syntax': 'off',
     },
   },
   {
     files: ['scripts/**/*.{js,ts}', 'prisma/**/*.{js,ts}'],
     rules: {
       'no-console': 'off',
+      'no-restricted-syntax': 'off',
     },
   },
 ];

@@ -1,26 +1,12 @@
-import type { AccountType } from '@bit-chain/api-contracts';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { PrivacyAmount } from '~/src/components/ui';
 import { ACCOUNT_TYPE_META, ACCOUNT_TYPE_META_FALLBACK } from '~/src/constants/accountTypes';
-import { colors, fontSize, fontWeight, radius, spacing } from '~/src/design/tokens';
+import { colors, fontSize } from '~/src/design/tokens';
 import { formatCurrency } from '~/src/utils/format';
+import { rowStyles as styles } from './_styles';
+import type { AccountRowProps } from './_types';
 
-export interface AccountRowData {
-  id: string;
-  name: string;
-  type: AccountType;
-  balance: number;
-  currency: string;
-  description?: string | null;
-  isActive: boolean;
-  transactionCount: number;
-  color?: string | null;
-  isMonobank: boolean;
-}
-
-interface AccountRowProps {
-  account: AccountRowData;
-}
+export type { AccountRowData } from './_types';
 
 export function AccountRow({ account }: AccountRowProps) {
   const meta = ACCOUNT_TYPE_META[account.type] ?? ACCOUNT_TYPE_META_FALLBACK;
@@ -29,12 +15,10 @@ export function AccountRow({ account }: AccountRowProps) {
 
   return (
     <View style={styles.row}>
-      {/* Colour avatar */}
       <View style={[styles.avatar, { backgroundColor: `${color}20` }]}>
         <Text style={styles.avatarIcon}>{meta.icon}</Text>
       </View>
 
-      {/* Name + type */}
       <View style={styles.info}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>
@@ -51,7 +35,6 @@ export function AccountRow({ account }: AccountRowProps) {
         </Text>
       </View>
 
-      {/* Balance — respects privacy mode */}
       <View style={styles.balanceWrap}>
         <PrivacyAmount
           value={formatCurrency(account.balance, account.currency)}
@@ -64,65 +47,3 @@ export function AccountRow({ account }: AccountRowProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  avatarIcon: {
-    fontSize: fontSize.xl,
-  },
-  info: {
-    flex: 1,
-    gap: 2,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  name: {
-    color: colors.textPrimary,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    flex: 1,
-  },
-  monobankTag: {
-    backgroundColor: colors.brandSubtle,
-    borderRadius: radius.xs,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  monobankText: {
-    color: colors.brand,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-  },
-  type: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-  },
-  balanceWrap: {
-    alignItems: 'flex-end',
-    gap: 1,
-    flexShrink: 0,
-  },
-  balance: {
-    fontWeight: fontWeight.bold,
-  },
-  currency: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-  },
-});

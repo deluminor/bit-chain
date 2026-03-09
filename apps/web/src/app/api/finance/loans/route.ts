@@ -1,313 +1,117 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { z } from 'zod';
 import { authOptions } from '@/features/auth/libs/auth';
-import { prisma } from '@/lib/prisma';
-import { BASE_CURRENCY, currencyService } from '@/lib/currency';
+import { findOrCreateFinanceUserByEmail } from '@/features/finance/services/finance-user.service';
+import {
+  createLoanInputSchema,
+  loanDeleteInputSchema,
+  updateLoanInputSchema,
+  webLoansQuerySchema,
+} from '@/features/finance/services/loans/loan-domain.schemas';
+import {
+  LoanDomainError,
+  createLoan,
+  deleteLoan,
+  listWebLoans,
+  toWebLoanPayload,
+  updateLoan,
+} from '@/features/finance/services/loans/loan-domain.service';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
-const loanSchema = z.object({
-  name: z.string().min(1).max(120),
-  type: z.enum(['LOAN', 'DEBT']),
-  totalAmount: z.number().positive(),
-  paidAmount: z.number().min(0).optional(),
-  currency: z.string().min(3).max(3).optional(),
-  startDate: z
-    .string()
-    .datetime()
-    .transform(value => new Date(value))
-    .optional(),
-  dueDate: z
-    .string()
-    .datetime()
-    .transform(value => new Date(value))
-    .optional(),
-  interestRate: z.number().min(0).max(100).optional(),
-  lender: z.string().max(120).optional(),
-  notes: z.string().max(1000).optional(),
-});
+async function getAuthenticatedFinanceUserId(): Promise<string | null> {
+  const session = await getServerSession(authOptions);
 
-const updateLoanSchema = loanSchema.partial().extend({
-  id: z.string().cuid(),
-});
+  if (!session?.user?.email) {
+    return null;
+  }
 
-async function findOrCreateUser(email: string) {
-  let user = await prisma.user.findUnique({
-    where: { email },
+  const user = await findOrCreateFinanceUserByEmail(session.user.email);
+  return user.id;
+}
+
+function parseWebLoansQuery(searchParams: URLSearchParams) {
+  return webLoansQuerySchema.parse({
+    includeInactive: searchParams.get('includeInactive') === 'true',
   });
+}
 
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        email,
-        password: 'nextauth_user',
-      },
-    });
-
-    await prisma.category.create({
-      data: {
-        name: 'solo',
-        userId: user.id,
-      },
-    });
+function mapLoanError(error: unknown, action: string): NextResponse {
+  if (error instanceof z.ZodError) {
+    return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
   }
 
-  return user;
+  if (error instanceof LoanDomainError) {
+    return NextResponse.json({ error: error.message }, { status: error.status });
+  }
+
+  console.error(`[finance/loans] ${action} error:`, error);
+  return NextResponse.json({ error: `Failed to ${action} loan` }, { status: 500 });
 }
 
-interface LoanRecord {
-  id: string;
-  name: string;
-  type: 'LOAN' | 'DEBT';
-  totalAmount: number;
-  paidAmount: number;
-  currency: string;
-  startDate: Date | null;
-  dueDate: Date | null;
-  interestRate: number | null;
-  lender: string | null;
-  notes: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
+    const userId = await getAuthenticatedFinanceUserId();
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await findOrCreateUser(session.user.email);
+    const query = parseWebLoansQuery(new URL(request.url).searchParams);
+    const response = await listWebLoans(userId, query);
+
+    return NextResponse.json(response);
+  } catch (error) {
+    return mapLoanError(error, 'fetch');
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const userId = await getAuthenticatedFinanceUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const input = createLoanInputSchema.parse(body);
+    const loan = await createLoan(userId, input);
+
+    return NextResponse.json({ loan: toWebLoanPayload(loan) }, { status: 201 });
+  } catch (error) {
+    return mapLoanError(error, 'create');
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const userId = await getAuthenticatedFinanceUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const input = updateLoanInputSchema.parse(body);
+    const loan = await updateLoan(userId, input);
+
+    return NextResponse.json({ loan: toWebLoanPayload(loan) });
+  } catch (error) {
+    return mapLoanError(error, 'update');
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const userId = await getAuthenticatedFinanceUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const includeInactive = searchParams.get('includeInactive') === 'true';
+    const { id } = loanDeleteInputSchema.parse({ id: searchParams.get('id') ?? '' });
 
-    const allLoans = (await prisma.loan.findMany({
-      where: {
-        userId: user.id,
-      },
-      orderBy: [{ createdAt: 'desc' }],
-    })) as LoanRecord[];
-
-    // Filter based on status (active = unpaid, inactive = paid)
-    const loans = includeInactive
-      ? allLoans
-      : allLoans.filter(loan => loan.paidAmount < loan.totalAmount);
-
-    let totalOutstandingBase = 0;
-    for (const loan of loans) {
-      const remaining = loan.totalAmount - loan.paidAmount;
-      try {
-        if (loan.currency === BASE_CURRENCY) {
-          totalOutstandingBase += remaining;
-        } else {
-          const converted = await currencyService.convertToBaseCurrency(remaining, loan.currency);
-          totalOutstandingBase += converted;
-        }
-      } catch (convertError) {
-        console.warn(`Failed to convert ${loan.currency} to ${BASE_CURRENCY}:`, convertError);
-        // Fallback: add raw amount without conversion
-        totalOutstandingBase += remaining;
-      }
-    }
-
-    const summary = {
-      total: loans.length,
-      active: loans.filter(loan => loan.paidAmount < loan.totalAmount).length,
-      loanCount: loans.filter(loan => loan.type === 'LOAN').length,
-      debtCount: loans.filter(loan => loan.type === 'DEBT').length,
-      totalOutstandingBase,
-    };
-
-    return NextResponse.json({ loans, summary });
-  } catch (error) {
-    console.error('Error fetching loans:', error);
-    return NextResponse.json({ error: 'Failed to fetch loans' }, { status: 500 });
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await findOrCreateUser(session.user.email);
-    const payload = loanSchema.parse(await request.json());
-
-    const paidAmount = payload.paidAmount ?? 0;
-
-    if (paidAmount > payload.totalAmount) {
-      return NextResponse.json(
-        { error: 'Paid amount cannot exceed total amount' },
-        { status: 400 },
-      );
-    }
-
-    const existingLoan = await prisma.loan.findFirst({
-      where: {
-        userId: user.id,
-        name: payload.name,
-      },
-    });
-
-    if (existingLoan) {
-      return NextResponse.json(
-        { error: 'Loan with this name already exists. Choose another name.' },
-        { status: 400 },
-      );
-    }
-
-    const loan = await prisma.loan.create({
-      data: {
-        userId: user.id,
-        name: payload.name,
-        type: payload.type,
-        totalAmount: payload.totalAmount,
-        paidAmount,
-        currency: payload.currency || 'UAH',
-        startDate: payload.startDate || null,
-        dueDate: payload.dueDate || null,
-        interestRate: payload.interestRate ?? null,
-        lender: payload.lender || null,
-        notes: payload.notes || null,
-      },
-    });
-
-    return NextResponse.json({ loan }, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 },
-      );
-    }
-
-    console.error('Error creating loan:', error);
-    return NextResponse.json({ error: 'Failed to create loan' }, { status: 500 });
-  }
-}
-
-export async function PUT(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await findOrCreateUser(session.user.email);
-    const payload = updateLoanSchema.parse(await request.json());
-
-    const existingLoan = await prisma.loan.findFirst({
-      where: {
-        id: payload.id,
-        userId: user.id,
-      },
-    });
-
-    if (!existingLoan) {
-      return NextResponse.json({ error: 'Loan not found' }, { status: 404 });
-    }
-
-    if (payload.type && payload.type !== existingLoan.type) {
-      return NextResponse.json(
-        { error: 'Loan type cannot be changed once created' },
-        { status: 400 },
-      );
-    }
-
-    if (payload.name && payload.name !== existingLoan.name) {
-      const nameExists = await prisma.loan.findFirst({
-        where: {
-          userId: user.id,
-          name: payload.name,
-        },
-      });
-
-      if (nameExists) {
-        return NextResponse.json(
-          { error: 'Loan with this name already exists. Choose another name.' },
-          { status: 400 },
-        );
-      }
-    }
-
-    const nextTotalAmount = payload.totalAmount ?? existingLoan.totalAmount;
-    const nextPaidAmount = payload.paidAmount ?? existingLoan.paidAmount;
-
-    if (nextPaidAmount > nextTotalAmount) {
-      return NextResponse.json(
-        { error: 'Paid amount cannot exceed total amount' },
-        { status: 400 },
-      );
-    }
-
-    const updatedLoan = await prisma.loan.update({
-      where: { id: existingLoan.id },
-      data: {
-        name: payload.name ?? existingLoan.name,
-        totalAmount: payload.totalAmount ?? existingLoan.totalAmount,
-        paidAmount: payload.paidAmount ?? existingLoan.paidAmount,
-        currency: payload.currency ?? existingLoan.currency,
-        startDate: payload.startDate ?? existingLoan.startDate,
-        dueDate: payload.dueDate ?? existingLoan.dueDate,
-        interestRate: payload.interestRate ?? existingLoan.interestRate,
-        lender: payload.lender ?? existingLoan.lender,
-        notes: payload.notes ?? existingLoan.notes,
-      },
-    });
-
-    return NextResponse.json({ loan: updatedLoan });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 },
-      );
-    }
-
-    console.error('Error updating loan:', error);
-    return NextResponse.json({ error: 'Failed to update loan' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await findOrCreateUser(session.user.email);
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json({ error: 'Loan ID is required' }, { status: 400 });
-    }
-
-    const existingLoan = await prisma.loan.findFirst({
-      where: {
-        id,
-        userId: user.id,
-      },
-    });
-
-    if (!existingLoan) {
-      return NextResponse.json({ error: 'Loan not found' }, { status: 404 });
-    }
-
-    await prisma.loan.delete({
-      where: { id: existingLoan.id },
-    });
+    await deleteLoan(userId, id);
 
     return NextResponse.json({ message: 'Loan deleted successfully' });
   } catch (error) {
-    console.error('Error deleting loan:', error);
-    return NextResponse.json({ error: 'Failed to delete loan' }, { status: 500 });
+    return mapLoanError(error, 'delete');
   }
 }

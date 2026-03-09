@@ -20,13 +20,25 @@ interface AccountBalanceTrend {
   [accountName: string]: string | number;
 }
 
+interface AccountBalanceResponseItem {
+  id: string;
+  name: string;
+  currency: string;
+  balance: number;
+  isActive: boolean;
+}
+
+interface AccountsResponse {
+  accounts: AccountBalanceResponseItem[];
+}
+
 async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
   const accountsResponse = await fetch('/api/finance/accounts?includeInactive=true');
   if (!accountsResponse.ok) {
     throw new Error('Failed to fetch accounts');
   }
 
-  const accountsData = await accountsResponse.json();
+  const accountsData = (await accountsResponse.json()) as AccountsResponse;
   const { accounts } = accountsData;
 
   const endDate = new Date();
@@ -46,7 +58,7 @@ async function fetchAccountBalanceTrends(): Promise<AccountBalanceTrend[]> {
   const transactionsData = await transactionsResponse.json();
   const { transactions } = transactionsData as { transactions: Transaction[] };
 
-  const activeAccounts = accounts.filter((account: any) => account.isActive);
+  const activeAccounts = accounts.filter(account => account.isActive);
   const accountBalances = new Map<string, number>();
 
   for (const account of activeAccounts) {

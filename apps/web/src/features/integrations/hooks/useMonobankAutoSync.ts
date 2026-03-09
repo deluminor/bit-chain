@@ -47,5 +47,5 @@ export function useMonobankAutoSync(reason: string) {
         intervalRef.current = null;
       }
     };
-  }, [data?.hasEnabledAccounts, reason, syncMutation.isPending]);
+  }, [data?.hasEnabledAccounts, reason, syncMutation, syncMutation.isPending]);
 }

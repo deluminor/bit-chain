@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useState } from 'react';
 
 export interface TransactionFilters {
   searchTerm: string;
@@ -15,7 +15,6 @@ export function useTransactionFilters() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Initialize filters from URL params (date range is now global)
   const [filters, setFilters] = useState<TransactionFilters>(() => {
     const searchTerm = searchParams.get('search') || '';
     const typeFilter = searchParams.get('type') as 'INCOME' | 'EXPENSE' | 'TRANSFER' | undefined;

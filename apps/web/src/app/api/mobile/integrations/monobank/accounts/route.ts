@@ -1,24 +1,20 @@
-import {
-  err,
-  ok,
-  MonobankAccountsUpdateRequestSchema,
-  type MonobankAccountsUpdateResponse,
-} from '@bit-chain/api-contracts';
+import type { Prisma } from '@/generated/prisma';
+import { mapMonobankAccountType } from '@/lib/integrations/monobank';
 import { getMobileUser } from '@/lib/mobile-auth';
 import { prisma } from '@/lib/prisma';
-import { mapMonobankAccountType } from '@/lib/integrations/monobank';
-import type { Prisma } from '@/generated/prisma';
+import {
+  err,
+  MonobankAccountsUpdateRequestSchema,
+  ok,
+  type MonobankAccountsUpdateResponse,
+} from '@bit-chain/api-contracts';
 import { NextRequest, NextResponse } from 'next/server';
 
-/**
- * Finds a unique FinanceAccount name for the user by appending suffixes.
- * Excludes the account being updated (excludeId) from uniqueness check.
- */
 async function buildUniqueAccountName(
   tx: Prisma.TransactionClient,
   userId: string,
   baseName: string,
-  excludeId?: string | null
+  excludeId?: string | null,
 ): Promise<string> {
   const trimmed = baseName.trim();
   const base = trimmed.length > 0 ? trimmed : 'Monobank Account';
@@ -74,7 +70,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   if (!parsed.success) {
     return NextResponse.json(
       err('VALIDATION_ERROR', parsed.error.issues[0]?.message ?? 'Invalid request body'),
-      { status: 422 }
+      { status: 422 },
     );
   }
 
@@ -90,18 +86,18 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       });
     }
 
-    const accountMap = new Map(integration.accounts.map((a) => [a.id, a]));
+    const accountMap = new Map(integration.accounts.map(a => [a.id, a]));
 
     for (const update of parsed.data.accounts) {
       const account = accountMap.get(update.accountId);
       if (!account) {
         return NextResponse.json(
           err('ACCOUNT_NOT_FOUND', `Account ${update.accountId} not found`),
-          { status: 404 }
+          { status: 404 },
         );
       }
 
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async tx => {
         const baseName = update.name ?? account.name;
         let finalName = baseName;
         let financeAccountId = account.financeAccountId;
@@ -123,7 +119,8 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
               type: mapMonobankAccountType(account.accountType),
               currency: account.currency,
               balance: account.balance,
-              description: account.ownerType === 'FOP' ? 'Monobank FOP account' : 'Monobank account',
+              description:
+                account.ownerType === 'FOP' ? 'Monobank FOP account' : 'Monobank account',
             },
           });
           financeAccountId = financeAccount.id;
@@ -145,7 +142,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       include: { accounts: { orderBy: { createdAt: 'asc' } } },
     });
 
-    const accounts = updated.accounts.map((a) => ({
+    const accounts = updated.accounts.map(a => ({
       id: a.id,
       externalId: a.providerAccountId,
       name: a.name,

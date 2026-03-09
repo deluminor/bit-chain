@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useAccounts } from '@/features/finance/queries/accounts';
 import { convertToBaseCurrencySafe, formatSummaryAmount } from '@/lib/currency';
 import { RefreshCw } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface TotalBalanceDisplayProps {
   className?: string;
@@ -19,7 +19,7 @@ export function TotalBalanceDisplay({
   fallbackText = '€0',
 }: TotalBalanceDisplayProps) {
   const { data: accountsData, isLoading: accountsLoading } = useAccounts();
-  const accounts = accountsData?.accounts || [];
+  const accounts = useMemo(() => accountsData?.accounts ?? [], [accountsData?.accounts]);
   const [totalBalanceEUR, setTotalBalanceEUR] = useState(0);
   const [isConverting, setIsConverting] = useState(false);
 

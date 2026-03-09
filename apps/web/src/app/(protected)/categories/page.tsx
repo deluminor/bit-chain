@@ -1,29 +1,11 @@
 'use client';
 
-import { CategoryForm } from '@/components/forms/CategoryForm';
 import { AnimatedDiv } from '@/components/ui/animations';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  DataTable,
-  DataTableColumn,
-  FilterField,
-  createSelectFilter,
-} from '@/components/ui/data-table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { CategoriesDialogs } from '@/features/finance/components/categories-page/CategoriesDialogs';
+import { CategoriesPageHeader } from '@/features/finance/components/categories-page/CategoriesPageHeader';
+import { CategoriesStatsCards } from '@/features/finance/components/categories-page/CategoriesStatsCards';
+import { CategoriesTable } from '@/features/finance/components/categories-page/CategoriesTable';
 import {
   CategoryFilters,
   TransactionCategory,
@@ -32,68 +14,27 @@ import {
   useUpdateCategory,
 } from '@/features/finance/queries/categories';
 import { useDataTable } from '@/hooks/useDataTable';
-import {
-  AlertTriangle,
-  Briefcase,
-  Car,
-  Coffee,
-  DollarSign,
-  Edit,
-  Eye,
-  EyeOff,
-  Gamepad2,
-  Gift,
-  GraduationCap,
-  HeartHandshake,
-  Home,
-  MoreHorizontal,
-  Plane,
-  Plus,
-  ShoppingCart,
-  Tag,
-  Trash2,
-  Wrench,
-} from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
-const ICON_MAP = {
-  DollarSign,
-  ShoppingCart,
-  Home,
-  Car,
-  Coffee,
-  Gamepad2,
-  HeartHandshake,
-  Briefcase,
-  GraduationCap,
-  Plane,
-  Gift,
-  Wrench,
-} as const;
-
 export default function CategoriesPage() {
-  // Data table hooks
   const { currentPage, pageSize, onPageChange, onPageSizeChange, totalPages } = useDataTable({
     initialPageSize: 25,
   });
 
-  // Filter states
   const [filters, setFilters] = useState<CategoryFilters>({
     type: undefined,
     includeInactive: false,
     hierarchical: false,
   });
 
-  // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<TransactionCategory | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Get categories with current filters
   const { data: categoriesData, isLoading, error, refetch, isFetching } = useCategories(filters);
-
   const deleteCategory = useDeleteCategory();
   const updateCategory = useUpdateCategory();
 
@@ -114,7 +55,7 @@ export default function CategoriesPage() {
       setShowDeleteDialog(false);
       setSelectedCategory(null);
     } catch {
-      // Error is handled by the mutation
+      // Mutation handles notification
     } finally {
       setIsDeleting(false);
     }
@@ -127,7 +68,7 @@ export default function CategoriesPage() {
         isActive: !category.isActive,
       });
     } catch {
-      // Error is handled by the mutation
+      // Mutation handles notification
     }
   };
 
@@ -147,128 +88,6 @@ export default function CategoriesPage() {
   };
 
   const hasActiveFilters = !!filters.type || !!filters.includeInactive;
-
-  const getIconComponent = (iconName: string) => {
-    return ICON_MAP[iconName as keyof typeof ICON_MAP] || Tag;
-  };
-
-  // Define table columns
-  const columns: DataTableColumn<TransactionCategory>[] = [
-    {
-      key: 'icon',
-      header: '',
-      cell: category => {
-        const IconComponent = getIconComponent(category.icon);
-        return (
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: category.color }}
-          >
-            <IconComponent className="w-4 h-4 text-white" />
-          </div>
-        );
-      },
-      className: 'w-[60px]',
-    },
-    {
-      key: 'name',
-      header: 'Name',
-      cell: category => (
-        <div>
-          <div className="font-medium flex items-center gap-2">
-            {category.name}
-            {category.isDefault && (
-              <Badge variant="secondary" className="text-xs">
-                Default
-              </Badge>
-            )}
-            {!category.isActive && (
-              <Badge variant="outline" className="text-xs">
-                Inactive
-              </Badge>
-            )}
-          </div>
-          {category.parent && (
-            <div className="text-xs text-muted-foreground">Under: {category.parent.name}</div>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'type',
-      header: 'Type',
-      cell: category => (
-        <Badge variant={category.type === 'INCOME' ? 'default' : 'secondary'}>
-          {category.type}
-        </Badge>
-      ),
-    },
-    {
-      key: 'usage',
-      header: 'Usage',
-      cell: category => (
-        <div className="text-sm">
-          <div>{category._count.transactions} transactions</div>
-          {category._count.children > 0 && (
-            <div className="text-xs text-muted-foreground">
-              {category._count.children} subcategories
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'color',
-      header: 'Color',
-      cell: category => (
-        <div className="flex items-center gap-2">
-          <div
-            className="w-4 h-4 rounded-full border"
-            style={{ backgroundColor: category.color }}
-          />
-          <span className="text-xs text-muted-foreground">{category.color}</span>
-        </div>
-      ),
-    },
-  ];
-
-  // Define filter fields
-  const filterFields: FilterField[] = [
-    createSelectFilter(
-      'type',
-      filters.type,
-      value =>
-        setFilters(prev => ({
-          ...prev,
-          type: value === 'all' ? undefined : (value as 'INCOME' | 'EXPENSE'),
-        })),
-      [
-        { value: 'INCOME', label: 'Income' },
-        { value: 'EXPENSE', label: 'Expense' },
-      ],
-      'types',
-    ),
-    {
-      key: 'includeInactive',
-      type: 'custom',
-      onChange: () => {}, // Required by FilterField type but not used
-      render: () => (
-        <Button
-          variant={filters.includeInactive ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setFilters(prev => ({ ...prev, includeInactive: !prev.includeInactive }))}
-          className="h-9"
-        >
-          {filters.includeInactive ? (
-            <Eye className="w-4 h-4 mr-2" />
-          ) : (
-            <EyeOff className="w-4 h-4 mr-2" />
-          )}
-          {filters.includeInactive ? 'Show All' : 'Active Only'}
-        </Button>
-      ),
-    },
-  ];
 
   if (error) {
     return (
@@ -291,193 +110,60 @@ export default function CategoriesPage() {
     <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
         <div className="flex flex-col gap-3 md:gap-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 rounded-xl bg-primary shadow-sm">
-                <Tag className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold">Categories</h1>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  Manage your transaction categories
-                </p>
-              </div>
-            </div>
-            <Button onClick={() => setShowCreateDialog(true)} className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Category
-            </Button>
-          </div>
+          <CategoriesPageHeader onCreateCategory={() => setShowCreateDialog(true)} />
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
-                {counts.income}
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Income Categories</p>
-            </div>
+          <CategoriesStatsCards counts={counts} />
 
-            <div className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">
-                {counts.expense}
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Expense Categories</p>
-            </div>
-
-            <div className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">
-                {counts.parents}
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Parent Categories</p>
-            </div>
-
-            <div className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">
-                {counts.children}
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Subcategories</p>
-            </div>
-          </div>
-
-          {/* Categories Table */}
-          <DataTable
-            data={categories}
-            columns={columns}
+          <CategoriesTable
+            categories={categories}
+            filters={filters}
             isLoading={isLoading}
             isFetching={isFetching}
             currentPage={currentPage}
-            totalPages={totalPages(categories.length)}
             pageSize={pageSize}
+            getTotalPages={totalPages}
             onPageChange={onPageChange}
             onPageSizeChange={onPageSizeChange}
-            pageSizeOptions={[10, 25, 50, 100]}
-            filterFields={filterFields}
+            onFiltersChange={setFilters}
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
-            onRefresh={refetch}
-            actions={category => (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSelectedCategory(category);
-                      setShowEditDialog(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleToggleActive(category)}>
-                    {category.isActive ? (
-                      <>
-                        <EyeOff className="h-4 w-4 mr-2" />
-                        Deactivate
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Activate
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSelectedCategory(category);
-                      setShowDeleteDialog(true);
-                    }}
-                    className="text-destructive"
-                    disabled={category.isDefault}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            emptyMessage={
-              hasActiveFilters ? 'No categories match your filters' : 'No categories found'
-            }
-            emptyDescription={
-              hasActiveFilters
-                ? 'Try adjusting your filters'
-                : 'Create your first category to get started'
-            }
-            emptyActions={
-              !hasActiveFilters && (
-                <Button onClick={() => setShowCreateDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Category
-                </Button>
-              )
-            }
-            showPagination={categories.length > 10}
+            onRefresh={() => {
+              void refetch();
+            }}
+            onCreateCategory={() => setShowCreateDialog(true)}
+            onEditCategory={category => {
+              setSelectedCategory(category);
+              setShowEditDialog(true);
+            }}
+            onToggleActive={handleToggleActive}
+            onDeleteCategory={category => {
+              setSelectedCategory(category);
+              setShowDeleteDialog(true);
+            }}
           />
 
-          {/* Create Category Dialog */}
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create Category</DialogTitle>
-              </DialogHeader>
-              <CategoryForm
-                onSuccess={handleFormSuccess}
-                onCancel={() => setShowCreateDialog(false)}
-              />
-            </DialogContent>
-          </Dialog>
-
-          {/* Edit Category Dialog */}
-          <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Edit Category</DialogTitle>
-              </DialogHeader>
-              <CategoryForm
-                category={selectedCategory || undefined}
-                onSuccess={handleFormSuccess}
-                onCancel={() => {
-                  setShowEditDialog(false);
-                  setSelectedCategory(null);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-
-          {/* Delete Category Dialog */}
-          <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete Category</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete "{selectedCategory?.name}"? This action cannot be
-                  undone.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowDeleteDialog(false);
-                    setSelectedCategory(null);
-                  }}
-                  disabled={isDeleting}
-                >
-                  Cancel
-                </Button>
-                <Button variant="destructive" onClick={handleDeleteCategory} disabled={isDeleting}>
-                  {isDeleting ? 'Deleting...' : 'Delete Category'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <CategoriesDialogs
+            showCreateDialog={showCreateDialog}
+            showEditDialog={showEditDialog}
+            showDeleteDialog={showDeleteDialog}
+            selectedCategory={selectedCategory}
+            isDeleting={isDeleting}
+            onCreateDialogChange={setShowCreateDialog}
+            onEditDialogChange={setShowEditDialog}
+            onDeleteDialogChange={setShowDeleteDialog}
+            onFormSuccess={handleFormSuccess}
+            onCancelEdit={() => {
+              setShowEditDialog(false);
+              setSelectedCategory(null);
+            }}
+            onCancelDelete={() => {
+              setShowDeleteDialog(false);
+              setSelectedCategory(null);
+            }}
+            onConfirmDelete={() => {
+              void handleDeleteCategory();
+            }}
+          />
         </div>
       </div>
     </AnimatedDiv>

@@ -1,13 +1,3 @@
-/**
- * Barrel export for all reusable UI primitives.
- * Import from this file, not from individual component files.
- *
- * @example
- * ```tsx
- * import { Card, StatCard, Badge, EmptyState, PrivacyAmount } from '~/src/components/ui';
- * ```
- */
-
 export { Badge } from './Badge';
 export * from './BudgetCard';
 export * from './Card';
@@ -23,5 +13,6 @@ export * from './Separator';
 export * from './StatCard';
 export { SummaryCard } from './SummaryCard';
 export type { SummaryMetric } from './SummaryCard';
+export { SyncButton } from './SyncButton';
 
 export type { BadgeVariant } from './Badge';

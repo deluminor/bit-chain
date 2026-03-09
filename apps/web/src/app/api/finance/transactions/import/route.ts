@@ -1,10 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { PrismaClient } from '@/generated/prisma';
-import { z } from 'zod';
 import { createImportKey } from '@/lib/finance/transaction-import';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const importSchema = z.object({
   accountId: z.string().cuid(),

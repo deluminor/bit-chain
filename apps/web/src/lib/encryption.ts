@@ -34,7 +34,7 @@ async function getEncryptionKey(): Promise<CryptoKey> {
   const keyBytes = Buffer.from(raw, 'base64');
   if (keyBytes.length !== 32) {
     throw new Error(
-      `MONOBANK_ENCRYPTION_KEY must be 32 bytes when base64-decoded, got ${keyBytes.length}`
+      `MONOBANK_ENCRYPTION_KEY must be 32 bytes when base64-decoded, got ${keyBytes.length}`,
     );
   }
 

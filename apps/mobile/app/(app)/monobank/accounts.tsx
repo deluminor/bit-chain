@@ -1,64 +1,21 @@
 import type { MonobankAccount } from '@bit-chain/api-contracts';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, EmptyState, ErrorScreen, LoadingScreen } from '~/src/components/ui';
-import { colors, fontSize, fontWeight, radius, spacing } from '~/src/design/tokens';
+import { colors } from '~/src/design/tokens';
 import { useMonobankAccountsUpdate, useMonobankStatus } from '~/src/hooks/useMonobank';
-import { formatCurrency } from '~/src/utils/format';
-
-// ─── Account row ─────────────────────────────────────────────────────────────
-
-interface MonobankAccountRowProps {
-  account: MonobankAccount;
-  onToggle: (id: string, enabled: boolean) => void;
-  isPending: boolean;
-}
-
-function MonobankAccountRow({ account, onToggle, isPending }: MonobankAccountRowProps) {
-  // Monobank returns balance in minor units (e.g. kopiykas)
-  const balance = formatCurrency(account.balance / 100, account.currency);
-
-  return (
-    <View style={styles.accountRow}>
-      {/* Account info */}
-      <View style={styles.accountInfo}>
-        <Text style={styles.accountName} numberOfLines={1}>
-          {account.name}
-        </Text>
-        <Text style={styles.accountMeta}>
-          {account.currency} · {balance}
-        </Text>
-        {account.maskedPan.length > 0 && (
-          <Text style={styles.accountPan}>{account.maskedPan[0]}</Text>
-        )}
-      </View>
-
-      {/* Import toggle */}
-      <Switch
-        value={account.importEnabled}
-        onValueChange={value => onToggle(account.id, value)}
-        disabled={isPending}
-        trackColor={{ false: colors.bgMuted, true: colors.brandDim }}
-        thumbColor={account.importEnabled ? '#93c5fd' : colors.textMuted}
-        ios_backgroundColor={colors.bgMuted}
-      />
-    </View>
-  );
-}
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
+import { MonobankAccountRow } from '@/route-modules/(app)/monobank/_components';
+import { accountsStyles as styles } from '@/route-modules/(app)/monobank/_styles';
 
 export default function MonobankAccountsScreen() {
   const { data, isLoading, error, refetch } = useMonobankStatus();
   const { mutate: updateAccounts, isPending } = useMonobankAccountsUpdate();
 
-  // Local optimistic state — server data is the fallback
   const [localAccounts, setLocalAccounts] = useState<MonobankAccount[] | null>(null);
   const accounts = localAccounts ?? data?.accounts ?? [];
 
   const handleToggle = (accountId: string, importEnabled: boolean) => {
-    // Apply optimistic update immediately
     const optimistic = accounts.map(a => (a.id === accountId ? { ...a, importEnabled } : a));
     setLocalAccounts(optimistic);
 
@@ -66,11 +23,9 @@ export default function MonobankAccountsScreen() {
       { accounts: [{ accountId, importEnabled }] },
       {
         onSuccess: result => {
-          // Sync with confirmed server state
           setLocalAccounts(result.accounts);
         },
         onError: () => {
-          // Revert to the state before the toggle
           setLocalAccounts(
             accounts.map(a => (a.id === accountId ? { ...a, importEnabled: !importEnabled } : a)),
           );
@@ -104,8 +59,8 @@ export default function MonobankAccountsScreen() {
         ListHeaderComponent={
           <View style={styles.summaryRow}>
             <Text style={styles.summaryText}>
-              {enabledCount} of {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'}{' '}
-              imported
+              {enabledCount} of {accounts.length}{' '}
+              {accounts.length === 1 ? 'account' : 'accounts'} imported
             </Text>
             {isPending && <ActivityIndicator size="small" color={colors.brand} />}
           </View>
@@ -120,63 +75,3 @@ export default function MonobankAccountsScreen() {
     </SafeAreaView>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bgBase,
-  },
-  list: {
-    padding: spacing.base,
-    paddingBottom: spacing['5xl'],
-  },
-
-  // Summary row
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  summaryText: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-  },
-
-  // Account card
-  card: {
-    borderRadius: radius.lg,
-  },
-  separator: {
-    height: spacing.sm,
-  },
-
-  // Account row content
-  accountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  accountInfo: { flex: 1 },
-  accountName: {
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-  },
-  accountMeta: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    marginTop: 2,
-  },
-  accountPan: {
-    color: colors.textDisabled,
-    fontSize: fontSize.xs,
-    marginTop: 2,
-    fontFamily: 'monospace',
-  },
-});

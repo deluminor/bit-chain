@@ -30,10 +30,7 @@ export function CryptoNewsSection() {
 
   return (
     <div className="grid grid-cols-1 gap-4 px-4 @xl/main:grid-cols-2 lg:px-6">
-      {/* Bitcoin Card */}
       <CryptoCoinCard id={NEWS_COINS.BITCOIN} data={bitcoin} news={bitcoinNews} />
-
-      {/* Ethereum Card */}
       <CryptoCoinCard id={NEWS_COINS.ETHEREUM} data={ethereum} news={ethereumNews} />
     </div>
   );

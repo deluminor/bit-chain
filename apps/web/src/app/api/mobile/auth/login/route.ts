@@ -1,11 +1,11 @@
-import { err, ok, LoginRequestSchema, type TokenResponse } from '@bit-chain/api-contracts';
-import { prisma } from '@/lib/prisma';
 import { issueTokenPair } from '@/lib/mobile-auth';
+import { prisma } from '@/lib/prisma';
 import { createRateLimiter, getIpAddress } from '@/lib/rate-limit';
 import { getOrCreateRequestId } from '@/lib/request-id';
+import { err, LoginRequestSchema, ok, type TokenResponse } from '@bit-chain/api-contracts';
 import { compare } from 'bcryptjs';
-import { randomBytes } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'node:crypto';
 
 /**
  * Brute-force protection: 10 attempts per IP per 15-minute window.
@@ -38,14 +38,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const rateCheck = loginRateLimiter.check(ip);
   if (!rateCheck.allowed) {
     return NextResponse.json(
-      err('RATE_LIMITED', `Too many login attempts. Retry after ${rateCheck.retryAfterSeconds}s`, requestId),
+      err(
+        'RATE_LIMITED',
+        `Too many login attempts. Retry after ${rateCheck.retryAfterSeconds}s`,
+        requestId,
+      ),
       {
         status: 429,
         headers: {
           'Retry-After': String(rateCheck.retryAfterSeconds),
           'X-Request-Id': requestId,
         },
-      }
+      },
     );
   }
 
@@ -53,17 +57,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      err('INVALID_JSON', 'Request body must be valid JSON', requestId),
-      { status: 400, headers: { 'X-Request-Id': requestId } }
-    );
+    return NextResponse.json(err('INVALID_JSON', 'Request body must be valid JSON', requestId), {
+      status: 400,
+      headers: { 'X-Request-Id': requestId },
+    });
   }
 
   const parsed = LoginRequestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       err('VALIDATION_ERROR', parsed.error.issues[0]?.message ?? 'Invalid request body', requestId),
-      { status: 422, headers: { 'X-Request-Id': requestId } }
+      { status: 422, headers: { 'X-Request-Id': requestId } },
     );
   }
 
@@ -79,10 +83,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const isValid = await compare(password, passwordHash);
 
   if (!user || !isValid) {
-    return NextResponse.json(
-      err('INVALID_CREDENTIALS', 'Invalid email or password', requestId),
-      { status: 401, headers: { 'X-Request-Id': requestId } }
-    );
+    return NextResponse.json(err('INVALID_CREDENTIALS', 'Invalid email or password', requestId), {
+      status: 401,
+      headers: { 'X-Request-Id': requestId },
+    });
   }
 
   const familyId = randomBytes(16).toString('hex');

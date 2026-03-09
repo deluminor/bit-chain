@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { PrismaClient } from '@/generated/prisma';
-
-const prisma = new PrismaClient();
+import { NextRequest, NextResponse } from 'next/server';
 
 // Helper function to get user from session
 async function getUserFromSession() {

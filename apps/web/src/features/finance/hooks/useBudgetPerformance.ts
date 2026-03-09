@@ -1,12 +1,33 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { convertToBaseCurrencySafe } from '@/lib/currency';
+import { useQuery } from '@tanstack/react-query';
 
 interface _Transaction {
   categoryId: string;
   amount: number;
   currency?: string;
+}
+
+interface BudgetCategoryPerformance {
+  planned: number;
+  actual: number;
+  plannedBase?: number;
+  actualBase?: number;
+  category: {
+    name: string;
+  };
+}
+
+interface BudgetItem {
+  startDate: string;
+  endDate: string;
+  currency?: string;
+  categories?: BudgetCategoryPerformance[];
+}
+
+interface BudgetsResponse {
+  budgets: BudgetItem[];
 }
 
 interface BudgetPerformanceData {
@@ -27,11 +48,11 @@ async function fetchBudgetPerformance(): Promise<BudgetPerformanceData[]> {
     throw new Error('Failed to fetch budgets');
   }
 
-  const budgetsData = await budgetsResponse.json();
+  const budgetsData = (await budgetsResponse.json()) as BudgetsResponse;
   const { budgets } = budgetsData;
 
   // Find current month budget
-  const currentBudget = budgets.find((budget: any) => {
+  const currentBudget = budgets.find(budget => {
     const budgetStart = new Date(budget.startDate);
     const budgetEnd = new Date(budget.endDate);
     return budgetStart <= now && budgetEnd >= now;

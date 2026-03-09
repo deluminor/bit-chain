@@ -8,13 +8,33 @@ interface NetWorthDataPoint {
   netWorth: number;
 }
 
+interface NetWorthAccount {
+  balance: number;
+  currency: string;
+  isActive: boolean;
+}
+
+interface AccountsResponse {
+  accounts: NetWorthAccount[];
+}
+
+interface NetWorthTransaction {
+  date: string;
+  amount: number;
+  currency?: string;
+}
+
+interface TransactionsResponse {
+  transactions: NetWorthTransaction[];
+}
+
 async function fetchNetWorthData(): Promise<NetWorthDataPoint[]> {
   // Get all accounts (including inactive to get full history)
   const accountsResponse = await fetch('/api/finance/accounts?includeInactive=true');
   if (!accountsResponse.ok) {
     throw new Error('Failed to fetch accounts');
   }
-  const accountsData = await accountsResponse.json();
+  const accountsData = (await accountsResponse.json()) as AccountsResponse;
   const accounts = accountsData.accounts;
 
   if (accounts.length === 0) {
@@ -26,12 +46,12 @@ async function fetchNetWorthData(): Promise<NetWorthDataPoint[]> {
   if (!transactionsResponse.ok) {
     throw new Error('Failed to fetch transactions');
   }
-  const transactionsData = await transactionsResponse.json();
+  const transactionsData = (await transactionsResponse.json()) as TransactionsResponse;
   const transactions = transactionsData.transactions;
 
   // Calculate current net worth from active accounts
   let currentNetWorth = 0;
-  for (const account of accounts.filter((acc: any) => acc.isActive)) {
+  for (const account of accounts.filter(acc => acc.isActive)) {
     currentNetWorth += await convertToBaseCurrencySafe(account.balance, account.currency);
   }
 

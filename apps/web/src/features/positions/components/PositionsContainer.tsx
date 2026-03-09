@@ -1,11 +1,11 @@
 'use client';
 
-import { usePagination } from '@/app/(protected)/journal/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, TagIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useDeleteDialog } from '../hooks/useDeleteDialog';
+import { usePagination } from '../hooks/usePagination';
 import { useTradeData } from '../hooks/useTradeData';
 import { useTradeFilters } from '../hooks/useTradeFilters';
 import { Trade } from '../types/position';

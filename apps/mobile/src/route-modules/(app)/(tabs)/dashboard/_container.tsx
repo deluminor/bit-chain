@@ -651,10 +651,11 @@ export default function DashboardScreen() {
             {formatCurrency(expenseTrendStats.previousTotal, baseCurrency)}
           </Text>
 
-          {!isPrivate && expenseBudgetLimit !== null && (
+          {expenseBudgetLimit !== null && (
             <View style={styles.expensesBudgetLimitRow}>
               <Text style={styles.expensesBudgetLimitLabel}>
-                Budget limit: {formatCurrency(expenseBudgetLimit, baseCurrency)}
+                Budget limit:{' '}
+                {isPrivate ? '••••' : formatCurrency(expenseBudgetLimit, baseCurrency)}
               </Text>
               <Text
                 style={[
@@ -668,7 +669,9 @@ export default function DashboardScreen() {
               >
                 {budgetLimitStatus
                   ? budgetLimitStatus.isOverLimit
-                    ? `Over by ${formatCurrency(expenseTrendStats.currentTotal - expenseBudgetLimit, baseCurrency)}`
+                    ? isPrivate
+                      ? 'Over limit'
+                      : `Over by ${formatCurrency(expenseTrendStats.currentTotal - expenseBudgetLimit, baseCurrency)}`
                     : budgetLimitStatus.isApproaching
                       ? `Approaching (${budgetLimitStatus.usagePercent.toFixed(0)}% used)`
                       : `${budgetLimitStatus.usagePercent.toFixed(0)}% used`
@@ -681,7 +684,7 @@ export default function DashboardScreen() {
             <ComparisonLineChartWidget
               points={expenseComparisonPoints}
               height={150}
-              referenceValue={isPrivate ? null : expenseBudgetLimit}
+              referenceValue={expenseBudgetLimit}
               referenceLineColor="rgba(239, 68, 68, 0.45)"
               onActivePointChange={setActiveExpensePoint}
               onInteractionChange={setIsTrendDragging}
@@ -705,7 +708,7 @@ export default function DashboardScreen() {
                     {expenseTrendStats.previousMonthLabel}
                   </Text>
                 </View>
-                {!isPrivate && expenseBudgetLimit !== null && (
+                {expenseBudgetLimit !== null && (
                   <View style={styles.expensesTrendLegendItem}>
                     <View style={styles.expensesTrendLegendLineBudget} />
                     <Text style={styles.expensesTrendLegendLabel}>Budget limit</Text>

@@ -7,21 +7,22 @@ import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TransactionRow } from '~/src/components/transaction/TransactionRow';
 import {
-  type ActiveLineChartPoint,
-  type ActiveComparisonLineChartPoint,
   Card,
-  type ComparisonLineChartPoint,
   ComparisonLineChartWidget,
   ErrorScreen,
-  type LineChartPoint,
   LineChartWidget,
   LoadingScreen,
   PrivacyAmount,
   SectionHeader,
   Separator,
   SyncButton,
+  type ActiveComparisonLineChartPoint,
+  type ActiveLineChartPoint,
+  type ComparisonLineChartPoint,
+  type LineChartPoint,
 } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
+import { useBudgets } from '~/src/hooks/useBudgets';
 import { useConvertedStats } from '~/src/hooks/useConvertedStats';
 import {
   useDashboard,
@@ -31,6 +32,7 @@ import {
 import { useMonobankSync } from '~/src/hooks/useMonobank';
 import { convertCurrency, useCurrencyStore } from '~/src/lib/currency';
 import { getPeriodLabel, getPeriodRange, usePeriodStore } from '~/src/lib/period';
+import { usePrivacyStore } from '~/src/lib/privacy';
 import { formatCurrency, formatRelativeDate } from '~/src/utils/format';
 
 function formatTrendLabel(isoDate: string): string {
@@ -86,22 +88,101 @@ export default function DashboardScreen() {
   });
   const { data: historyData, refetch: refetchHistory } = useDashboardHistory();
   const { data: expensesTrendData, refetch: refetchExpensesTrend } = useDashboardExpensesTrend();
+  const { data: budgetsData } = useBudgets();
   const { mutate: sync, isPending: isSyncing } = useMonobankSync();
   const router = useRouter();
   const baseCurrency = useCurrencyStore(s => s.baseCurrency);
+  const isPrivate = usePrivacyStore(s => s.isPrivate);
   const [totalInBase, setTotalInBase] = useState<number | null>(null);
   const [trendPoints, setTrendPoints] = useState<LineChartPoint[]>([]);
   const [expenseComparisonPoints, setExpenseComparisonPoints] = useState<
     ComparisonLineChartPoint[]
   >([]);
-  const [activeExpensePoint, setActiveExpensePoint] = useState<ActiveComparisonLineChartPoint | null>(
-    null,
-  );
+  const [activeExpensePoint, setActiveExpensePoint] =
+    useState<ActiveComparisonLineChartPoint | null>(null);
   const [activeTrendPoint, setActiveTrendPoint] = useState<ActiveLineChartPoint | null>(null);
   const [isTrendDragging, setIsTrendDragging] = useState(false);
+  const [expenseBudgetLimit, setExpenseBudgetLimit] = useState<number | null>(null);
 
   const convertedStats = useConvertedStats(data?.periodStats ?? null);
   const insets = useSafeAreaInsets();
+
+  const currentMonthBudgets = useMemo(() => {
+    const budgets = budgetsData?.budgets ?? [];
+    const now = new Date();
+    const currentUtcMonthStartTs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0);
+    const nextUtcMonthStartTs = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth() + 1,
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
+    const currentLocalMonthStartTs = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0,
+    ).getTime();
+    const nextLocalMonthStartTs = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1,
+      0,
+      0,
+      0,
+      0,
+    ).getTime();
+
+    const monthlyBudgets = budgets.filter(budget => budget.isActive && budget.period === 'MONTHLY');
+
+    const parsedMonthlyBudgets = monthlyBudgets
+      .map(budget => ({
+        budget,
+        startTs: Date.parse(budget.startDate),
+        endTs: Date.parse(budget.endDate),
+      }))
+      .filter(item => Number.isFinite(item.startTs) && Number.isFinite(item.endTs))
+      .filter(item => {
+        const overlapsUtcMonth =
+          item.startTs < nextUtcMonthStartTs && item.endTs >= currentUtcMonthStartTs;
+        const overlapsLocalMonth =
+          item.startTs < nextLocalMonthStartTs && item.endTs >= currentLocalMonthStartTs;
+
+        return overlapsUtcMonth || overlapsLocalMonth;
+      })
+      .map(item => item.budget);
+
+    const currentRegularBudgets = parsedMonthlyBudgets.filter(budget => !budget.isTemplate);
+    if (currentRegularBudgets.length > 0) {
+      return currentRegularBudgets;
+    }
+
+    if (parsedMonthlyBudgets.length > 0) {
+      return parsedMonthlyBudgets;
+    }
+
+    const fallbackSorted = monthlyBudgets
+      .map(budget => ({
+        budget,
+        startTs: Date.parse(budget.startDate),
+      }))
+      .filter(item => Number.isFinite(item.startTs))
+      .sort((left, right) => right.startTs - left.startTs);
+
+    const latestRegular = fallbackSorted.find(item => !item.budget.isTemplate)?.budget;
+    if (latestRegular) {
+      return [latestRegular];
+    }
+
+    const latestAny = fallbackSorted[0]?.budget;
+    return latestAny ? [latestAny] : [];
+  }, [budgetsData?.budgets]);
 
   const handleSync = () => {
     sync(
@@ -278,6 +359,7 @@ export default function DashboardScreen() {
         if (isMounted) {
           setExpenseComparisonPoints([]);
           setActiveExpensePoint(null);
+          setExpenseBudgetLimit(null);
         }
         return;
       }
@@ -286,18 +368,49 @@ export default function DashboardScreen() {
         baseCurrency === 'EUR' ? 1 : await convertCurrency(1, 'EUR', baseCurrency).catch(() => 1);
       const todayDay = new Date().getUTCDate();
 
-      const normalized: ComparisonLineChartPoint[] = expensesTrendData.points
-        .map(point => ({
-          day: point.day,
-          label: point.label,
-          currentValue:
-            point.day <= todayDay ? roundToCents(point.currentExpenseEUR * factor) : null,
-          previousValue: roundToCents(point.previousExpenseEUR * factor),
-        }));
+      const normalized: ComparisonLineChartPoint[] = expensesTrendData.points.map(point => ({
+        day: point.day,
+        label: point.label,
+        currentValue: point.day <= todayDay ? roundToCents(point.currentExpenseEUR * factor) : null,
+        previousValue: roundToCents(point.previousExpenseEUR * factor),
+      }));
 
       if (!isMounted) return;
       setExpenseComparisonPoints(normalized);
       setActiveExpensePoint(null);
+
+      let resolvedBudgetLimit: number | null = null;
+      if (currentMonthBudgets.length > 0) {
+        const convertedBudgetLimits = await Promise.all(
+          currentMonthBudgets.map(async budget => {
+            const plannedBase = Number(budget.totalPlannedBase);
+            if (Number.isFinite(plannedBase) && plannedBase >= 0) {
+              const converted = await convertCurrency(plannedBase, 'EUR', baseCurrency).catch(
+                () => plannedBase,
+              );
+              return roundToCents(converted);
+            }
+
+            const planned = Number(budget.totalPlanned);
+            if (!Number.isFinite(planned) || planned < 0) {
+              return null;
+            }
+
+            const converted = await convertCurrency(planned, budget.currency, baseCurrency).catch(
+              () => planned,
+            );
+            return roundToCents(converted);
+          }),
+        );
+
+        const totalLimit = convertedBudgetLimits.reduce<number>(
+          (sum, value) => sum + (typeof value === 'number' ? value : 0),
+          0,
+        );
+        resolvedBudgetLimit = totalLimit > 0 ? roundToCents(totalLimit) : null;
+      }
+
+      setExpenseBudgetLimit(resolvedBudgetLimit);
     };
 
     void recomputeExpenseTrend();
@@ -305,7 +418,7 @@ export default function DashboardScreen() {
     return () => {
       isMounted = false;
     };
-  }, [expensesTrendData, baseCurrency]);
+  }, [currentMonthBudgets, expensesTrendData, baseCurrency]);
 
   const trendStats = useMemo(() => {
     const series = trendPoints.map(point => point.value).filter(Number.isFinite);
@@ -339,13 +452,14 @@ export default function DashboardScreen() {
   }, [trendPoints, totalInBase, activeTrendPoint]);
 
   const expenseTrendStats = useMemo(() => {
-    const latestCurrentPoint = [...expenseComparisonPoints].reverse().find(
-      point => typeof point.currentValue === 'number' && Number.isFinite(point.currentValue),
-    );
+    const latestCurrentPoint = [...expenseComparisonPoints]
+      .reverse()
+      .find(point => typeof point.currentValue === 'number' && Number.isFinite(point.currentValue));
     const fallbackCurrentTotal = latestCurrentPoint?.currentValue ?? 0;
     const fallbackDay = latestCurrentPoint?.day ?? new Date().getUTCDate();
-    const fallbackPreviousValue = expenseComparisonPoints.find(point => point.day === fallbackDay)
-      ?.previousValue;
+    const fallbackPreviousValue = expenseComparisonPoints.find(
+      point => point.day === fallbackDay,
+    )?.previousValue;
     const fallbackPreviousTotal =
       typeof fallbackPreviousValue === 'number' && Number.isFinite(fallbackPreviousValue)
         ? fallbackPreviousValue
@@ -374,6 +488,20 @@ export default function DashboardScreen() {
       comparedDays: expensesTrendData?.comparedDays ?? expenseComparisonPoints.length,
     };
   }, [expenseComparisonPoints, expensesTrendData, activeExpensePoint]);
+
+  const budgetLimitStatus = useMemo(() => {
+    if (!expenseBudgetLimit || expenseBudgetLimit <= 0) {
+      return null;
+    }
+
+    const usagePercent = (expenseTrendStats.currentTotal / expenseBudgetLimit) * 100;
+
+    return {
+      usagePercent,
+      isApproaching: usagePercent >= 80 && usagePercent < 100,
+      isOverLimit: usagePercent >= 100,
+    };
+  }, [expenseBudgetLimit, expenseTrendStats.currentTotal]);
 
   // Stats are already converted to baseCurrency by useConvertedStats
   const netFlowValue = convertedStats.netFlow || 0;
@@ -523,14 +651,38 @@ export default function DashboardScreen() {
             {formatCurrency(expenseTrendStats.previousTotal, baseCurrency)}
           </Text>
 
-          <Text style={styles.expensesTrendHint}>
-            Solid line: this month. Dashed line: previous month.
-          </Text>
+          {!isPrivate && expenseBudgetLimit !== null && (
+            <View style={styles.expensesBudgetLimitRow}>
+              <Text style={styles.expensesBudgetLimitLabel}>
+                Budget limit: {formatCurrency(expenseBudgetLimit, baseCurrency)}
+              </Text>
+              <Text
+                style={[
+                  styles.expensesBudgetLimitStatus,
+                  budgetLimitStatus?.isOverLimit
+                    ? styles.expensesBudgetLimitOver
+                    : budgetLimitStatus?.isApproaching
+                      ? styles.expensesBudgetLimitApproaching
+                      : null,
+                ]}
+              >
+                {budgetLimitStatus
+                  ? budgetLimitStatus.isOverLimit
+                    ? `Over by ${formatCurrency(expenseTrendStats.currentTotal - expenseBudgetLimit, baseCurrency)}`
+                    : budgetLimitStatus.isApproaching
+                      ? `Approaching (${budgetLimitStatus.usagePercent.toFixed(0)}% used)`
+                      : `${budgetLimitStatus.usagePercent.toFixed(0)}% used`
+                  : '—'}
+              </Text>
+            </View>
+          )}
 
           {expenseTrendStats.hasData ? (
             <ComparisonLineChartWidget
               points={expenseComparisonPoints}
               height={150}
+              referenceValue={isPrivate ? null : expenseBudgetLimit}
+              referenceLineColor="rgba(239, 68, 68, 0.45)"
               onActivePointChange={setActiveExpensePoint}
               onInteractionChange={setIsTrendDragging}
             />
@@ -553,6 +705,12 @@ export default function DashboardScreen() {
                     {expenseTrendStats.previousMonthLabel}
                   </Text>
                 </View>
+                {!isPrivate && expenseBudgetLimit !== null && (
+                  <View style={styles.expensesTrendLegendItem}>
+                    <View style={styles.expensesTrendLegendLineBudget} />
+                    <Text style={styles.expensesTrendLegendLabel}>Budget limit</Text>
+                  </View>
+                )}
               </View>
             </View>
           )}

@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SummaryCard } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
 import { useReport } from '~/src/hooks/useReports';
-import { getPeriodRange, PERIOD_OPTIONS, usePeriodStore } from '~/src/lib/period';
+import { PERIOD_OPTIONS, getPeriodRange, usePeriodStore } from '~/src/lib/period';
 import { formatCurrency } from '~/src/utils/format';
 
 export default function ReportsScreen() {
@@ -113,19 +113,16 @@ export default function ReportsScreen() {
               label: 'Income',
               value: isLoading ? '…' : formatCurrency(data?.totalIncome ?? 0, currency),
               valueColor: colors.income,
-              private: false,
             },
             {
               label: 'Expenses',
               value: isLoading ? '…' : formatCurrency(data?.totalExpenses ?? 0, currency),
               valueColor: colors.expense,
-              private: false,
             },
             {
               label: 'Net',
               value: isLoading ? '…' : formatCurrency(Math.abs(netFlow), currency),
               valueColor: netFlow >= 0 ? colors.income : colors.expense,
-              private: false,
             },
           ]}
         />

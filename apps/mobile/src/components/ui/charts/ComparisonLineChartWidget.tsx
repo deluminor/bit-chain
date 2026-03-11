@@ -32,6 +32,8 @@ interface LineChartComparisonProps {
   height?: number;
   currentLineColor?: string;
   previousLineColor?: string;
+  referenceValue?: number | null;
+  referenceLineColor?: string;
   onActivePointChange?: (point: ActiveComparisonLineChartPoint | null) => void;
   onInteractionChange?: (isInteracting: boolean) => void;
   interactive?: boolean;
@@ -52,12 +54,16 @@ export function ComparisonLineChartWidget({
   height = 150,
   currentLineColor = colors.expense,
   previousLineColor = colors.textDisabled,
+  referenceValue = null,
+  referenceLineColor = colors.expense,
   onActivePointChange,
   onInteractionChange,
   interactive = true,
 }: LineChartComparisonProps) {
   const [width, setWidth] = useState(0);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const normalizedReferenceValue =
+    typeof referenceValue === 'number' && Number.isFinite(referenceValue) ? referenceValue : null;
 
   const normalizedPoints = useMemo(
     () =>
@@ -102,13 +108,14 @@ export function ComparisonLineChartWidget({
     });
   }, [normalizedPoints]);
 
-  const { currentPath, previousPath, chartPoints, innerWidth } = useMemo(() => {
+  const { currentPath, previousPath, chartPoints, innerWidth, referenceY } = useMemo(() => {
     if (width === 0 || normalizedPoints.length === 0) {
       return {
         currentPath: '',
         previousPath: '',
         chartPoints: [] as ChartPoint[],
         innerWidth: 0,
+        referenceY: null as number | null,
       };
     }
 
@@ -120,7 +127,9 @@ export function ComparisonLineChartWidget({
     const values = sourcePoints
       .flatMap(point => [point.currentValue, point.previousValue])
       .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
-    const safeValues = values.length > 0 ? values : [0];
+    const valuesWithReference =
+      normalizedReferenceValue !== null ? [...values, normalizedReferenceValue] : values;
+    const safeValues = valuesWithReference.length > 0 ? valuesWithReference : [0];
     const rawMin = Math.min(...safeValues);
     const rawMax = Math.max(...safeValues);
     const lowerBound = Math.min(0, rawMin);
@@ -153,6 +162,11 @@ export function ComparisonLineChartWidget({
       };
     });
 
+    const referenceY =
+      normalizedReferenceValue !== null
+        ? height - PADDING_Y - ((normalizedReferenceValue - min) / valueRange) * drawableHeight
+        : null;
+
     const currentLineGenerator = d3Shape
       .line<ChartPoint>()
       .defined(point => point.yCurrent !== null)
@@ -172,8 +186,9 @@ export function ComparisonLineChartWidget({
       previousPath: previousLineGenerator(resolvedPoints) || '',
       chartPoints: resolvedPoints,
       innerWidth,
+      referenceY,
     };
-  }, [height, normalizedPoints, width]);
+  }, [height, normalizedPoints, normalizedReferenceValue, width]);
 
   const resolvedActiveIndex =
     activeIndex !== null && activeIndex >= 0 && activeIndex < chartPoints.length
@@ -182,7 +197,7 @@ export function ComparisonLineChartWidget({
         ? chartPoints.length - 1
         : null;
   const activeAnchorPoint =
-    resolvedActiveIndex !== null ? chartPoints[resolvedActiveIndex] ?? null : null;
+    resolvedActiveIndex !== null ? (chartPoints[resolvedActiveIndex] ?? null) : null;
 
   const resolveNearestDefinedPoint = (
     startIndex: number,
@@ -325,6 +340,17 @@ export function ComparisonLineChartWidget({
     >
       {width > 0 && chartPoints.length > 0 && (
         <Svg width={width} height={height}>
+          {typeof referenceY === 'number' && (
+            <Line
+              x1={PADDING_X}
+              x2={PADDING_X + innerWidth}
+              y1={referenceY}
+              y2={referenceY}
+              stroke={referenceLineColor}
+              strokeWidth={1.5}
+              strokeDasharray="6 6"
+            />
+          )}
           <Path
             d={previousPath}
             fill="none"

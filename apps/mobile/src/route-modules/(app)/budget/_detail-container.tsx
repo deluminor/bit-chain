@@ -13,12 +13,13 @@ import {
   Card,
   ErrorScreen,
   LoadingScreen,
+  PrivacyAmount,
   ProgressBar,
   SectionHeader,
   Separator,
 } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
-import { useBudgets, useDeleteBudget } from '~/src/hooks/useBudgets';
+import { useBudgets, useCreateBudget, useDeleteBudget } from '~/src/hooks/useBudgets';
 import { formatCurrency, formatShortDate } from '~/src/utils/format';
 import { styles } from './_detail-styles';
 
@@ -27,6 +28,7 @@ export default function BudgetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data, isLoading, error, refetch, isRefetching } = useBudgets();
+  const { mutate: createBudget, isPending: isCopying } = useCreateBudget();
   const { mutate: deleteBudget, isPending: isDeleting } = useDeleteBudget();
 
   const budget = data?.budgets.find(item => item.id === id);
@@ -58,6 +60,64 @@ export default function BudgetDetailScreen() {
           },
         },
       ],
+    );
+  };
+
+  const handleCopyToNextMonth = () => {
+    if (budget.period !== 'MONTHLY') {
+      Alert.alert('Not supported', 'Only monthly budgets can be copied to the next month.');
+      return;
+    }
+
+    const sourceDate = new Date(budget.startDate);
+    const nextMonthDate = new Date(sourceDate);
+    nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+    const nextMonthStart = new Date(
+      nextMonthDate.getFullYear(),
+      nextMonthDate.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
+    const nextMonthEnd = new Date(
+      nextMonthDate.getFullYear(),
+      nextMonthDate.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+    const nextMonthLabel = nextMonthStart.toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    });
+
+    createBudget(
+      {
+        name: `${nextMonthLabel} Budget`,
+        period: 'MONTHLY',
+        startDate: nextMonthStart.toISOString(),
+        endDate: nextMonthEnd.toISOString(),
+        currency: budget.currency,
+        totalPlanned: budget.totalPlanned,
+        categories: budget.categories.map(category => ({
+          categoryId: category.categoryId,
+          planned: category.planned,
+        })),
+        isTemplate: false,
+        templateName: null,
+        autoApply: false,
+      },
+      {
+        onSuccess: () => {
+          Alert.alert('Budget copied', `Created budget for ${nextMonthLabel}.`);
+          void refetch();
+        },
+        onError: copyError => Alert.alert('Copy failed', copyError.message),
+      },
     );
   };
 
@@ -101,6 +161,18 @@ export default function BudgetDetailScreen() {
                 )}
               </Pressable>
               <Pressable
+                style={[styles.headerBtn, isCopying && { opacity: 0.5 }]}
+                onPress={handleCopyToNextMonth}
+                disabled={isCopying}
+                hitSlop={8}
+              >
+                {isCopying ? (
+                  <ActivityIndicator size="small" color={colors.textSecondary} />
+                ) : (
+                  <Text style={styles.headerIcon}>⧉</Text>
+                )}
+              </Pressable>
+              <Pressable
                 style={styles.headerBtn}
                 onPress={() => router.push({ pathname: '/budget/edit', params: { id: budget.id } })}
                 hitSlop={8}
@@ -118,15 +190,19 @@ export default function BudgetDetailScreen() {
           <View style={styles.amountsRow}>
             <View>
               <Text style={styles.amountLabel}>Spent</Text>
-              <Text style={[styles.spentAmount, isOverBudget && styles.overSpent]}>
-                {formatCurrency(budget.totalActualBase, budget.currency)}
-              </Text>
+              <PrivacyAmount
+                value={formatCurrency(budget.totalActualBase, budget.currency)}
+                style={[styles.spentAmount, isOverBudget && styles.overSpent]}
+                color={isOverBudget ? colors.expense : colors.textPrimary}
+              />
             </View>
             <View style={styles.amountPlannedWrap}>
               <Text style={styles.amountLabel}>Planned</Text>
-              <Text style={styles.plannedAmount}>
-                {formatCurrency(budget.totalPlannedBase, budget.currency)}
-              </Text>
+              <PrivacyAmount
+                value={formatCurrency(budget.totalPlannedBase, budget.currency)}
+                style={styles.plannedAmount}
+                color={colors.textSecondary}
+              />
             </View>
           </View>
           <View style={styles.mainProgressWrap}>
@@ -155,12 +231,17 @@ export default function BudgetDetailScreen() {
                     </Text>
                   </View>
                   <View style={styles.catAmounts}>
-                    <Text style={[styles.catSpent, catOver && styles.catOverSpent]}>
-                      {formatCurrency(cat.actualBase, budget.currency)}
-                    </Text>
-                    <Text style={styles.catPlanned}>
-                      / {formatCurrency(cat.plannedBase, budget.currency)}
-                    </Text>
+                    <PrivacyAmount
+                      value={formatCurrency(cat.actualBase, budget.currency)}
+                      style={[styles.catSpent, catOver && styles.catOverSpent]}
+                      color={catOver ? colors.expense : colors.textPrimary}
+                    />
+                    <Text style={styles.catPlanned}>/</Text>
+                    <PrivacyAmount
+                      value={formatCurrency(cat.plannedBase, budget.currency)}
+                      style={styles.catPlanned}
+                      color={colors.textMuted}
+                    />
                   </View>
                 </View>
                 <View style={styles.catProgressWrap}>

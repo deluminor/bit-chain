@@ -192,10 +192,33 @@ const screenStyles = StyleSheet.create({
     fontSize: fontSize.xs,
     marginBottom: spacing.xs,
   },
-  expensesTrendHint: {
+  expensesBudgetLimitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.expenseSubtle,
+    borderRadius: radius.md,
+    backgroundColor: colors.errorSubtle,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  expensesBudgetLimitLabel: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  expensesBudgetLimitStatus: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
-    marginBottom: spacing.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  expensesBudgetLimitApproaching: {
+    color: colors.warning,
+  },
+  expensesBudgetLimitOver: {
+    color: colors.expense,
   },
   expensesTrendLegendRow: {
     flexDirection: 'row',
@@ -224,6 +247,13 @@ const screenStyles = StyleSheet.create({
     height: 0,
     borderBottomWidth: 2,
     borderBottomColor: colors.textDisabled,
+    borderStyle: 'dashed',
+  },
+  expensesTrendLegendLineBudget: {
+    width: 18,
+    height: 0,
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(239, 68, 68, 0.45)',
     borderStyle: 'dashed',
   },
   expensesTrendLegendLabel: {

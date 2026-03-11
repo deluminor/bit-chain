@@ -11,16 +11,13 @@ const CURRENCY_STORAGE_KEY = 'bit_chain_base_currency';
 
 interface CurrencyState {
   baseCurrency: CurrencyCode;
-  /** All currencies that can be selected in settings. */
   availableCurrencies: readonly CurrencyCode[];
-  /** Update base currency and persist to AsyncStorage. */
   setBaseCurrency: (code: CurrencyCode) => Promise<void>;
-  /** Hydrate base currency from AsyncStorage on app start. */
   hydrate: () => Promise<void>;
 }
 
 export const useCurrencyStore = create<CurrencyState>(set => ({
-  baseCurrency: 'UAH',
+  baseCurrency: BASE_CURRENCY,
   availableCurrencies: SUPPORTED_CURRENCIES,
 
   setBaseCurrency: async code => {
@@ -38,9 +35,7 @@ export const useCurrencyStore = create<CurrencyState>(set => ({
       if (stored && SUPPORTED_CURRENCIES.includes(stored)) {
         set({ baseCurrency: stored });
       }
-    } catch {
-      // Ignore — fallback to default UAH
-    }
+    } catch {}
   },
 }));
 
@@ -70,10 +65,6 @@ let cachedRates: ExchangeRate | null = null;
 let lastFetch = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-/**
- * Fetches FX rates using the same public APIs and semantics as the web app.
- * Base currency is EUR; rates map is compatible with apps/web `currencyService`.
- */
 export async function getExchangeRates(force = false): Promise<ExchangeRate> {
   const now = Date.now();
 
@@ -83,9 +74,7 @@ export async function getExchangeRates(force = false): Promise<ExchangeRate> {
 
   try {
     const apis = [
-      // ExchangeRate-API (free, no API key required)
       `https://api.exchangerate-api.com/v4/latest/${BASE_CURRENCY}`,
-      // Alternative free API
       `https://open.er-api.com/v6/latest/${BASE_CURRENCY}`,
     ];
 
@@ -126,7 +115,6 @@ export async function getExchangeRates(force = false): Promise<ExchangeRate> {
     lastFetch = now;
     return cachedRates;
   } catch {
-    // Ultimate fallback with current approximate rates (kept in sync with web)
     cachedRates = {
       base: BASE_CURRENCY,
       rates: {
@@ -172,7 +160,6 @@ export async function convertFromBaseCurrency(
     return amount;
   }
 
-  // EUR → target currency
   return amount * rate;
 }
 

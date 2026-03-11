@@ -59,6 +59,53 @@ export const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4,
   },
+  templateCard: {
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.bgSurface,
+    padding: spacing.md,
+  },
+  templateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  templateTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  templateTitle: {
+    color: colors.textPrimary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  templateHint: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+  },
+  templateToggle: {
+    width: 46,
+    height: 28,
+    borderRadius: radius.full,
+    backgroundColor: colors.border,
+    padding: 3,
+    justifyContent: 'center',
+  },
+  templateToggleActive: {
+    backgroundColor: colors.brand,
+  },
+  templateToggleThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.full,
+    backgroundColor: colors.white,
+  },
+  templateToggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
   sectionHeaderWrap: {
     flexDirection: 'row',
     justifyContent: 'space-between',

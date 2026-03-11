@@ -62,16 +62,16 @@ export const createBudgetSchema = z.object({
   period: z.enum(['MONTHLY', 'YEARLY', 'CUSTOM']),
   startDate: z.string().datetime(),
   endDate: z.string().datetime(),
-  currency: z.string().default('UAH'),
-  totalPlanned: z.number().positive('Total planned must be positive'),
+  currency: z.string().default('EUR'),
+  totalPlanned: z.number().nonnegative('Total planned must be zero or positive'),
   categories: z
     .array(
       z.object({
         categoryId: z.string().cuid('Invalid category ID'),
-        planned: z.number().positive('Planned amount must be positive'),
+        planned: z.number().nonnegative('Planned amount must be zero or positive'),
       }),
     )
-    .min(1, 'At least one category is required'),
+    .default([]),
   isTemplate: z.boolean().optional(),
   templateName: z.string().optional().nullable(),
   autoApply: z.boolean().optional(),

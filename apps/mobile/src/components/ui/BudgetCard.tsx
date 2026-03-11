@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, fontSize, fontWeight, spacing } from '~/src/design/tokens';
 import { formatCurrency, formatShortDate } from '~/src/utils/format';
 import { Card } from './Card';
+import { PrivacyAmount } from './PrivacyAmount';
 import { ProgressBar } from './ProgressBar';
 
 type Props = {
@@ -46,12 +47,22 @@ export function BudgetCard({ budget }: Props) {
       </View>
 
       <View style={styles.amounts}>
-        <Text style={[styles.spent, isOverBudget && styles.overSpent]}>
-          {formatCurrency(budget.totalActualBase, budget.currency)} spent
-        </Text>
-        <Text style={styles.planned}>
-          of {formatCurrency(budget.totalPlannedBase, budget.currency)}
-        </Text>
+        <View style={styles.spentRow}>
+          <PrivacyAmount
+            value={formatCurrency(budget.totalActualBase, budget.currency)}
+            style={[styles.spent, isOverBudget && styles.overSpent]}
+            color={isOverBudget ? colors.expense : colors.textPrimary}
+          />
+          <Text style={[styles.spent, isOverBudget && styles.overSpent]}> spent</Text>
+        </View>
+        <View style={styles.plannedRow}>
+          <Text style={styles.planned}>of </Text>
+          <PrivacyAmount
+            value={formatCurrency(budget.totalPlannedBase, budget.currency)}
+            style={styles.planned}
+            color={colors.textMuted}
+          />
+        </View>
       </View>
     </Card>
   );
@@ -108,6 +119,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
+  },
+  spentRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  plannedRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   spent: {
     fontSize: fontSize.base,

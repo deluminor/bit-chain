@@ -5,8 +5,8 @@ import {
 } from '@bit-chain/api-contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { useEffect, useMemo, useState } from 'react';
+import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import {
   ActivityIndicator,
   Alert,
@@ -24,11 +24,15 @@ import { ErrorScreen, LoadingScreen } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
 import { useBudgets, useCreateBudget, useUpdateBudget } from '~/src/hooks/useBudgets';
 import { useCategories } from '~/src/hooks/useCategories';
+import { BASE_CURRENCY, useCurrencyStore } from '~/src/lib/currency';
 import { styles } from './_edit-styles';
 
 type BudgetFormValues = z.input<typeof createBudgetSchema>;
 
-function getBudgetFormDefaults(existingBudget: Budget | null): BudgetFormValues {
+function getBudgetFormDefaults(
+  existingBudget: Budget | null,
+  defaultCurrency: string,
+): BudgetFormValues {
   if (existingBudget) {
     return {
       name: existingBudget.name,
@@ -56,7 +60,7 @@ function getBudgetFormDefaults(existingBudget: Budget | null): BudgetFormValues 
     period: 'MONTHLY',
     startDate: startOfMonth.toISOString(),
     endDate: endOfMonth.toISOString(),
-    currency: 'UAH',
+    currency: defaultCurrency,
     totalPlanned: 0,
     categories: [],
     isTemplate: false,
@@ -74,9 +78,11 @@ export default function EditBudgetScreen() {
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
   const { mutate: createBudget, isPending: isCreating } = useCreateBudget();
   const { mutate: updateBudget, isPending: isUpdating } = useUpdateBudget();
+  const baseCurrency = useCurrencyStore(state => state.baseCurrency);
 
   const isEditing = Boolean(id);
   const isSubmitting = isCreating || isUpdating;
+  const [hasInitializedDefaultCategories, setHasInitializedDefaultCategories] = useState(false);
 
   const existingBudget = useMemo(() => {
     if (!id || !budgetsData) return null;
@@ -88,7 +94,10 @@ export default function EditBudgetScreen() {
     return categoriesData.categories.filter(category => category.type === 'EXPENSE');
   }, [categoriesData]);
 
-  const defaultValues = useMemo(() => getBudgetFormDefaults(existingBudget), [existingBudget]);
+  const defaultValues = useMemo(
+    () => getBudgetFormDefaults(existingBudget, baseCurrency || BASE_CURRENCY),
+    [existingBudget, baseCurrency],
+  );
 
   const {
     control,
@@ -101,21 +110,23 @@ export default function EditBudgetScreen() {
     defaultValues,
   });
 
-  const { fields, append, remove } = useFieldArray<BudgetFormValues, 'categories'>({
+  const { fields, append, remove, replace } = useFieldArray<BudgetFormValues, 'categories'>({
     control,
     name: 'categories',
   });
 
-  if ((isEditing && budgetsLoading) || categoriesLoading) {
-    return <LoadingScreen label="Loading budget data..." />;
-  }
-
-  if (isEditing && !existingBudget) {
-    return <ErrorScreen message="Budget not found" onRetry={() => router.back()} />;
-  }
-
   const onSubmit = (data: BudgetFormValues) => {
-    const payload: CreateBudgetRequest = createBudgetSchema.parse(data);
+    const totalPlanned = (data.categories ?? []).reduce(
+      (sum, item) => sum + (Number(item.planned) || 0),
+      0,
+    );
+
+    const payload: CreateBudgetRequest = createBudgetSchema.parse({
+      ...data,
+      totalPlanned,
+      templateName: data.isTemplate ? data.templateName?.trim() || data.name.trim() : null,
+      autoApply: data.isTemplate ? data.autoApply : false,
+    });
 
     if (isEditing && id) {
       updateBudget(
@@ -148,12 +159,81 @@ export default function EditBudgetScreen() {
     Alert.alert('Info', 'All expense categories are already added.');
   };
 
-  const watchCategories = watch('categories');
+  const watchCategories = useWatch({
+    control,
+    name: 'categories',
+  });
+  const isTemplateEnabled = watch('isTemplate');
+  const expenseCategoryNameById = useMemo(
+    () => new Map(expenseCategories.map(category => [category.id, category.name])),
+    [expenseCategories],
+  );
+  const sortedCategoryRows = useMemo(() => {
+    return fields
+      .map((field, index) => {
+        const currentCategory = watchCategories?.[index];
+        const planned = Number(currentCategory?.planned ?? field.planned ?? 0);
+        const categoryId = currentCategory?.categoryId ?? field.categoryId;
+        const categoryName = expenseCategoryNameById.get(categoryId) ?? '';
+
+        return {
+          field,
+          index,
+          planned,
+          categoryName,
+        };
+      })
+      .sort((left, right) => {
+        if (right.planned !== left.planned) {
+          return right.planned - left.planned;
+        }
+
+        const byName = left.categoryName.localeCompare(right.categoryName);
+        if (byName !== 0) {
+          return byName;
+        }
+
+        return left.index - right.index;
+      });
+  }, [expenseCategoryNameById, fields, watchCategories]);
+
+  useEffect(() => {
+    if (isEditing || hasInitializedDefaultCategories) {
+      return;
+    }
+
+    if (expenseCategories.length === 0) {
+      return;
+    }
+
+    replace(
+      expenseCategories.map(category => ({
+        categoryId: category.id,
+        planned: 0,
+      })),
+    );
+    setHasInitializedDefaultCategories(true);
+  }, [
+    expenseCategories,
+    hasInitializedDefaultCategories,
+    isEditing,
+    replace,
+    setHasInitializedDefaultCategories,
+  ]);
+
   useEffect(() => {
     const categories = watchCategories ?? [];
     const total = categories.reduce((sum, item) => sum + (Number(item.planned) || 0), 0);
-    setValue('totalPlanned', total);
+    setValue('totalPlanned', total, { shouldDirty: true, shouldValidate: true });
   }, [watchCategories, setValue]);
+
+  if ((isEditing && budgetsLoading) || categoriesLoading) {
+    return <LoadingScreen label="Loading budget data..." />;
+  }
+
+  if (isEditing && !existingBudget) {
+    return <ErrorScreen message="Budget not found" onRetry={() => router.back()} />;
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
@@ -181,10 +261,60 @@ export default function EditBudgetScreen() {
             {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
           </View>
 
+          <View style={styles.templateCard}>
+            <View style={styles.templateRow}>
+              <View style={styles.templateTextWrap}>
+                <Text style={styles.templateTitle}>Use as monthly template</Text>
+                <Text style={styles.templateHint}>
+                  Reuse this setup as a template when creating future budgets.
+                </Text>
+              </View>
+              <Pressable
+                style={[styles.templateToggle, isTemplateEnabled && styles.templateToggleActive]}
+                onPress={() => {
+                  const nextValue = !isTemplateEnabled;
+                  setValue('isTemplate', nextValue);
+
+                  if (!nextValue) {
+                    setValue('templateName', null);
+                  }
+                }}
+              >
+                <View
+                  style={[
+                    styles.templateToggleThumb,
+                    isTemplateEnabled && styles.templateToggleThumbActive,
+                  ]}
+                />
+              </Pressable>
+            </View>
+
+            {isTemplateEnabled && (
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Template Name</Text>
+                <Controller
+                  control={control}
+                  name="templateName"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      style={styles.input}
+                      value={value ?? ''}
+                      onChangeText={onChange}
+                      placeholder="e.g. Monthly Living Costs"
+                      placeholderTextColor={colors.textDisabled}
+                    />
+                  )}
+                />
+              </View>
+            )}
+          </View>
+
           <View style={styles.fieldBlock}>
             <Text style={styles.label}>Total Planned Amount</Text>
             <View style={[styles.input, styles.inputDisabled]}>
-              <Text style={styles.readOnlyText}>{watch('totalPlanned')} UAH</Text>
+              <Text style={styles.readOnlyText}>
+                {watch('totalPlanned')} {baseCurrency || BASE_CURRENCY}
+              </Text>
             </View>
             <Text style={styles.hintText}>Automatically calculated from categories.</Text>
           </View>
@@ -206,7 +336,7 @@ export default function EditBudgetScreen() {
             </View>
           ) : (
             <View style={styles.categoriesList}>
-              {fields.map((field, index) => (
+              {sortedCategoryRows.map(({ field, index }) => (
                 <View key={field.id} style={styles.catRow}>
                   <View style={styles.catInputWrap}>
                     <Text style={styles.catLabel}>Category</Text>
@@ -228,8 +358,12 @@ export default function EditBudgetScreen() {
                             }
                           }}
                         >
+                          {/*
+                           * `categoryId` can be temporarily undefined while user edits the form.
+                           * Guard before `Map.get` to keep strict typing intact.
+                           */}
                           <Text style={styles.inputText}>
-                            {expenseCategories.find(category => category.id === value)?.name ||
+                            {(value ? expenseCategoryNameById.get(value) : undefined) ??
                               'Select...'}
                           </Text>
                         </Pressable>
@@ -266,7 +400,9 @@ export default function EditBudgetScreen() {
         <View style={styles.footer}>
           <Pressable
             style={[styles.btn, isSubmitting && styles.btnDisabled]}
-            onPress={handleSubmit(onSubmit)}
+            onPress={handleSubmit(onSubmit, () => {
+              Alert.alert('Validation failed', 'Please review the form fields.');
+            })}
             disabled={isSubmitting}
           >
             {isSubmitting ? (

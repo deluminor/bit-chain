@@ -1,3 +1,4 @@
+import { BackupDataImportSchema } from '@/features/backup/backup.schema';
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import type { BackupData } from '@/types/backup';
@@ -28,20 +29,17 @@ export async function loadBackupFromDb(filename: string, userId: string): Promis
     throw new Error(`Backup not found: ${filename}`);
   }
 
-  const backupData = backup.data as unknown as BackupData;
-
-  if (!backupData.metadata || !backupData.users || !backupData.categories || !backupData.trades) {
-    throw new Error('Invalid backup file structure');
-  }
-
-  backupData.financeAccounts ??= [];
-  backupData.transactions ??= [];
-  backupData.transactionCategories ??= [];
-  backupData.budgets ??= [];
-  backupData.budgetCategories ??= [];
-  backupData.financialGoals ??= [];
-  backupData.loans ??= [];
-
+  const parsed = BackupDataImportSchema.parse(backup.data);
+  const backupData = {
+    ...parsed,
+    financeAccounts: parsed.financeAccounts ?? [],
+    transactions: parsed.transactions ?? [],
+    transactionCategories: parsed.transactionCategories ?? [],
+    budgets: parsed.budgets ?? [],
+    budgetCategories: parsed.budgetCategories ?? [],
+    financialGoals: parsed.financialGoals ?? [],
+    loans: parsed.loans ?? [],
+  } as BackupData;
   return backupData;
 }
 

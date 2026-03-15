@@ -1,7 +1,16 @@
+import { authOptions } from '@/features/auth/libs/auth';
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+const MAX_TRANSACTIONS_LIMIT = 100;
+
+const AccountPatchSchema = z.object({
+  action: z.enum(['activate', 'deactivate', 'adjustBalance']),
+  amount: z.number().optional(),
+});
 
 interface RouteContext {
   params: Promise<{
@@ -9,9 +18,8 @@ interface RouteContext {
   }>;
 }
 
-// Helper function to get user from session
 async function getUserFromSession() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return null;
   }
@@ -31,7 +39,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const { searchParams } = new URL(request.url);
     const includeTransactions = searchParams.get('includeTransactions') === 'true';
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const rawLimit = parseInt(searchParams.get('limit') ?? '10', 10);
+    const limit = Math.min(
+      Math.max(1, Number.isNaN(rawLimit) ? 10 : rawLimit),
+      MAX_TRANSACTIONS_LIMIT,
+    );
 
     const account = await prisma.financeAccount.findFirst({
       where: {
@@ -81,17 +93,23 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const { id } = await context.params;
-    const body = await request.json();
-    const { action, amount } = body;
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
 
-    if (!action || !['activate', 'deactivate', 'adjustBalance'].includes(action)) {
+    const parsed = AccountPatchSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid action. Must be activate, deactivate, or adjustBalance' },
+        { error: parsed.error.issues[0]?.message ?? 'Invalid request body' },
         { status: 400 },
       );
     }
 
-    // Check if account exists and belongs to user
+    const { action, amount } = parsed.data;
+
     const account = await prisma.financeAccount.findFirst({
       where: {
         id,
@@ -118,7 +136,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         break;
 
       case 'adjustBalance':
-        if (typeof amount !== 'number') {
+        if (amount === undefined || typeof amount !== 'number') {
           return NextResponse.json(
             { error: 'Amount is required for balance adjustment' },
             { status: 400 },

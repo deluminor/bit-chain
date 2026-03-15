@@ -10,14 +10,14 @@ import { Form } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Resolver, useForm } from 'react-hook-form';
 import { useDefaultCategory } from '../queries/categories';
 import {
   PositionFormValues,
-  positionSchema,
-  Trade,
   TRADE_RESULTS,
   TRADE_SIDES,
+  Trade,
+  positionSchema,
 } from '../types/position';
 import { PositionFormFields } from './PositionFormFields';
 
@@ -35,8 +35,7 @@ export function PositionModal({ position, onSave, onDelete, children }: Position
   const { data: defaultCategory } = useDefaultCategory();
 
   const form = useForm<PositionFormValues>({
-    // @ts-expect-error - Known type mismatch between zodResolver and react-hook-form
-    resolver: zodResolver(positionSchema),
+    resolver: zodResolver(positionSchema as never) as unknown as Resolver<PositionFormValues>,
     defaultValues: position
       ? {
           date: position.date,
@@ -93,8 +92,9 @@ export function PositionModal({ position, onSave, onDelete, children }: Position
         screenshots: values.screenshots || [],
       });
       setIsOpen(false);
-    } catch {
-      // Error is handled in queries
+    } catch (error) {
+      // Mutation onError shows toast; rethrow for error boundaries / logging
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -107,8 +107,9 @@ export function PositionModal({ position, onSave, onDelete, children }: Position
       setIsLoading(true);
       await onDelete();
       setIsOpen(false);
-    } catch {
-      // Error is handled in queries
+    } catch (error) {
+      // Mutation onError shows toast; rethrow for error boundaries / logging
+      throw error;
     } finally {
       setIsLoading(false);
     }

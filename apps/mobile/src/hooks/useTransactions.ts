@@ -9,14 +9,17 @@ import type {
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { z } from 'zod';
-import { ACCOUNTS_QUERY_KEY } from '~/src/hooks/useAccounts';
-import { BUDGETS_QUERY_KEY } from '~/src/hooks/useBudgets';
-import { DASHBOARD_QUERY_KEY } from '~/src/hooks/useDashboard';
 import api from '~/src/lib/api';
 import { QUERY_CONFIG } from '~/src/lib/constants';
+import {
+  ACCOUNTS_QUERY_KEY,
+  BUDGETS_QUERY_KEY,
+  DASHBOARD_QUERY_KEY,
+  TRANSACTION_BY_ID_QUERY_KEY,
+  TRANSACTIONS_QUERY_KEY,
+} from '~/src/lib/query-keys';
 
-export const TRANSACTIONS_QUERY_KEY = ['transactions', 'list'] as const;
-export const TRANSACTION_BY_ID_QUERY_KEY = ['transactions', 'by-id'] as const;
+export { TRANSACTION_BY_ID_QUERY_KEY, TRANSACTIONS_QUERY_KEY };
 const TRANSACTION_BY_ID_FALLBACK_PAGE_SIZE = 50;
 const TRANSACTION_BY_ID_FALLBACK_MAX_PAGES = 40;
 const TRANSACTION_MUTATION_TIMEOUT_MS = 60_000;
@@ -75,56 +78,61 @@ function extractMutationErrorMessage(error: unknown, fallbackMessage: string): s
   return fallbackMessage;
 }
 
-function mapMutationTransactionToListItem(payload: unknown): TransactionListItem | null {
-  if (typeof payload !== 'object' || payload === null) return null;
-  if (!('transaction' in payload)) return null;
-  const transaction = payload.transaction;
-  if (typeof transaction !== 'object' || transaction === null) return null;
+/** API returns nested { account, category, transferTo } — transform to flat TransactionListItem */
+const NestedTransactionSchema = z
+  .object({
+    id: z.string(),
+    amount: z.number(),
+    type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']),
+    description: z.string().nullable(),
+    date: z
+      .union([z.string(), z.date()])
+      .transform(d => (typeof d === 'string' ? d : (d as Date).toISOString())),
+    currency: z.string(),
+    accountId: z.string(),
+    account: z.object({ name: z.string() }).optional(),
+    categoryId: z.string().nullable().optional(),
+    category: z
+      .object({ name: z.string().nullable(), color: z.string().nullable() })
+      .optional()
+      .nullable(),
+    transferToId: z.string().nullable().optional(),
+    transferTo: z.object({ name: z.string() }).optional().nullable(),
+    transferAmount: z.number().nullable().optional(),
+    transferCurrency: z.string().nullable().optional(),
+  })
+  .transform(t => ({
+    id: t.id,
+    amount: t.amount,
+    type: t.type,
+    description: t.description,
+    date: t.date,
+    currency: t.currency,
+    accountId: t.accountId,
+    accountName: t.account?.name ?? '',
+    categoryId: t.categoryId ?? null,
+    categoryName: t.category?.name ?? null,
+    categoryColor: t.category?.color ?? null,
+    transferToId: t.transferToId ?? null,
+    transferToAccountName: t.transferTo?.name ?? null,
+    transferAmount: t.transferAmount ?? null,
+    transferCurrency: t.transferCurrency ?? null,
+  }));
 
-  const source = transaction as Record<string, unknown>;
-  const account = source.account as Record<string, unknown> | undefined;
-  const category = source.category as Record<string, unknown> | null | undefined;
-  const transferTo = source.transferTo as Record<string, unknown> | null | undefined;
+/** API returns { transaction } (mobile route) or { ok: true, data: { transaction } } */
+const MutationTransactionResponseSchema = z.union([
+  z.object({ transaction: NestedTransactionSchema }).transform(r => r.transaction),
+  z
+    .object({
+      ok: z.literal(true),
+      data: z.object({ transaction: NestedTransactionSchema }),
+    })
+    .transform(r => r.data.transaction),
+]);
 
-  if (
-    typeof source.id !== 'string' ||
-    typeof source.amount !== 'number' ||
-    (source.type !== 'INCOME' && source.type !== 'EXPENSE' && source.type !== 'TRANSFER') ||
-    typeof source.currency !== 'string' ||
-    typeof source.accountId !== 'string'
-  ) {
-    return null;
-  }
-
-  const dateValue = source.date;
-  const dateString =
-    typeof dateValue === 'string'
-      ? dateValue
-      : dateValue instanceof Date
-        ? dateValue.toISOString()
-        : null;
-  if (!dateString) return null;
-
-  const accountName = typeof account?.name === 'string' ? account.name : '';
-  if (!accountName) return null;
-
-  return {
-    id: source.id,
-    amount: source.amount,
-    type: source.type,
-    description: typeof source.description === 'string' ? source.description : null,
-    date: dateString,
-    currency: source.currency,
-    accountId: source.accountId,
-    accountName,
-    categoryId: typeof source.categoryId === 'string' ? source.categoryId : null,
-    categoryName: typeof category?.name === 'string' ? category.name : null,
-    categoryColor: typeof category?.color === 'string' ? category.color : null,
-    transferToId: typeof source.transferToId === 'string' ? source.transferToId : null,
-    transferToAccountName: typeof transferTo?.name === 'string' ? transferTo.name : null,
-    transferAmount: typeof source.transferAmount === 'number' ? source.transferAmount : null,
-    transferCurrency: typeof source.transferCurrency === 'string' ? source.transferCurrency : null,
-  };
+function parseMutationTransactionResponse(payload: unknown): TransactionListItem | null {
+  const result = MutationTransactionResponseSchema.safeParse(payload);
+  return result.success ? result.data : null;
 }
 
 async function fetchTransactionByIdViaList(transactionId: string): Promise<TransactionListItem> {
@@ -342,7 +350,7 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
 
-      const mapped = mapMutationTransactionToListItem(response);
+      const mapped = parseMutationTransactionResponse(response);
       if (mapped && payload.id) {
         queryClient.setQueryData([...TRANSACTION_BY_ID_QUERY_KEY, payload.id], mapped);
       }

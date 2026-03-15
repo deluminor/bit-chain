@@ -1,7 +1,6 @@
+import axiosInstance from '@/lib/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 
-// Types
 export interface FinanceAccount {
   id: string;
   name: string;
@@ -73,7 +72,6 @@ export interface AccountStats {
   };
 }
 
-// Query keys
 export const accountKeys = {
   all: ['finance', 'accounts'] as const,
   lists: () => [...accountKeys.all, 'list'] as const,
@@ -83,12 +81,11 @@ export const accountKeys = {
   stats: () => [...accountKeys.all, 'stats'] as const,
 };
 
-// Hooks
 export function useAccounts(includeInactive = false) {
   return useQuery({
     queryKey: accountKeys.list({ includeInactive }),
     queryFn: async () => {
-      const { data } = await axios.get('/api/finance/accounts', {
+      const { data } = await axiosInstance.get('/finance/accounts', {
         params: { includeInactive },
       });
       return data;
@@ -100,7 +97,7 @@ export function useAccount(accountId: string, includeTransactions = false, trans
   return useQuery({
     queryKey: [...accountKeys.detail(accountId), { includeTransactions, transactionLimit }],
     queryFn: async () => {
-      const { data } = await axios.get(`/api/finance/accounts/${accountId}`, {
+      const { data } = await axiosInstance.get(`/finance/accounts/${accountId}`, {
         params: {
           includeTransactions,
           limit: transactionLimit,
@@ -116,7 +113,7 @@ export function useAccountStats() {
   return useQuery({
     queryKey: accountKeys.stats(),
     queryFn: async () => {
-      const { data } = await axios.get('/api/finance/accounts/stats');
+      const { data } = await axiosInstance.get('/finance/accounts/stats');
       return data as AccountStats;
     },
   });
@@ -127,7 +124,7 @@ export function useCreateAccount() {
 
   return useMutation({
     mutationFn: async (accountData: CreateAccountData) => {
-      const { data } = await axios.post('/api/finance/accounts', accountData);
+      const { data } = await axiosInstance.post('/finance/accounts', accountData);
       return data;
     },
     onSuccess: () => {
@@ -141,7 +138,7 @@ export function useUpdateAccount() {
 
   return useMutation({
     mutationFn: async (accountData: UpdateAccountData) => {
-      const { data } = await axios.put('/api/finance/accounts', accountData);
+      const { data } = await axiosInstance.put('/finance/accounts', accountData);
       return data;
     },
     onSuccess: (data, variables) => {
@@ -156,7 +153,7 @@ export function useDeleteAccount() {
 
   return useMutation({
     mutationFn: async ({ id, force = false }: { id: string; force?: boolean }) => {
-      const { data } = await axios.delete('/api/finance/accounts', {
+      const { data } = await axiosInstance.delete('/finance/accounts', {
         params: { id, force },
       });
       return data;
@@ -180,7 +177,7 @@ export function useAccountAction() {
       action: 'activate' | 'deactivate' | 'adjustBalance';
       amount?: number;
     }) => {
-      const { data } = await axios.patch(`/api/finance/accounts/${id}`, {
+      const { data } = await axiosInstance.patch(`/finance/accounts/${id}`, {
         action,
         amount,
       });

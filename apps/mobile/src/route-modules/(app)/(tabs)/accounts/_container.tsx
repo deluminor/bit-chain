@@ -1,5 +1,3 @@
-'use client';
-
 import { ACCOUNT_FILTERS } from '@/route-modules/(app)/(tabs)/accounts/_constants';
 import { styles } from '@/route-modules/(app)/(tabs)/accounts/_styles';
 import type { FilterKey } from '@/route-modules/(app)/(tabs)/accounts/_types';

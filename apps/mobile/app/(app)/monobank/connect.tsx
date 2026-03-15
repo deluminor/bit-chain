@@ -1,3 +1,5 @@
+import { MONOBANK_STEPS } from '@/route-modules/(app)/monobank/_constants';
+import { connectStyles as styles } from '@/route-modules/(app)/monobank/_styles';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -12,11 +14,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { z } from 'zod';
 import { Card } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
 import { useMonobankConnect } from '~/src/hooks/useMonobank';
-import { MONOBANK_STEPS } from '@/route-modules/(app)/monobank/_constants';
-import { connectStyles as styles } from '@/route-modules/(app)/monobank/_styles';
+
+const MonobankTokenSchema = z.object({
+  token: z.string().min(1, 'Please enter your Monobank API token.').max(500, 'Token is too long.'),
+});
 
 export default function MonobankConnectScreen() {
   const [token, setToken] = useState('');
@@ -25,41 +30,40 @@ export default function MonobankConnectScreen() {
 
   const handleConnect = () => {
     const trimmed = token.trim();
-    if (!trimmed) {
-      Alert.alert('Missing token', 'Please enter your Monobank API token.');
+    const parsed = MonobankTokenSchema.safeParse({ token: trimmed });
+    if (!parsed.success) {
+      const msg = parsed.error.flatten().fieldErrors.token?.[0] ?? 'Please enter a valid token.';
+      Alert.alert('Invalid token', msg);
       return;
     }
 
-    connect(
-      { token: trimmed },
-      {
-        onSuccess: result => {
-          Alert.alert(
-            'Connected ✓',
-            `Found ${result.accountsFound} account${result.accountsFound === 1 ? '' : 's'}.\nChoose which ones to import.`,
-            [
-              {
-                text: 'Manage Accounts',
-                onPress: () => router.replace('/(app)/monobank/accounts'),
-              },
-              {
-                text: 'Go to Dashboard',
-                style: 'cancel',
-                onPress: () => router.replace('/(app)/(tabs)/dashboard'),
-              },
-            ],
-          );
-        },
-        onError: error => {
-          Alert.alert(
-            'Connection failed',
-            error.message === 'INVALID_TOKEN'
-              ? 'The token you entered is invalid. Please check and try again.'
-              : 'Could not connect to Monobank. Please try again later.',
-          );
-        },
+    connect(parsed.data, {
+      onSuccess: result => {
+        Alert.alert(
+          'Connected ✓',
+          `Found ${result.accountsFound} account${result.accountsFound === 1 ? '' : 's'}.\nChoose which ones to import.`,
+          [
+            {
+              text: 'Manage Accounts',
+              onPress: () => router.replace('/(app)/monobank/accounts'),
+            },
+            {
+              text: 'Go to Dashboard',
+              style: 'cancel',
+              onPress: () => router.replace('/(app)/(tabs)/dashboard'),
+            },
+          ],
+        );
       },
-    );
+      onError: error => {
+        Alert.alert(
+          'Connection failed',
+          error.message === 'INVALID_TOKEN'
+            ? 'The token you entered is invalid. Please check and try again.'
+            : 'Could not connect to Monobank. Please try again later.',
+        );
+      },
+    });
   };
 
   return (

@@ -5,15 +5,10 @@ import type {
   GetBudgetsResponse,
   UpdateBudgetRequest,
 } from '@bit-chain/api-contracts';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '~/src/lib/api';
-import { queryClient } from '~/src/lib/query';
+import { BUDGETS_QUERY_KEY } from '~/src/lib/query-keys';
 
-export const BUDGETS_QUERY_KEY = ['budgets', 'list'] as const;
-
-/**
- * Fetches all budgets for the authenticated user
- */
 export function useBudgets() {
   return useQuery({
     queryKey: BUDGETS_QUERY_KEY,
@@ -26,10 +21,8 @@ export function useBudgets() {
   });
 }
 
-/**
- * Creates a new budget
- */
 export function useCreateBudget() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateBudgetRequest) => {
       const { data } = await api.post<ApiResponse<{ budget: Budget }>>('/budget', payload);
@@ -42,10 +35,8 @@ export function useCreateBudget() {
   });
 }
 
-/**
- * Updates an existing budget
- */
 export function useUpdateBudget() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: UpdateBudgetRequest) => {
       const { data } = await api.put<ApiResponse<{ budget: Budget }>>('/budget', payload);
@@ -58,10 +49,8 @@ export function useUpdateBudget() {
   });
 }
 
-/**
- * Deletes a budget
- */
 export function useDeleteBudget() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (budgetId: string) => {
       const { data } = await api.delete<ApiResponse<{ message: string }>>(`/budget?id=${budgetId}`);

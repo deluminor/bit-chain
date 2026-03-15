@@ -98,7 +98,9 @@ export function useConvertedStats(statsInput: RawStats | unknown | null): Conver
           }
         }
       } catch (err) {
-        console.warn('[useConvertedStats] FX conversion error:', err);
+        if (__DEV__) {
+          console.warn('[useConvertedStats] FX conversion error:', err);
+        }
       }
 
       if (!cancelled) {

@@ -1,3 +1,4 @@
+import { authOptions } from '@/features/auth/libs/auth';
 import {
   TransactionDomainError,
   createTransaction,
@@ -16,7 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 async function getUserFromSession() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return null;
   }

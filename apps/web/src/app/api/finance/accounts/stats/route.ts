@@ -1,10 +1,10 @@
+import { authOptions } from '@/features/auth/libs/auth';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Helper function to get user from session
 async function getUserFromSession() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return null;
   }

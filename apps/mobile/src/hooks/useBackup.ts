@@ -3,11 +3,9 @@ import type {
   BackupListResponse,
   CreateBackupResponse,
 } from '@bit-chain/api-contracts';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '~/src/lib/api';
-import { queryClient } from '~/src/lib/query';
-
-export const BACKUP_QUERY_KEY = ['backup', 'list'] as const;
+import { BACKUP_QUERY_KEY } from '~/src/lib/query-keys';
 
 export function useBackupList() {
   return useQuery({
@@ -21,6 +19,7 @@ export function useBackupList() {
 }
 
 export function useCreateBackup() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (): Promise<CreateBackupResponse> => {
       const { data } = await api.post<ApiResponse<CreateBackupResponse>>('/backup', {

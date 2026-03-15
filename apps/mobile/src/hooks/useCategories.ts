@@ -6,22 +6,11 @@ import type {
   CreateCategoryRequest,
   UpdateCategoryRequest,
 } from '@bit-chain/api-contracts';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '~/src/lib/api';
 import { QUERY_CONFIG } from '~/src/lib/constants';
-import { queryClient } from '~/src/lib/query';
+import { CATEGORIES_QUERY_KEY } from '~/src/lib/query-keys';
 
-export const CATEGORIES_QUERY_KEY = ['categories', 'list'] as const;
-
-/**
- * Fetches all categories from /api/mobile/categories.
- * Returns income/expense counts and a flat category list.
- *
- * @example
- * ```tsx
- * const { data } = useCategories();
- * ```
- */
 export function useCategories() {
   return useQuery({
     queryKey: CATEGORIES_QUERY_KEY,
@@ -35,6 +24,7 @@ export function useCategories() {
 }
 
 export function useCreateCategory() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateCategoryRequest): Promise<CategoryListItem> => {
       const { data } = await api.post<ApiResponse<CategoryListItem>>('/categories', payload);
@@ -48,6 +38,7 @@ export function useCreateCategory() {
 }
 
 export function useUpdateCategory() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: UpdateCategoryRequest): Promise<CategoryListItem> => {
       const { data } = await api.put<ApiResponse<CategoryListItem>>('/categories', payload);
@@ -61,6 +52,7 @@ export function useUpdateCategory() {
 }
 
 export function useDeleteCategory() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
       const { data } = await api.delete<ApiResponse<{ message: string }>>(`/categories?id=${id}`);

@@ -1,8 +1,8 @@
 'use client';
 
 import { StatCardSkeleton } from '@/components/layout/statistics/StatCardSkeleton';
-import { formatCurrency } from '@/features/positions/utils/formatters';
 import { useTradingStats } from '@/hooks/useTradingStats';
+import { formatCurrency } from '@/lib/currency';
 import { StatCard } from './StatCard';
 
 export function SectionCards() {
@@ -18,7 +18,13 @@ export function SectionCards() {
     );
   }
 
-  if (!stats) return;
+  if (!stats) {
+    return (
+      <div className="grid grid-cols-1 gap-4 px-4 lg:px-6">
+        <p className="text-muted-foreground">No trading data yet</p>
+      </div>
+    );
+  }
 
   const currentWinRate =
     stats.winLossData.find(d => d.type.toLowerCase() === 'winning')?.percentage || 0;
@@ -26,8 +32,12 @@ export function SectionCards() {
   const winRateChange = ((currentWinRate - avgWinRate) / avgWinRate) * 100;
 
   const totalTrades = stats.categoriesData.reduce((sum, cat) => sum + cat.trades, 0);
-  const avgTradesPerCategory = totalTrades / stats.categoriesData.length;
-  const tradesChange = ((totalTrades - avgTradesPerCategory) / avgTradesPerCategory) * 100 || 0;
+  const categoryCount = stats.categoriesData.length || 1;
+  const avgTradesPerCategory = totalTrades / categoryCount;
+  const tradesChange =
+    avgTradesPerCategory > 0
+      ? ((totalTrades - avgTradesPerCategory) / avgTradesPerCategory) * 100
+      : 0;
 
   const totalPnL = stats.pnlData[stats.pnlData.length - 1]?.pnl || 0;
   const prevPnL = stats.pnlData[stats.pnlData.length - 2]?.pnl || 0;
@@ -58,7 +68,7 @@ export function SectionCards() {
   const cards = [
     {
       title: 'Total PnL',
-      value: formatCurrency(totalPnL),
+      value: formatCurrency(totalPnL, 'USD'),
       description: 'Profit and Loss',
       trend: {
         value: Number(pnlChange.toFixed(2)),

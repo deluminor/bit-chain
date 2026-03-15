@@ -1,5 +1,3 @@
-'use client';
-
 import { MonobankStatusDot, SettingsRow } from '@/route-modules/(app)/(tabs)/settings/_components';
 import { styles } from '@/route-modules/(app)/(tabs)/settings/_styles';
 import { Tabs, useRouter } from 'expo-router';

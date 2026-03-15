@@ -2,6 +2,7 @@ import type { Budget } from '@bit-chain/api-contracts';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, fontSize, fontWeight, spacing } from '~/src/design/tokens';
+import { BASE_CURRENCY } from '~/src/lib/currency';
 import { formatCurrency, formatShortDate } from '~/src/utils/format';
 import { Card } from './Card';
 import { PrivacyAmount } from './PrivacyAmount';
@@ -49,7 +50,7 @@ export function BudgetCard({ budget }: Props) {
       <View style={styles.amounts}>
         <View style={styles.spentRow}>
           <PrivacyAmount
-            value={formatCurrency(budget.totalActualBase, budget.currency)}
+            value={formatCurrency(budget.totalActualBase, BASE_CURRENCY)}
             style={[styles.spent, isOverBudget && styles.overSpent]}
             color={isOverBudget ? colors.expense : colors.textPrimary}
           />
@@ -58,7 +59,7 @@ export function BudgetCard({ budget }: Props) {
         <View style={styles.plannedRow}>
           <Text style={styles.planned}>of </Text>
           <PrivacyAmount
-            value={formatCurrency(budget.totalPlannedBase, budget.currency)}
+            value={formatCurrency(budget.totalPlannedBase, BASE_CURRENCY)}
             style={styles.planned}
             color={colors.textMuted}
           />

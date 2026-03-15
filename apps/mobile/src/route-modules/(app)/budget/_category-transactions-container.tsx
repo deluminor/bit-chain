@@ -6,6 +6,7 @@ import { TransactionList } from '~/src/components/transaction/TransactionList';
 import { ErrorScreen, LoadingScreen, PrivacyAmount } from '~/src/components/ui';
 import { colors, fontSize, fontWeight, spacing } from '~/src/design/tokens';
 import { useBudgets } from '~/src/hooks/useBudgets';
+import { BASE_CURRENCY } from '~/src/lib/currency';
 import { formatCurrency, formatShortDate } from '~/src/utils/format';
 
 export default function BudgetCategoryTransactionsContainer() {
@@ -45,7 +46,7 @@ export default function BudgetCategoryTransactionsContainer() {
       <View style={styles.row}>
         <Text style={styles.label}>Spent</Text>
         <PrivacyAmount
-          value={formatCurrency(budgetCategory.actualBase, budget.currency)}
+          value={formatCurrency(budgetCategory.actualBase, BASE_CURRENCY)}
           color={colors.textPrimary}
           size={fontSize.base}
         />
@@ -53,7 +54,7 @@ export default function BudgetCategoryTransactionsContainer() {
       <View style={styles.row}>
         <Text style={styles.label}>Planned</Text>
         <PrivacyAmount
-          value={formatCurrency(budgetCategory.plannedBase, budget.currency)}
+          value={formatCurrency(budgetCategory.plannedBase, BASE_CURRENCY)}
           color={colors.textMuted}
           size={fontSize.base}
         />

@@ -24,8 +24,10 @@ export const useCurrencyStore = create<CurrencyState>(set => ({
     set({ baseCurrency: code });
     try {
       await AsyncStorage.setItem(CURRENCY_STORAGE_KEY, code);
-    } catch {
-      // Ignore storage errors — state is still updated in memory
+    } catch (err) {
+      if (__DEV__) {
+        console.warn('[Currency] Failed to persist base currency:', err);
+      }
     }
   },
 
@@ -35,7 +37,11 @@ export const useCurrencyStore = create<CurrencyState>(set => ({
       if (stored && SUPPORTED_CURRENCIES.includes(stored)) {
         set({ baseCurrency: stored });
       }
-    } catch {}
+    } catch (err) {
+      if (__DEV__) {
+        console.warn('[Currency] Failed to hydrate base currency:', err);
+      }
+    }
   },
 }));
 
@@ -60,6 +66,16 @@ function isRatesPayload(
 
   return Object.values(ratesValue).every(rate => typeof rate === 'number');
 }
+
+/** Fallback rates when API fails. rates[X] = units of X per 1 EUR. */
+const FALLBACK_RATES: Record<string, number> = {
+  EUR: 1,
+  USD: 1.15,
+  UAH: 50.67,
+  HUF: 391.95,
+  GBP: 0.864,
+  PLN: 4.27,
+};
 
 let cachedRates: ExchangeRate | null = null;
 let lastFetch = 0;
@@ -106,23 +122,23 @@ export async function getExchangeRates(force = false): Promise<ExchangeRate> {
     }
 
     const baseCurrency = isCurrencyCode(data.base) ? data.base : BASE_CURRENCY;
+    const apiRates = data.rates ?? {};
+    const rates = { ...FALLBACK_RATES, ...apiRates };
 
     cachedRates = {
       base: baseCurrency,
-      rates: data.rates ?? {},
+      rates,
       timestamp: now,
     };
     lastFetch = now;
     return cachedRates;
   } catch {
+    if (__DEV__) {
+      console.warn('[Currency] Using fallback rates (API unavailable)');
+    }
     cachedRates = {
       base: BASE_CURRENCY,
-      rates: {
-        EUR: 1,
-        USD: 1.09, // 1 EUR = 1.09 USD
-        UAH: 44.5, // 1 EUR = 44.5 UAH
-        HUF: 395, // 1 EUR = 395 HUF
-      },
+      rates: { ...FALLBACK_RATES },
       timestamp: now,
     };
     lastFetch = now;
@@ -136,9 +152,12 @@ export async function convertToBaseCurrency(amount: number, fromCurrency: string
   }
 
   const rates = await getExchangeRates();
-  const rate = rates.rates[fromCurrency];
+  const rate = rates.rates[fromCurrency] ?? FALLBACK_RATES[fromCurrency];
 
-  if (!rate) {
+  if (!rate || rate <= 0) {
+    if (__DEV__) {
+      console.warn(`[Currency] No rate for ${fromCurrency}, using 1:1`);
+    }
     return amount;
   }
 
@@ -154,9 +173,12 @@ export async function convertFromBaseCurrency(
   }
 
   const rates = await getExchangeRates();
-  const rate = rates.rates[toCurrency];
+  const rate = rates.rates[toCurrency] ?? FALLBACK_RATES[toCurrency];
 
-  if (!rate) {
+  if (!rate || rate <= 0) {
+    if (__DEV__) {
+      console.warn(`[Currency] No rate for ${toCurrency}, using 1:1`);
+    }
     return amount;
   }
 

@@ -4,9 +4,9 @@ import { getBudgetRange } from './budget-domain.shared';
 import {
   budgetWithCategoriesInclude,
   type BudgetCategoryWithActual,
-  type BudgetsWithSummaryResult,
   type BudgetWithActual,
   type BudgetWithCategories,
+  type BudgetsWithSummaryResult,
 } from './budget-domain.types';
 
 async function calculateBudgetCategoryActual(
@@ -21,6 +21,7 @@ async function calculateBudgetCategoryActual(
       userId,
       categoryId: budgetCategory.categoryId,
       type: 'EXPENSE',
+      isDemo: false,
       date: {
         gte: startDate,
         lte: endDate,
@@ -29,23 +30,25 @@ async function calculateBudgetCategoryActual(
     select: {
       amount: true,
       currency: true,
+      account: { select: { currency: true } },
     },
   });
 
-  const actual = Math.abs(transactions.reduce((sum, transaction) => sum + transaction.amount, 0));
-
   const convertedTransactions = await Promise.all(
-    transactions.map(transaction =>
-      convertToBaseCurrencySafe(transaction.amount, transaction.currency ?? undefined),
-    ),
+    transactions.map(transaction => {
+      const currency = transaction.currency || transaction.account?.currency || budget.currency;
+      return convertToBaseCurrencySafe(Math.abs(transaction.amount), currency);
+    }),
   );
 
-  const actualBase = Math.abs(convertedTransactions.reduce((sum, amount) => sum + amount, 0));
-  const plannedBase = await convertToBaseCurrencySafe(budgetCategory.planned, budget.currency);
+  const actualBaseRaw = convertedTransactions.reduce((sum, amount) => sum + amount, 0);
+  const actualBase = Math.round(actualBaseRaw * 100) / 100;
+  const plannedBaseRaw = await convertToBaseCurrencySafe(budgetCategory.planned, budget.currency);
+  const plannedBase = Math.round(plannedBaseRaw * 100) / 100;
 
   return {
     ...budgetCategory,
-    actual,
+    actual: actualBase,
     actualBase,
     plannedBase,
     transactionCount: transactions.length,
@@ -60,14 +63,15 @@ async function hydrateBudgetWithActual(
     budget.categories.map(category => calculateBudgetCategoryActual(userId, budget, category)),
   );
 
-  const totalActual = categories.reduce((sum, category) => sum + category.actual, 0);
-  const totalActualBase = categories.reduce((sum, category) => sum + category.actualBase, 0);
-  const totalPlannedBase = await convertToBaseCurrencySafe(budget.totalPlanned, budget.currency);
+  const totalActualBaseRaw = categories.reduce((sum, category) => sum + category.actualBase, 0);
+  const totalPlannedBaseRaw = await convertToBaseCurrencySafe(budget.totalPlanned, budget.currency);
+  const totalActualBase = Math.round(totalActualBaseRaw * 100) / 100;
+  const totalPlannedBase = Math.round(totalPlannedBaseRaw * 100) / 100;
 
   return {
     ...budget,
     categories,
-    totalActual,
+    totalActual: totalActualBase,
     totalActualBase,
     totalPlannedBase,
   };
@@ -78,7 +82,7 @@ async function hydrateBudgetWithActual(
  */
 export async function listBudgetsWithSummary(userId: string): Promise<BudgetsWithSummaryResult> {
   const budgets = await prisma.budget.findMany({
-    where: { userId },
+    where: { userId, isDemo: false },
     include: budgetWithCategoriesInclude,
     orderBy: { startDate: 'desc' },
   });

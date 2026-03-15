@@ -208,18 +208,21 @@ export function mapMonobankStatementsToTransactions({
         });
       }
 
-      const description =
-        operationAmount != null && operationCurrency !== accountCurrency
-          ? `${baseDescription} (${operationCurrency} ${operationAmount})`
-          : baseDescription;
+      const isCrossCurrency = operationAmount != null && operationCurrency !== accountCurrency;
+      const description = isCrossCurrency
+        ? `${baseDescription} (${operationCurrency} ${operationAmount})`
+        : baseDescription;
+
+      const txAmount = isCrossCurrency && operationAmount != null ? operationAmount : amount;
+      const txCurrency = isCrossCurrency ? operationCurrency : accountCurrency;
 
       return {
         userId,
         accountId: account.financeAccountId,
         categoryId: resolvedCategoryId,
         type: classification.type,
-        amount,
-        currency: accountCurrency,
+        amount: txAmount,
+        currency: txCurrency,
         description,
         date: new Date(statement.time * 1000),
         tags: [],

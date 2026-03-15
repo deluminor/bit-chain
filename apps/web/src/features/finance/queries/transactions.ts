@@ -1,3 +1,5 @@
+import { accountKeys } from '@/features/finance/queries/accounts';
+import axiosInstance from '@/lib/axios';
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -5,7 +7,6 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import axios from 'axios';
 import type {
   CategoryFilters,
   CreateTransactionData,
@@ -29,7 +30,6 @@ export type {
   UpdateTransactionData,
 } from './transactions.types';
 
-// Query keys
 export const transactionKeys = {
   all: ['finance', 'transactions'] as const,
   lists: () => [...transactionKeys.all, 'list'] as const,
@@ -40,7 +40,6 @@ export const transactionKeys = {
   categoriesList: (filters: CategoryFilters) => [...transactionKeys.categories, filters] as const,
 };
 
-// Transactions hooks
 export function useTransactions(
   filters: TransactionFilters & { page?: number; limit?: number } = {},
 ) {
@@ -55,7 +54,7 @@ export function useTransactions(
         }
       });
 
-      const { data } = await axios.get('/api/finance/transactions', { params });
+      const { data } = await axiosInstance.get('/finance/transactions', { params });
       return data;
     },
     placeholderData: keepPreviousData,
@@ -74,7 +73,7 @@ export function useInfiniteTransactions(filters: TransactionFilters = {}) {
         }
       });
 
-      const { data } = await axios.get('/api/finance/transactions', { params });
+      const { data } = await axiosInstance.get('/finance/transactions', { params });
       return data;
     },
     getNextPageParam: lastPage => {
@@ -90,13 +89,13 @@ export function useCreateTransaction() {
 
   return useMutation({
     mutationFn: async (transactionData: CreateTransactionData) => {
-      const { data } = await axios.post('/api/finance/transactions', transactionData);
+      const { data } = await axiosInstance.post('/finance/transactions', transactionData);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
       // Also invalidate accounts to update balances
-      queryClient.invalidateQueries({ queryKey: ['finance', 'accounts'] });
+      queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }
@@ -106,12 +105,12 @@ export function useUpdateTransaction() {
 
   return useMutation({
     mutationFn: async (transactionData: UpdateTransactionData) => {
-      const { data } = await axios.put('/api/finance/transactions', transactionData);
+      const { data } = await axiosInstance.put('/finance/transactions', transactionData);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['finance', 'accounts'] });
+      queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }
@@ -121,14 +120,14 @@ export function useDeleteTransaction() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await axios.delete('/api/finance/transactions', {
+      const { data } = await axiosInstance.delete('/finance/transactions', {
         params: { id },
       });
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['finance', 'accounts'] });
+      queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }
@@ -147,7 +146,7 @@ export function usePreviewTransactionImport() {
       formData.append('incomeCategoryId', payload.incomeCategoryId);
       formData.append('expenseCategoryId', payload.expenseCategoryId);
 
-      const { data } = await axios.post('/api/finance/transactions/import/preview', formData, {
+      const { data } = await axiosInstance.post('/finance/transactions/import/preview', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return data;
@@ -160,12 +159,12 @@ export function useImportTransactions() {
 
   return useMutation({
     mutationFn: async (payload: { accountId: string; items: TransactionImportRequestItem[] }) => {
-      const { data } = await axios.post('/api/finance/transactions/import', payload);
+      const { data } = await axiosInstance.post('/finance/transactions/import', payload);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['finance', 'accounts'] });
+      queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }
@@ -184,7 +183,7 @@ export function useTransactionCategories(
       if (includeInactive) params.append('includeInactive', 'true');
       if (hierarchical) params.append('hierarchical', 'true');
 
-      const { data } = await axios.get('/api/finance/categories', { params });
+      const { data } = await axiosInstance.get('/finance/categories', { params });
       return data;
     },
   });
@@ -202,7 +201,7 @@ export function useCreateTransactionCategory() {
       icon: string;
       isDefault?: boolean;
     }) => {
-      const { data } = await axios.post('/api/finance/categories', categoryData);
+      const { data } = await axiosInstance.post('/finance/categories', categoryData);
       return data;
     },
     onSuccess: () => {
@@ -222,7 +221,7 @@ export function useUpdateTransactionCategory() {
       icon?: string;
       isActive?: boolean;
     }) => {
-      const { data } = await axios.put('/api/finance/categories', categoryData);
+      const { data } = await axiosInstance.put('/finance/categories', categoryData);
       return data;
     },
     onSuccess: () => {
@@ -236,7 +235,7 @@ export function useDeleteTransactionCategory() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await axios.delete('/api/finance/categories', {
+      const { data } = await axiosInstance.delete('/finance/categories', {
         params: { id },
       });
       return data;

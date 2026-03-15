@@ -1,10 +1,11 @@
+import { authOptions } from '@/features/auth/libs/auth';
 import { syncMonobankAccounts } from '@/lib/integrations/monobank-sync';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 
 async function getUserFromSession() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return null;
   }

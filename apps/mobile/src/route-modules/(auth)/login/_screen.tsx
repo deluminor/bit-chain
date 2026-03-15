@@ -1,3 +1,4 @@
+import { LoginRequestSchema } from '@bit-chain/api-contracts';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -23,20 +24,24 @@ export default function LoginScreen() {
   const handleLogin = () => {
     const trimmedEmail = email.trim().toLowerCase();
 
-    if (!trimmedEmail || !password) {
-      Alert.alert('Error', 'Email and password are required.');
+    const parsed = LoginRequestSchema.safeParse({
+      email: trimmedEmail,
+      password,
+    });
+    if (!parsed.success) {
+      const first = parsed.error.flatten().fieldErrors;
+      const msg =
+        first.email?.[0] ?? first.password?.[0] ?? 'Please check your email and password.';
+      Alert.alert('Error', msg);
       return;
     }
 
-    login(
-      { email: trimmedEmail, password },
-      {
-        onError: error => {
-          const message = LOGIN_ERROR_MESSAGES[error.message] ?? 'Login failed. Please try again.';
-          Alert.alert('Login Failed', message);
-        },
+    login(parsed.data, {
+      onError: error => {
+        const message = LOGIN_ERROR_MESSAGES[error.message] ?? 'Login failed. Please try again.';
+        Alert.alert('Login Failed', message);
       },
-    );
+    });
   };
 
   return (

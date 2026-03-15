@@ -10,8 +10,13 @@ import { isAxiosError } from 'axios';
 import api from '~/src/lib/api';
 import { QUERY_CONFIG } from '~/src/lib/constants';
 import { convertCurrency } from '~/src/lib/currency';
+import {
+  DASHBOARD_EXPENSES_TREND_QUERY_KEY,
+  DASHBOARD_HISTORY_QUERY_KEY,
+  DASHBOARD_QUERY_KEY,
+} from '~/src/lib/query-keys';
 
-export const DASHBOARD_QUERY_KEY = ['dashboard', 'summary'] as const;
+export { DASHBOARD_QUERY_KEY };
 
 export interface DashboardFilters {
   dateFrom?: string;
@@ -51,8 +56,6 @@ export function useDashboard(filters?: DashboardFilters) {
   });
 }
 
-export const DASHBOARD_HISTORY_QUERY_KEY = ['dashboard', 'history'] as const;
-
 export interface DashboardHistoryFilters {
   dateFrom?: string;
   dateTo?: string;
@@ -76,8 +79,6 @@ export function useDashboardHistory(filters?: DashboardHistoryFilters) {
     staleTime: QUERY_CONFIG.STALE_TIME_DASHBOARD,
   });
 }
-
-export const DASHBOARD_EXPENSES_TREND_QUERY_KEY = ['dashboard', 'expenses-trend'] as const;
 
 const EXPENSES_TREND_FALLBACK_PAGE_SIZE = 50;
 const EXPENSES_TREND_FALLBACK_MAX_PAGES = 40;

@@ -1,16 +1,11 @@
 import type { ApiResponse, LoginRequest, TokenResponse } from '@bit-chain/api-contracts';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api from '~/src/lib/api';
 import type { AuthUser } from '~/src/lib/auth';
 import { useAuthStore } from '~/src/lib/auth';
 import { API_BASE_URL } from '~/src/lib/constants';
-import { queryClient } from '~/src/lib/query';
 
-/**
- * Hook to fetch the current user's profile from the backend.
- * Falls back to the store user if the request is still loading or fails.
- */
 export function useUser() {
   const storeUser = useAuthStore(s => s.user);
 
@@ -31,15 +26,6 @@ export function useUser() {
   };
 }
 
-/**
- * Login mutation. On success, persists tokens to SecureStore and sets auth state.
- *
- * @example
- * ```tsx
- * const { mutate: login, isPending } = useLogin();
- * login({ email, password });
- * ```
- */
 export function useLogin() {
   const setAuth = useAuthStore(s => s.setAuth);
 
@@ -58,17 +44,14 @@ export function useLogin() {
   });
 }
 
-/**
- * Logout mutation. Revokes session on server and clears local auth state.
- */
 export function useLogout() {
   const clearAuth = useAuthStore(s => s.clearAuth);
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
-      await api.post('/auth/logout', { all: false }).catch(() => {
-        // Ignore server errors — always clear local state
-      });
+      // Intentionally ignore server errors — always clear local state on logout
+      await api.post('/auth/logout', { all: false }).catch(() => {});
     },
     onSuccess: async () => {
       await clearAuth();

@@ -1,84 +1,69 @@
 'use client';
 
+import { parseBackupFileContent } from '@/features/backup/backup.schema';
+import {
+  useBackupList,
+  useCreateBackup,
+  useDeleteBackup,
+  useExportBackup,
+  useImportBackup,
+  useRestoreBackup,
+} from '@/features/backup/queries/backup';
 import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
 import { useSession } from 'next-auth/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { ZodError } from 'zod';
 import { BackupActionsCard } from './BackupActionsCard';
 import { BackupHistoryCard } from './BackupHistoryCard';
 import { BackupImportDialog } from './BackupImportDialog';
-import type { BackupFile } from './backup.types';
 
 export function BackupManager() {
   const { data: session } = useSession();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isListLoading, setIsListLoading] = useState(true);
-  const [backupFiles, setBackupFiles] = useState<BackupFile[]>([]);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [showImportDialog, setShowImportDialog] = useState(false);
+  const userId = session?.user?.id;
   const { toast } = useToast();
 
-  const loadBackupFiles = useCallback(async () => {
-    if (!session?.user?.id) {
-      return;
-    }
+  const { data: backupFiles = [], isLoading: isListLoading, refetch } = useBackupList(userId);
+  const createBackupMutation = useCreateBackup(userId);
+  const exportBackupMutation = useExportBackup();
+  const importBackupMutation = useImportBackup(userId);
+  const restoreBackupMutation = useRestoreBackup(userId);
+  const deleteBackupMutation = useDeleteBackup(userId);
 
-    setIsListLoading(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+
+  const isLoading =
+    createBackupMutation.isPending ||
+    exportBackupMutation.isPending ||
+    importBackupMutation.isPending ||
+    restoreBackupMutation.isPending ||
+    deleteBackupMutation.isPending;
+
+  const loadBackupFiles = useCallback(() => {
+    void refetch();
+  }, [refetch]);
+
+  const createBackup = useCallback(async () => {
+    if (!userId) return;
     try {
-      const response = await axios.get('/api/backup?action=list');
-      setBackupFiles(response.data.files || []);
+      await createBackupMutation.mutateAsync();
+      toast({ title: 'Success', description: 'Personal backup created successfully' });
+      loadBackupFiles();
     } catch (error) {
-      console.error('Error loading backup files:', error);
+      console.error('Error creating backup:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load backup files',
+        description: 'Failed to create backup',
         variant: 'destructive',
       });
-    } finally {
-      setIsListLoading(false);
     }
-  }, [session?.user?.id, toast]);
+  }, [userId, createBackupMutation, toast, loadBackupFiles]);
 
-  useEffect(() => {
-    void loadBackupFiles();
-  }, [loadBackupFiles]);
-
-  if (!session?.user?.id) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to access backup management</p>
-      </div>
-    );
-  }
-
-  const createBackup = async () => {
-    setIsLoading(true);
+  const exportData = useCallback(async () => {
+    if (!userId) return;
     try {
-      const response = await axios.post('/api/backup', {
-        action: 'create',
-        userId: session.user.id,
-      });
-
-      if (response.data.success) {
-        toast({ title: 'Success', description: 'Personal backup created successfully' });
-        await loadBackupFiles();
-      }
-    } catch {
-      console.error('Error creating backup:');
-      toast({ title: 'Error', description: 'Failed to create backup', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const exportData = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axios.get(`/api/backup?action=export&userId=${session.user.id}`, {
-        responseType: 'blob',
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = await exportBackupMutation.mutateAsync(userId);
+      const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `my_backup_${new Date().toISOString().split('T')[0]}.json`);
@@ -86,15 +71,16 @@ export function BackupManager() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-
       toast({ title: 'Success', description: 'Your personal data exported successfully' });
-    } catch {
-      console.error('Error exporting data:');
-      toast({ title: 'Error', description: 'Failed to export data', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export data',
+        variant: 'destructive',
+      });
     }
-  };
+  }, [userId, exportBackupMutation, toast]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -103,7 +89,6 @@ export function BackupManager() {
       setShowImportDialog(true);
       return;
     }
-
     toast({
       title: 'Error',
       description: 'Please select a valid JSON backup file',
@@ -111,81 +96,90 @@ export function BackupManager() {
     });
   };
 
-  const importData = async (overwrite = false) => {
-    if (!selectedFile) {
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const fileContent = await selectedFile.text();
-      const backupData = JSON.parse(fileContent);
-
-      const response = await axios.post('/api/backup', {
-        action: 'import',
-        data: backupData,
-        userId: session.user.id,
-        overwrite,
-      });
-
-      if (response.data.success) {
+  const importData = useCallback(
+    async (overwrite: boolean) => {
+      if (!selectedFile || !userId) return;
+      try {
+        const fileContent = await selectedFile.text();
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(fileContent);
+        } catch {
+          toast({
+            title: 'Error',
+            description: 'Invalid JSON file. Please select a valid backup file.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        const backupData = parseBackupFileContent(parsed);
+        await importBackupMutation.mutateAsync({ data: backupData, overwrite });
         toast({ title: 'Success', description: 'Personal data imported successfully' });
         setShowImportDialog(false);
         setSelectedFile(null);
-        await loadBackupFiles();
+        loadBackupFiles();
+      } catch (error) {
+        const message =
+          error instanceof ZodError
+            ? 'Invalid backup file format. Ensure it was exported from BitChain.'
+            : 'Failed to import data';
+        toast({
+          title: 'Error',
+          description: message,
+          variant: 'destructive',
+        });
       }
-    } catch {
-      console.error('Error importing data:');
-      toast({ title: 'Error', description: 'Failed to import data', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [selectedFile, userId, importBackupMutation, toast, loadBackupFiles],
+  );
 
-  const restoreFromFile = async (filename: string, overwrite = false) => {
-    setIsLoading(true);
-    try {
-      const response = await axios.post('/api/backup', {
-        action: 'restore',
-        filename,
-        userId: session.user.id,
-        overwrite,
-      });
-
-      if (response.data.success) {
+  const restoreFromFile = useCallback(
+    async (filename: string, overwrite: boolean) => {
+      if (!userId) return;
+      try {
+        await restoreBackupMutation.mutateAsync({ filename, overwrite });
         toast({ title: 'Success', description: 'Personal backup restored successfully' });
+      } catch (error) {
+        console.error('Error restoring backup:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to restore backup',
+          variant: 'destructive',
+        });
       }
-    } catch {
-      console.error('Error restoring backup:');
-      toast({ title: 'Error', description: 'Failed to restore backup', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [userId, restoreBackupMutation, toast],
+  );
 
-  const deleteBackup = async (filename: string) => {
-    setIsLoading(true);
-    try {
-      const response = await axios.post('/api/backup', {
-        action: 'delete',
-        filename,
-      });
-
-      if (response.data.success) {
+  const deleteBackup = useCallback(
+    async (filename: string) => {
+      try {
+        await deleteBackupMutation.mutateAsync(filename);
         toast({ title: 'Success', description: 'Backup deleted successfully' });
-        await loadBackupFiles();
+        loadBackupFiles();
+      } catch (error) {
+        console.error('Error deleting backup:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to delete backup',
+          variant: 'destructive',
+        });
       }
-    } catch {
-      console.error('Error deleting backup:');
-      toast({ title: 'Error', description: 'Failed to delete backup', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [deleteBackupMutation, toast, loadBackupFiles],
+  );
 
   const formatTimestamp = (timestamp: string) => {
     return new Date(timestamp).toLocaleString();
   };
+
+  if (!userId) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-muted-foreground">Please log in to access backup management</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

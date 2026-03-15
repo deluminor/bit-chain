@@ -1,4 +1,3 @@
-'use client';
 import { styles } from '@/route-modules/(app)/(tabs)/transactions/_styles';
 import { useQueryClient } from '@tanstack/react-query';
 import { Tabs, useRouter } from 'expo-router';
@@ -11,12 +10,12 @@ import { colors } from '~/src/design/tokens';
 import { useConvertedStats } from '~/src/hooks/useConvertedStats';
 import { useMonobankSync } from '~/src/hooks/useMonobank';
 import {
-  TRANSACTIONS_QUERY_KEY,
   TRANSACTION_FILTERS,
   useTransactions,
   type TransactionFilter,
 } from '~/src/hooks/useTransactions';
 import { getPeriodLabel, getPeriodRange, usePeriodStore } from '~/src/lib/period';
+import { TRANSACTIONS_QUERY_KEY } from '~/src/lib/query-keys';
 import { formatCurrency } from '~/src/utils/format';
 
 export default function TransactionsScreen() {
@@ -49,7 +48,16 @@ export default function TransactionsScreen() {
 
   const refetchCb = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY });
-    sync({}, { onError: () => {} });
+    sync(
+      {},
+      {
+        onError: err => {
+          if (__DEV__) {
+            console.warn('[Transactions] Monobank sync on refresh failed:', err?.message ?? err);
+          }
+        },
+      },
+    );
   }, [queryClient, sync]);
 
   const income = convertedStats.income;

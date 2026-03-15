@@ -5,11 +5,9 @@ import type {
   LoansListResponse,
   UpdateLoanRequest,
 } from '@bit-chain/api-contracts';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '~/src/lib/api';
-import { queryClient } from '~/src/lib/query';
-
-export const LOANS_QUERY_KEY = ['loans', 'list'] as const;
+import { LOANS_QUERY_KEY } from '~/src/lib/query-keys';
 
 /**
  * Fetches all loans and debts for the authenticated user.
@@ -36,6 +34,7 @@ export function useLoans(showPaid = false) {
 }
 
 export function useCreateLoan() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateLoanRequest): Promise<LoanItem> => {
       const { data } = await api.post<ApiResponse<LoanItem>>('/loans', payload);
@@ -49,6 +48,7 @@ export function useCreateLoan() {
 }
 
 export function useUpdateLoan() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: UpdateLoanRequest): Promise<LoanItem> => {
       const { data } = await api.put<ApiResponse<LoanItem>>('/loans', payload);
@@ -62,6 +62,7 @@ export function useUpdateLoan() {
 }
 
 export function useDeleteLoan() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
       const { data } = await api.delete<ApiResponse<{ message: string }>>(`/loans?id=${id}`);

@@ -1,5 +1,5 @@
+import axiosInstance from '@/lib/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 
 export type LoanType = 'LOAN' | 'DEBT';
 
@@ -58,7 +58,7 @@ export function useLoans(includeInactive = false) {
   return useQuery({
     queryKey: loanKeys.list({ includeInactive }),
     queryFn: async (): Promise<LoansResponse> => {
-      const { data } = await axios.get('/api/finance/loans', {
+      const { data } = await axiosInstance.get('/finance/loans', {
         params: { includeInactive },
       });
       return data;
@@ -71,7 +71,7 @@ export function useCreateLoan() {
 
   return useMutation({
     mutationFn: async (payload: CreateLoanData) => {
-      const { data } = await axios.post('/api/finance/loans', payload);
+      const { data } = await axiosInstance.post('/finance/loans', payload);
       return data;
     },
     onSuccess: () => {
@@ -85,7 +85,7 @@ export function useUpdateLoan() {
 
   return useMutation({
     mutationFn: async (payload: UpdateLoanData) => {
-      const { data } = await axios.put('/api/finance/loans', payload);
+      const { data } = await axiosInstance.put('/finance/loans', payload);
       return data;
     },
     onSuccess: () => {
@@ -99,7 +99,7 @@ export function useDeleteLoan() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await axios.delete('/api/finance/loans', { params: { id } });
+      const { data } = await axiosInstance.delete('/finance/loans', { params: { id } });
       return data;
     },
     onSuccess: () => {

@@ -1,0 +1,12 @@
+export const ACCOUNTS_QUERY_KEY = ['accounts', 'list'] as const;
+export const BUDGETS_QUERY_KEY = ['budgets', 'list'] as const;
+export const CATEGORIES_QUERY_KEY = ['categories', 'list'] as const;
+export const DASHBOARD_QUERY_KEY = ['dashboard', 'summary'] as const;
+export const DASHBOARD_HISTORY_QUERY_KEY = ['dashboard', 'history'] as const;
+export const DASHBOARD_EXPENSES_TREND_QUERY_KEY = ['dashboard', 'expenses-trend'] as const;
+export const GOALS_QUERY_KEY = ['goals', 'list'] as const;
+export const LOANS_QUERY_KEY = ['loans', 'list'] as const;
+export const MONOBANK_QUERY_KEY = ['monobank', 'status'] as const;
+export const BACKUP_QUERY_KEY = ['backup', 'list'] as const;
+export const TRANSACTIONS_QUERY_KEY = ['transactions', 'list'] as const;
+export const TRANSACTION_BY_ID_QUERY_KEY = ['transactions', 'by-id'] as const;

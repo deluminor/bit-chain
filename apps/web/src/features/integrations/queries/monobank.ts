@@ -1,7 +1,7 @@
 import { accountKeys } from '@/features/finance/queries/accounts';
 import { transactionKeys } from '@/features/finance/queries/transactions';
+import axiosInstance from '@/lib/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 
 export type IntegrationStatus = 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
 export type IntegrationProvider = 'MONOBANK';
@@ -58,7 +58,8 @@ export function useMonobankIntegration() {
   return useQuery({
     queryKey: monobankKeys.detail(),
     queryFn: async () => {
-      const { data } = await axios.get<MonobankIntegrationResponse>('/api/integrations/monobank');
+      const { data } =
+        await axiosInstance.get<MonobankIntegrationResponse>('/integrations/monobank');
       return data;
     },
   });
@@ -69,7 +70,7 @@ export function useMonobankConnect() {
 
   return useMutation({
     mutationFn: async (payload?: { token?: string }) => {
-      const { data } = await axios.post('/api/integrations/monobank/connect', payload);
+      const { data } = await axiosInstance.post('/integrations/monobank/connect', payload);
       return data;
     },
     onSuccess: () => {
@@ -83,7 +84,7 @@ export function useMonobankUpdateAccounts() {
 
   return useMutation({
     mutationFn: async (payload: MonobankAccountsUpdatePayload) => {
-      const { data } = await axios.patch('/api/integrations/monobank/accounts', payload);
+      const { data } = await axiosInstance.patch('/integrations/monobank/accounts', payload);
       return data;
     },
     onSuccess: () => {
@@ -103,7 +104,7 @@ export function useMonobankSync() {
       fromDate?: Date;
       limit?: number;
     }) => {
-      const { data } = await axios.post('/api/integrations/monobank/sync', payload ?? {});
+      const { data } = await axiosInstance.post('/integrations/monobank/sync', payload ?? {});
       return data;
     },
     onSuccess: () => {

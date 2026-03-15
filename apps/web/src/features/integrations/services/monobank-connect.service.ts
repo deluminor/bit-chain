@@ -1,3 +1,4 @@
+import { authOptions } from '@/features/auth/libs/auth';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 
@@ -42,7 +43,7 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
 };
 
 export async function getSessionUser() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return null;
   }

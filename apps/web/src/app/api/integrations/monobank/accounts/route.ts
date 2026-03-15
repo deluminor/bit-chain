@@ -1,3 +1,4 @@
+import { authOptions } from '@/features/auth/libs/auth';
 import type { Prisma } from '@/generated/prisma';
 import { mapMonobankAccountType } from '@/lib/integrations/monobank';
 import { prisma } from '@/lib/prisma';
@@ -18,7 +19,7 @@ const updateAccountsSchema = z.object({
 });
 
 async function getUserFromSession() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return null;
   }

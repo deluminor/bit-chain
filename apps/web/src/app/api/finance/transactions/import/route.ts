@@ -1,3 +1,4 @@
+import { authOptions } from '@/features/auth/libs/auth';
 import { createImportKey } from '@/lib/finance/transaction-import';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
@@ -22,7 +23,7 @@ const importSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

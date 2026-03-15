@@ -5,11 +5,9 @@ import type {
   GoalsListResponse,
   UpdateGoalRequest,
 } from '@bit-chain/api-contracts';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '~/src/lib/api';
-import { queryClient } from '~/src/lib/query';
-
-export const GOALS_QUERY_KEY = ['goals', 'list'] as const;
+import { GOALS_QUERY_KEY } from '~/src/lib/query-keys';
 
 /**
  * Fetches all financial goals for the authenticated user.
@@ -32,6 +30,7 @@ export function useGoals() {
 }
 
 export function useCreateGoal() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateGoalRequest): Promise<GoalItem> => {
       const { data } = await api.post<ApiResponse<GoalItem>>('/goals', payload);
@@ -45,6 +44,7 @@ export function useCreateGoal() {
 }
 
 export function useUpdateGoal() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: UpdateGoalRequest): Promise<GoalItem> => {
       const { data } = await api.put<ApiResponse<GoalItem>>('/goals', payload);
@@ -58,6 +58,7 @@ export function useUpdateGoal() {
 }
 
 export function useDeleteGoal() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
       const { data } = await api.delete<ApiResponse<{ message: string }>>(`/goals?id=${id}`);

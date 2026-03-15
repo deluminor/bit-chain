@@ -20,6 +20,7 @@ import {
 } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
 import { useBudgets, useCreateBudget, useDeleteBudget } from '~/src/hooks/useBudgets';
+import { BASE_CURRENCY } from '~/src/lib/currency';
 import { formatCurrency, formatShortDate } from '~/src/utils/format';
 import { styles } from './_detail-styles';
 
@@ -191,7 +192,7 @@ export default function BudgetDetailScreen() {
             <View>
               <Text style={styles.amountLabel}>Spent</Text>
               <PrivacyAmount
-                value={formatCurrency(budget.totalActualBase, budget.currency)}
+                value={formatCurrency(budget.totalActualBase, BASE_CURRENCY)}
                 style={[styles.spentAmount, isOverBudget && styles.overSpent]}
                 color={isOverBudget ? colors.expense : colors.textPrimary}
               />
@@ -199,7 +200,7 @@ export default function BudgetDetailScreen() {
             <View style={styles.amountPlannedWrap}>
               <Text style={styles.amountLabel}>Planned</Text>
               <PrivacyAmount
-                value={formatCurrency(budget.totalPlannedBase, budget.currency)}
+                value={formatCurrency(budget.totalPlannedBase, BASE_CURRENCY)}
                 style={styles.plannedAmount}
                 color={colors.textSecondary}
               />
@@ -243,13 +244,13 @@ export default function BudgetDetailScreen() {
                       </View>
                       <View style={styles.catAmounts}>
                         <PrivacyAmount
-                          value={formatCurrency(cat.actualBase, budget.currency)}
+                          value={formatCurrency(cat.actualBase, BASE_CURRENCY)}
                           style={[styles.catSpent, catOver && styles.catOverSpent]}
                           color={catOver ? colors.expense : colors.textPrimary}
                         />
                         <Text style={styles.catPlanned}>/</Text>
                         <PrivacyAmount
-                          value={formatCurrency(cat.plannedBase, budget.currency)}
+                          value={formatCurrency(cat.plannedBase, BASE_CURRENCY)}
                           style={styles.catPlanned}
                           color={colors.textMuted}
                         />

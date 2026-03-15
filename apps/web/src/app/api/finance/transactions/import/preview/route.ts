@@ -1,3 +1,4 @@
+import { authOptions } from '@/features/auth/libs/auth';
 import {
   createImportKey,
   parseTransactionsCsv,
@@ -61,7 +62,7 @@ const buildExistingMap = (
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

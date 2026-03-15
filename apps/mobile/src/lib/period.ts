@@ -76,10 +76,6 @@ function fmtShort(d: Date): string {
   return `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
 
-/**
- * Returns ISO date strings for the given period key.
- * `dateFrom` is undefined for 'all'.
- */
 export function getPeriodRange(key: PeriodKey): DateRange {
   const now = new Date();
   const end = endOfDay(now).toISOString();
@@ -99,9 +95,6 @@ export function getPeriodRange(key: PeriodKey): DateRange {
   }
 }
 
-/**
- * Returns a human-readable label like "Jan 1 – Feb 23" or "All time".
- */
 export function getPeriodLabel(key: PeriodKey): string {
   if (key === 'all') return 'All time';
   const { dateFrom, dateTo } = getPeriodRange(key);
@@ -125,8 +118,10 @@ export const usePeriodStore = create<PeriodState>(set => ({
     set({ period: key });
     try {
       await AsyncStorage.setItem(PERIOD_STORAGE_KEY, key);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      if (__DEV__) {
+        console.warn('[Period] Failed to persist period:', err);
+      }
     }
   },
 
@@ -136,8 +131,10 @@ export const usePeriodStore = create<PeriodState>(set => ({
       if (stored && PERIOD_OPTIONS.some(o => o.key === stored)) {
         set({ period: stored });
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      if (__DEV__) {
+        console.warn('[Period] Failed to hydrate period:', err);
+      }
     }
   },
 }));

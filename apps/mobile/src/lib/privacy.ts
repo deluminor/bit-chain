@@ -3,11 +3,8 @@ import { create } from 'zustand';
 import { STORAGE_KEYS } from './constants';
 
 interface PrivacyState {
-  /** When true, all monetary values are replaced with "••••" */
   isPrivate: boolean;
-  /** Toggle privacy mode and persist to storage */
   toggle: () => Promise<void>;
-  /** Load preference from storage on app start */
   hydrate: () => Promise<void>;
 }
 
@@ -21,8 +18,10 @@ export const usePrivacyStore = create<PrivacyState>((set, get) => ({
     set({ isPrivate: next });
     try {
       await AsyncStorage.setItem(PRIVACY_KEY, JSON.stringify(next));
-    } catch {
-      // Ignore storage errors — state is still updated in memory
+    } catch (err) {
+      if (__DEV__) {
+        console.warn('[Privacy] Failed to persist toggle:', err);
+      }
     }
   },
 
@@ -30,10 +29,16 @@ export const usePrivacyStore = create<PrivacyState>((set, get) => ({
     try {
       const stored = await AsyncStorage.getItem(PRIVACY_KEY);
       if (stored !== null) {
-        set({ isPrivate: JSON.parse(stored) as boolean });
+        const parsed = JSON.parse(stored);
+        if (typeof parsed === 'boolean') {
+          set({ isPrivate: parsed });
+        }
       }
     } catch {
-      // Ignore — default to false
+      // Corrupt or invalid JSON — default to false
+      if (__DEV__) {
+        console.warn('[Privacy] Failed to parse stored preference, defaulting to false');
+      }
     }
   },
 }));

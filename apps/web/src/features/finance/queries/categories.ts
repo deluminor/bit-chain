@@ -1,6 +1,6 @@
 import { useToast } from '@/hooks/use-toast';
+import axiosInstance from '@/lib/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from '@/lib/axios';
 
 export interface TransactionCategory {
   id: string;
@@ -62,7 +62,7 @@ export const useCategories = (filters?: CategoryFilters) => {
       if (filters?.includeInactive) params.append('includeInactive', 'true');
       if (filters?.hierarchical) params.append('hierarchical', 'true');
 
-      const response = await axios.get(`/finance/categories?${params.toString()}`);
+      const response = await axiosInstance.get(`/finance/categories?${params.toString()}`);
       return response.data;
     },
   });
@@ -74,7 +74,7 @@ export const useCreateCategory = () => {
 
   return useMutation({
     mutationFn: async (data: CreateCategoryParams) => {
-      const response = await axios.post('/finance/categories', data);
+      const response = await axiosInstance.post('/finance/categories', data);
       return response.data.category;
     },
     onSuccess: _newCategory => {
@@ -103,7 +103,7 @@ export const useUpdateCategory = () => {
 
   return useMutation({
     mutationFn: async (params: UpdateCategoryParams) => {
-      const response = await axios.put('/finance/categories', params);
+      const response = await axiosInstance.put('/finance/categories', params);
       return response.data.category;
     },
     onSuccess: _updatedCategory => {
@@ -131,7 +131,7 @@ export const useDeleteCategory = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await axios.delete(`/finance/categories?id=${id}`);
+      const response = await axiosInstance.delete(`/finance/categories?id=${id}`);
       return response.data;
     },
     onSuccess: () => {

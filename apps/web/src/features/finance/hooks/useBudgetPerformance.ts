@@ -67,17 +67,13 @@ async function fetchBudgetPerformance(): Promise<BudgetPerformanceData[]> {
 
   for (const budgetCategory of currentBudget.categories) {
     let budgetedInEUR = budgetCategory.plannedBase ?? budgetCategory.planned;
-    let spentInEUR = budgetCategory.actualBase ?? budgetCategory.actual;
+    const spentInEUR = budgetCategory.actualBase ?? budgetCategory.actual;
 
     if (budgetCategory.plannedBase === undefined && currentBudget.currency) {
       budgetedInEUR = await convertToBaseCurrencySafe(
         budgetCategory.planned,
         currentBudget.currency,
       );
-    }
-
-    if (budgetCategory.actualBase === undefined && currentBudget.currency) {
-      spentInEUR = await convertToBaseCurrencySafe(budgetCategory.actual, currentBudget.currency);
     }
 
     const remaining = Math.max(0, budgetedInEUR - spentInEUR);

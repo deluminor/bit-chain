@@ -15,7 +15,8 @@ import type { TransactionRowData } from '~/src/components/transaction/Transactio
 import { TransactionRow } from '~/src/components/transaction/TransactionRow';
 import { Separator } from '~/src/components/ui';
 import { colors, radius, spacing } from '~/src/design/tokens';
-import { TRANSACTIONS_QUERY_KEY, useTransactions } from '~/src/hooks/useTransactions';
+import { useTransactions } from '~/src/hooks/useTransactions';
+import { TRANSACTIONS_QUERY_KEY } from '~/src/lib/query-keys';
 import { groupByDate } from './_list-utils';
 
 const DEFAULT_PAGE_SIZE = 50;

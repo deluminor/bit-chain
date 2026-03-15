@@ -48,9 +48,10 @@ export class CurrencyService {
         throw new Error('All exchange rate APIs failed');
       }
 
+      const apiRates = data.rates ?? {};
       this.exchangeRates = {
         base: data.base || BASE_CURRENCY,
-        rates: data.rates || {},
+        rates: { ...FALLBACK_EXCHANGE_RATES, ...apiRates },
         timestamp: now,
       };
       this.lastFetch = now;
@@ -79,9 +80,9 @@ export class CurrencyService {
     }
 
     const rates = await this.getExchangeRates();
-    const rate = rates.rates[fromCurrency];
+    const rate = rates.rates[fromCurrency] ?? FALLBACK_EXCHANGE_RATES[fromCurrency];
 
-    if (!rate) {
+    if (!rate || rate <= 0) {
       console.warn(`Exchange rate not found for ${fromCurrency}, using 1:1 conversion`);
       return amount;
     }
@@ -95,9 +96,9 @@ export class CurrencyService {
     }
 
     const rates = await this.getExchangeRates();
-    const rate = rates.rates[toCurrency];
+    const rate = rates.rates[toCurrency] ?? FALLBACK_EXCHANGE_RATES[toCurrency];
 
-    if (!rate) {
+    if (!rate || rate <= 0) {
       console.warn(`Exchange rate not found for ${toCurrency}, using 1:1 conversion`);
       return amount;
     }

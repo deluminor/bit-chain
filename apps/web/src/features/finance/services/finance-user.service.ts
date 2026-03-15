@@ -1,11 +1,7 @@
 import { prisma } from '@/lib/prisma';
+import { hash } from 'bcryptjs';
+import { randomBytes } from 'node:crypto';
 
-/**
- * Finds an existing finance user by email or creates a minimal account for NextAuth users.
- *
- * @param email - Unique user email from authenticated session
- * @returns Existing or newly created user record
- */
 export async function findOrCreateFinanceUserByEmail(email: string) {
   let user = await prisma.user.findUnique({
     where: { email },
@@ -15,10 +11,13 @@ export async function findOrCreateFinanceUserByEmail(email: string) {
     return user;
   }
 
+  const randomPassword = randomBytes(32).toString('base64url');
+  const hashedPassword = await hash(randomPassword, 10);
+
   user = await prisma.user.create({
     data: {
       email,
-      password: 'nextauth_user',
+      password: hashedPassword,
     },
   });
 

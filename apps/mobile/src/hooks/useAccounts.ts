@@ -2,22 +2,14 @@ import type { AccountsListResponse, ApiResponse } from '@bit-chain/api-contracts
 import { useQuery } from '@tanstack/react-query';
 import api from '~/src/lib/api';
 import { QUERY_CONFIG } from '~/src/lib/constants';
+import { ACCOUNTS_QUERY_KEY } from '~/src/lib/query-keys';
 
-export const ACCOUNTS_QUERY_KEY = ['accounts', 'list'] as const;
+export { ACCOUNTS_QUERY_KEY };
 
 export interface UseAccountsOptions {
   includeInactive?: boolean;
 }
 
-/**
- * Fetches the list of all accounts from /api/mobile/accounts.
- * Returns total balance, account count, and a per-account breakdown.
- *
- * @example
- * ```tsx
- * const { data, isLoading, error } = useAccounts();
- * ```
- */
 export function useAccounts(options?: UseAccountsOptions) {
   return useQuery({
     queryKey: [...ACCOUNTS_QUERY_KEY, options] as const,

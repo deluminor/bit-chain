@@ -10,6 +10,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { isAxiosError } from 'axios';
 import { z } from 'zod';
 import { ACCOUNTS_QUERY_KEY } from '~/src/hooks/useAccounts';
+import { BUDGETS_QUERY_KEY } from '~/src/hooks/useBudgets';
 import { DASHBOARD_QUERY_KEY } from '~/src/hooks/useDashboard';
 import api from '~/src/lib/api';
 import { QUERY_CONFIG } from '~/src/lib/constants';
@@ -307,6 +308,7 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: TRANSACTION_BY_ID_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
     },
   });
 }
@@ -338,6 +340,7 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: TRANSACTION_BY_ID_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
 
       const mapped = mapMutationTransactionToListItem(response);
       if (mapped && payload.id) {
@@ -369,6 +372,7 @@ export function useDeleteTransaction() {
       queryClient.invalidateQueries({ queryKey: TRANSACTION_BY_ID_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
     },
   });
 }

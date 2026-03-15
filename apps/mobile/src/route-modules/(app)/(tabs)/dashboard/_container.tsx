@@ -13,6 +13,7 @@ import {
   LineChartWidget,
   LoadingScreen,
   PrivacyAmount,
+  ProgressBar,
   SectionHeader,
   Separator,
   SyncButton,
@@ -33,7 +34,7 @@ import { useMonobankSync } from '~/src/hooks/useMonobank';
 import { convertCurrency, useCurrencyStore } from '~/src/lib/currency';
 import { getPeriodLabel, getPeriodRange, usePeriodStore } from '~/src/lib/period';
 import { usePrivacyStore } from '~/src/lib/privacy';
-import { formatCurrency, formatRelativeDate } from '~/src/utils/format';
+import { formatCurrency, formatRelativeDate, formatShortDate } from '~/src/utils/format';
 
 function formatTrendLabel(isoDate: string): string {
   const date = new Date(isoDate);
@@ -758,6 +759,84 @@ export default function DashboardScreen() {
                     />
                   </View>
                   {idx < data.balances.length - 1 && <Separator />}
+                </View>
+              ))}
+            </Card>
+          </>
+        )}
+
+        {currentMonthBudgets.length > 0 && (
+          <>
+            <SectionHeader
+              title="Budget"
+              actionLabel="View"
+              onAction={() =>
+                router.push({
+                  pathname: '/budget/[id]',
+                  params: { id: currentMonthBudgets[0]!.id },
+                })
+              }
+            />
+            <Card padding="sm">
+              {currentMonthBudgets.map((budget, budgetIdx) => (
+                <View key={budget.id}>
+                  {budgetIdx > 0 && <Separator />}
+                  <Text style={styles.budgetPeriod}>
+                    {formatShortDate(budget.startDate)} – {formatShortDate(budget.endDate)}
+                  </Text>
+                  {[...budget.categories]
+                    .sort((a, b) => b.plannedBase - a.plannedBase)
+                    .map((cat, idx) => {
+                      const catProgress =
+                        cat.plannedBase > 0
+                          ? Math.min((cat.actualBase / cat.plannedBase) * 100, 100)
+                          : 0;
+                      const catOver = cat.actualBase > cat.plannedBase;
+                      return (
+                        <Pressable
+                          key={cat.id}
+                          onPress={() =>
+                            router.push({
+                              pathname: '/budget/[id]/category/[categoryId]',
+                              params: { id: budget.id, categoryId: cat.categoryId },
+                            })
+                          }
+                        >
+                          <View style={styles.budgetCatRow}>
+                            <View style={styles.budgetCatInfo}>
+                              <Text style={styles.budgetCatIcon}>📁</Text>
+                              <Text style={styles.budgetCatName} numberOfLines={1}>
+                                {cat.category.name}
+                              </Text>
+                            </View>
+                            <View style={styles.budgetCatAmounts}>
+                              <PrivacyAmount
+                                value={formatCurrency(cat.actualBase, budget.currency)}
+                                style={[
+                                  styles.budgetCatSpent,
+                                  catOver && styles.budgetCatOverSpent,
+                                ]}
+                                color={catOver ? colors.expense : colors.textPrimary}
+                              />
+                              <Text style={styles.budgetCatPlanned}>/</Text>
+                              <PrivacyAmount
+                                value={formatCurrency(cat.plannedBase, budget.currency)}
+                                style={styles.budgetCatPlanned}
+                                color={colors.textMuted}
+                              />
+                            </View>
+                          </View>
+                          <View style={styles.budgetCatProgressWrap}>
+                            <ProgressBar
+                              progress={catProgress}
+                              color={catOver ? colors.expense : cat.category.color || colors.brand}
+                              height={6}
+                            />
+                          </View>
+                          {idx < budget.categories.length - 1 && <Separator />}
+                        </Pressable>
+                      );
+                    })}
                 </View>
               ))}
             </Card>

@@ -216,45 +216,57 @@ export default function BudgetDetailScreen() {
 
         <SectionHeader title="Categories" />
         <Card padding="sm">
-          {budget.categories.map((cat, idx) => {
-            const catProgress =
-              cat.plannedBase > 0 ? Math.min((cat.actualBase / cat.plannedBase) * 100, 100) : 0;
-            const catOver = cat.actualBase > cat.plannedBase;
+          {[...budget.categories]
+            .sort((a, b) => b.plannedBase - a.plannedBase)
+            .map((cat, idx) => {
+              const catProgress =
+                cat.plannedBase > 0 ? Math.min((cat.actualBase / cat.plannedBase) * 100, 100) : 0;
+              const catOver = cat.actualBase > cat.plannedBase;
 
-            return (
-              <View key={cat.id}>
-                <View style={styles.catRow}>
-                  <View style={styles.catInfo}>
-                    <Text style={styles.catIcon}>{'📁'}</Text>
-                    <Text style={styles.catName} numberOfLines={1}>
-                      {cat.category.name}
-                    </Text>
+              return (
+                <Pressable
+                  key={cat.id}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/budget/[id]/category/[categoryId]',
+                      params: { id: budget.id, categoryId: cat.categoryId },
+                    })
+                  }
+                >
+                  <View>
+                    <View style={styles.catRow}>
+                      <View style={styles.catInfo}>
+                        <Text style={styles.catIcon}>{'📁'}</Text>
+                        <Text style={styles.catName} numberOfLines={1}>
+                          {cat.category.name}
+                        </Text>
+                      </View>
+                      <View style={styles.catAmounts}>
+                        <PrivacyAmount
+                          value={formatCurrency(cat.actualBase, budget.currency)}
+                          style={[styles.catSpent, catOver && styles.catOverSpent]}
+                          color={catOver ? colors.expense : colors.textPrimary}
+                        />
+                        <Text style={styles.catPlanned}>/</Text>
+                        <PrivacyAmount
+                          value={formatCurrency(cat.plannedBase, budget.currency)}
+                          style={styles.catPlanned}
+                          color={colors.textMuted}
+                        />
+                      </View>
+                    </View>
+                    <View style={styles.catProgressWrap}>
+                      <ProgressBar
+                        progress={catProgress}
+                        color={catOver ? colors.expense : cat.category.color || colors.brand}
+                        height={6}
+                      />
+                    </View>
                   </View>
-                  <View style={styles.catAmounts}>
-                    <PrivacyAmount
-                      value={formatCurrency(cat.actualBase, budget.currency)}
-                      style={[styles.catSpent, catOver && styles.catOverSpent]}
-                      color={catOver ? colors.expense : colors.textPrimary}
-                    />
-                    <Text style={styles.catPlanned}>/</Text>
-                    <PrivacyAmount
-                      value={formatCurrency(cat.plannedBase, budget.currency)}
-                      style={styles.catPlanned}
-                      color={colors.textMuted}
-                    />
-                  </View>
-                </View>
-                <View style={styles.catProgressWrap}>
-                  <ProgressBar
-                    progress={catProgress}
-                    color={catOver ? colors.expense : cat.category.color || colors.brand}
-                    height={6}
-                  />
-                </View>
-                {idx < budget.categories.length - 1 && <Separator />}
-              </View>
-            );
-          })}
+                  {idx < budget.categories.length - 1 && <Separator />}
+                </Pressable>
+              );
+            })}
         </Card>
 
         <Pressable

@@ -260,6 +260,54 @@ const screenStyles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.xs,
   },
+  budgetPeriod: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    marginBottom: spacing.sm,
+  },
+  budgetCatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  budgetCatInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.sm,
+  },
+  budgetCatIcon: {
+    fontSize: 20,
+  },
+  budgetCatName: {
+    fontSize: fontSize.base,
+    color: colors.textPrimary,
+    fontWeight: fontWeight.medium,
+  },
+  budgetCatAmounts: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  budgetCatSpent: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.textPrimary,
+  },
+  budgetCatOverSpent: {
+    color: colors.expense,
+  },
+  budgetCatPlanned: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  budgetCatProgressWrap: {
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.md,
+  },
 });
 
 export const styles = {

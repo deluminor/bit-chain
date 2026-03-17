@@ -1,773 +1,249 @@
-# 🚀 BitChain App
+## BitChain
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
-[![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev/)
-[![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://www.prisma.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+## Personal finance and trading journal with web and mobile clients, bank integration, and backup.
 
-## 📋 Table of Contents
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![Expo](https://img.shields.io/badge/Expo-54-000020?logo=expo)
+![Prisma](https://img.shields.io/badge/Prisma-6.6-2D3748?logo=prisma)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-- [🎯 Key Features](#-key-features)
-- [🏗️ Architecture](#️-architecture)
-- [🛠️ Tech Stack](#️-tech-stack)
-- [📊 Functionality](#-functionality)
-- [🎨 UI/UX](#-uiux)
-- [🔒 Security](#-security)
-- [📈 Analytics & Reporting](#-analytics--reporting)
-- [💾 Backup System](#-backup-system)
-- [🚀 Quick Start](#-quick-start)
-- [⚙️ Configuration](#️-configuration)
-- [🏃‍♂️ Development](#️-development)
-- [🚀 Deployment](#-deployment)
-- [📱 Responsiveness](#-responsiveness)
-- [🔧 Development Guidelines](#-development-guidelines)
+## Table of Contents
 
-## 🎯 Key Features
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Running the App](#running-the-app)
+- [Available Scripts](#available-scripts)
+- [Key Features](#key-features)
+- [Contributing](#contributing)
+- [License](#license)
 
-### 📊 **Trading Management**
+## Overview
 
-- **Detailed trade journal** with Long/Short position support
-- **Trade screenshots** for visual analysis
-- **Trade categorization** (solo, radar, everest, cryptonite, and more)
-- **P&L calculations** and performance statistics
-- **Demo and live account support**
+**BitChain** is a full-stack personal finance and trading journal application. It lets you track accounts, transactions, budgets, financial goals, and loans on the web, and sync trading activity with demo/live accounts. A mobile app (Expo) provides access to the same finance data via a dedicated JWT-based API.
 
-### 💰 **Personal Finance System**
+**Why it exists** — Centralize personal finance tracking, trading journal, and bank integration (Monobank) in one place with a consistent experience across web and mobile.
 
-- **Multi-account management** (cash, bank cards, savings, investments)
-- **Income and expense categorization** with hierarchical structure
-- **Budget planning** with templates and automatic creation
-- **Financial goals** with progress tracking
-- **Multi-currency support** with flexible base currency selection and real-time FX conversions
-- **Monobank integration** with opt-in account selection and automated transaction sync
+**Current status** — Core modules implemented: trading (trades, categories, P&L), finance (accounts, transactions, budgets, goals, loans), Monobank integration, web (NextAuth) and mobile (custom JWT) auth, backup (JSON export/import). E2E tests and `ARCHITECTURE.md` are planned.
 
-### 📱 **Mobile Native Application**
+## Tech Stack
 
-- **Cross-platform mobile app** built with React Native and Expo
-- **Sleek dark-themed dashboard** featuring a dynamic "Market Trend" SVG history chart starting from user's origin
-- **Fast, unified synchronization** for Monobank and backend data in a single swipe (pull-to-refresh)
-- **Secure Authentication** using custom JWE session management and ROPG flows
-- **Quick Actions** for instant on-the-go finance management
+| Layer           | Technology                                 |
+| --------------- | ------------------------------------------ |
+| Web             | Next.js 15 (App Router, Turbopack)         |
+| Web             | React 19, TailwindCSS 4                    |
+| Web             | Radix UI (Shadcn-style), CVA               |
+| Web             | TanStack Query 5, Zustand 5                |
+| Web             | React Hook Form 7, Zod 3.24                |
+| Web             | NextAuth 4 (JWT session)                   |
+| Web             | Prisma 6.6, PostgreSQL 14+                 |
+| Mobile          | Expo 54, Expo Router 6                     |
+| Mobile          | TanStack Query, Zustand, expo-secure-store |
+| Shared          | @bit-chain/api-contracts (Zod schemas)     |
+| Package Manager | pnpm                                       |
 
-### 📈 **Analytics & Visualization**
+## Architecture
 
-- **Interactive charts** using Recharts
-- **Net Worth tracking** with growth dynamics
-- **Categorized spending** with color coding
-- **Account balance trends** across all accounts
-- **Budget analytics** with plan vs actual
+BitChain is a monorepo with a single Next.js backend serving both web (session cookies) and mobile (Bearer JWT) clients. Domain logic lives in feature modules under `apps/web/src/features/`; API routes are thin and delegate to domain services. Prisma is the single ORM; PostgreSQL is the database.
 
-### 🔐 **Security & Data Management**
-
-- **Personal backups** with full recovery
-- **Role-based authorization** with JWT tokens
-- **User data isolation**
-- **Password encryption** with bcryptjs
-
-## 🏗️ Architecture
-
-### **Monorepo Structure**
-
-```text
-bit-chain/
-├── apps/
-│   ├── web/                          # Next.js Web Application
-│   │   ├── src/app/                  # App Router & API Routes
-│   │   └── ...
-│   └── mobile/                       # Expo React Native App
-│       ├── app/                      # Expo Router (Tab Navigation)
-│       ├── src/components/           # Native UI components & SVG Charts
-│       └── ...
-├── packages/
-│   ├── api-contracts/                # Shared Zod schemas, types & API structures
-│   └── database/                     # Prisma schema and generated client
-└── ...
-```
-
-### **Backend Architecture (apps/web/src/app/api)**
-
-```text
-Backend (API Routes):
-├── /api/auth/[...nextauth]     # NextAuth.js endpoints for web
-├── /api/mobile/                # Dedicated mobile API with JWE auth
-├── /api/backup                 # Backup system
-├── /api/finance/               # Finance APIs
-│   ├── accounts/              # Account CRUD operations
-│   ├── transactions/          # Transaction management
-│   ├── categories/            # Transaction categories
-│   ├── budget/               # Budget system
-│   └── reports/              # Reports and analytics
-└── /api/trades/              # Trading API
-```
-
-### **Database Schema**
+### System Overview
 
 ```mermaid
-erDiagram
-    User ||--o{ Trade : owns
-    User ||--o{ Category : creates
-    User ||--o{ FinanceAccount : manages
-    User ||--o{ Transaction : records
-    User ||--o{ Budget : plans
-    User ||--o{ FinancialGoal : sets
+flowchart TB
+    subgraph Client["Clients"]
+        Web[Web Browser]
+        Mobile[Mobile App]
+    end
 
-    Trade ||--o{ Screenshot : contains
-    Trade }o--|| Category : belongs_to
+    subgraph Server["Next.js (apps/web)"]
+        API[API Routes]
+        NextAuth[NextAuth]
+        Prisma[Prisma]
+    end
 
-    Transaction }o--|| FinanceAccount : from_account
-    Transaction }o--|| TransactionCategory : categorized_as
-    Transaction }o--|| FinanceAccount : to_account
+    subgraph External["External"]
+        PG[(PostgreSQL)]
+        Monobank[Monobank API]
+    end
 
-    Budget ||--o{ BudgetCategory : includes
-    BudgetCategory }o--|| TransactionCategory : tracks
+    Web -->|Session cookies| API
+    Web --> NextAuth
+    Mobile -->|Bearer JWT| API
+    API --> Prisma
+    API --> Monobank
+    Prisma --> PG
 ```
 
-## 🛠️ Tech Stack
+### Web Request Flow
 
-### **Web & Mobile Frontend**
-
-| Technology              | Version | Purpose                                    |
-| ----------------------- | ------- | ------------------------------------------ |
-| **Next.js**             | 15.x    | Full-stack React framework with App Router |
-| **Expo / React Native** | Latest  | Mobile framework for iOS cross-platform    |
-| **TypeScript**          | 5.x     | Type safety and better development         |
-| **TailwindCSS**         | 3.x/4.x | Utility-first CSS framework                |
-| **Zustand**             | 4.x     | Lightweight client state management        |
-| **React Hook Form**     | 7.x     | Efficient form management                  |
-| **React Query**         | 5.x     | Server state and caching management        |
-| **React Native SVG**    | Latest  | Highly optimized custom data visualization |
-
-### **Backend & Database**
-
-| Technology      | Version | Purpose                          |
-| --------------- | ------- | -------------------------------- |
-| **Prisma**      | 5.x     | Type-safe ORM with migrations    |
-| **PostgreSQL**  | 14+     | Relational database              |
-| **NextAuth.js** | 4.x     | Authentication and authorization |
-| **bcryptjs**    | 2.x     | Password hashing                 |
-| **Zod**         | 3.x     | Schema validation                |
-
-### **Deployment & DevOps**
-
-| Technology            | Purpose                     |
-| --------------------- | --------------------------- |
-| **Vercel**            | Hosting and auto-deployment |
-| **Neon**              | Serverless PostgreSQL       |
-| **GitHub Actions**    | CI/CD pipeline              |
-| **ESLint + Prettier** | Code quality and formatting |
-
-## 📊 Functionality
-
-### **🎯 Trading Module**
-
-**Trade Management:**
-
-- Add trades with complete details (symbol, entry/exit price, leverage, P&L)
-- Support for Long/Short positions
-- Automatic profit/loss calculations
-- Strategy-based categorization
-- Demo and real accounts
-
-**Visual Analytics:**
-
-- Performance chart over time
-- Win/loss ratio statistics
-- Category distribution
-- Net Worth dynamics
-
-**System Files:**
-
-```typescript
-// Trade model
-model Trade {
-  id           String        @id @default(cuid())
-  userId       String
-  symbol       String        // BTC/USDT
-  side         TradeSide     // LONG/SHORT
-  entryPrice   Float
-  exitPrice    Float
-  positionSize Float
-  leverage     Float?
-  pnl          Float         // Calculated P&L
-  result       TradeResult   // WIN/LOSS/PENDING
-  screenshots  Screenshot[]  // Attached screenshots
-}
+```
+Browser → Next.js API route → getServerSession(authOptions) → findOrCreateFinanceUserByEmail
+       → Domain service → Prisma → PostgreSQL
+       → NextResponse.json(payload)
 ```
 
-### **💰 Financial System**
+### Mobile Request Flow
 
-**Multi-Account Management:**
-
-- Cash wallets
-- Bank cards and accounts
-- Savings accounts
-- Investment portfolios
-
-**Smart Categorization:**
-
-```typescript
-// Hierarchical categories
-model TransactionCategory {
-  id       String @id @default(cuid())
-  name     String // "Groceries", "Entertainment"
-  type     TransactionType // INCOME/EXPENSE
-  parentId String? // Sub-categories
-  parent   TransactionCategory? @relation("CategoryHierarchy")
-  children TransactionCategory[] @relation("CategoryHierarchy")
-  color    String // Color coding
-  icon     String // UI icon
-}
+```
+Mobile → axios (Bearer token) → /api/mobile/* → getMobileUser(request) → userId
+      → Domain logic → Prisma → PostgreSQL
+      → ok(data) or err(code, message, requestId)
 ```
 
-**Budget System:**
+## Project Structure
 
-- Monthly and yearly planning
-- Budget templates for reuse
-- Automatic expense tracking
-- Alerts for limit violations
-
-**Financial Goals:**
-
-- Target savings with deadlines
-- Progress tracker with visualization
-- Multiple currencies
-
-### **🔗 Integrations**
-
-- **Monobank**: connect in Settings, choose accounts to import, sync balances and statements on demand
-- Future integrations (crypto exchanges, additional banks) plug into the same Settings area
-
-## 🎨 UI/UX
-
-### **Design System**
-
-The project uses **Shadcn UI** as the foundation for the design system with customization through TailwindCSS:
-
-**Color Palette:**
-
-```css
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
-  --secondary: 210 40% 96%;
-  --muted: 210 40% 96%;
-  --accent: 210 40% 96%;
-  --destructive: 0 84.2% 60.2%;
-}
+```
+bit-chain/
+├── apps/
+│   ├── web/                          # Next.js web app
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma         # Single schema, Prisma client in src/generated
+│   │   │   ├── migrations/
+│   │   │   └── seed.ts
+│   │   ├── scripts/                  # monobank-sync-all, remove-demo-data
+│   │   └── src/
+│   │       ├── app/
+│   │       │   ├── (protected)/      # Auth-guarded layout, sidebar, dashboard, journal, accounts, etc.
+│   │       │   ├── (public)/         # Login, register, auth API
+│   │       │   └── api/              # Finance, backup, crypto, integrations, mobile, reports
+│   │       ├── components/           # ui (Shadcn), forms, layout, dashboard, backup
+│   │       ├── features/
+│   │       │   ├── auth/             # LoginForm, RegisterForm, AuthProvider
+│   │       │   ├── crypto/            # CryptoCardSkeleton, news
+│   │       │   ├── finance/           # Accounts, transactions, budget, goals, categories
+│   │       │   ├── integrations/     # Monobank integration
+│   │       │   └── positions/         # Trades, categories, demo-mode
+│   │       ├── generated/prisma/     # Prisma client output
+│   │       ├── lib/                  # prisma, axios, backup, mobile-auth, rate-limit
+│   │       └── store/
+│   └── mobile/                       # Expo React Native app
+│       ├── app/
+│       │   ├── (app)/(tabs)/         # dashboard, transactions, etc.
+│       │   └── (auth)/               # login
+│       └── src/
+│           ├── components/
+│           ├── design/               # tokens
+│           └── lib/                  # auth, api, query, network
+├── packages/
+│   ├── api-contracts/                # Zod schemas, ok/err helpers for mobile API
+│   └── tsconfig/                     # base, nextjs, react-native configs
+├── .github/workflows/
+├── pnpm-workspace.yaml
+└── package.json
 ```
 
-**Component Architecture:**
+## Getting Started
 
-- **Atomic Design** principles
-- **Compositional components** with Radix UI
-- **Responsive-first** approach
-- **Dark/Light mode** support
+### Prerequisites
 
-### **Charts & Visualization**
+- **Node.js** >= 20.x
+- **pnpm** >= 9.x — `npm install -g pnpm`
+- **PostgreSQL** 14+
 
-```typescript
-// Chart configuration example
-const chartConfig = {
-  netWorth: {
-    label: 'Net Worth',
-    color: '#8b5cf6',
-  },
-} satisfies ChartConfig;
-
-// Gradient configuration for smooth visualization
-<linearGradient id="netWorthGradient" x1="0" y1="0" x2="0" y2="1">
-  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.55} />
-  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.02} />
-</linearGradient>
-```
-
-## 🔒 Security
-
-### **Authentication**
-
-```typescript
-// NextAuth configuration with JWT
-export const authOptions: NextAuthOptions = {
-  session: { strategy: 'jwt' },
-  providers: [
-    CredentialsProvider({
-      async authorize(credentials) {
-        const user = await prisma.user.findUnique({
-          where: { email: credentials?.email },
-        });
-        const isValid = await compare(credentials.password, user.password);
-        return isValid ? { id: user.id, email: user.email } : null;
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) token.id = user.id;
-      return token;
-    },
-    async session({ session, token }) {
-      session.user.id = token.id as string;
-      return session;
-    },
-  },
-};
-```
-
-### **API-Level Authorization**
-
-Each API route validates user session:
-
-```typescript
-export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // Filter data by userId
-  const data = await prisma.transaction.findMany({
-    where: { userId: session.user.id },
-  });
-}
-```
-
-### **Data Isolation**
-
-- All data tied to `userId`
-- Automatic filtering at Prisma level
-- Middleware for route protection
-
-## 📈 Analytics & Reporting
-
-### **Real-time Dashboard**
-
-```typescript
-// Hook for financial statistics
-export function useFinanceStats() {
-  return useQuery({
-    queryKey: ['financeStats'],
-    queryFn: async () => {
-      const response = await fetch('/api/finance/stats');
-      return response.json();
-    },
-    refetchInterval: 30000, // Update every 30 seconds
-  });
-}
-```
-
-### **Graphical Analytics**
-
-- **Net Worth Chart**: Capital growth dynamics
-- **Category Spending**: Expense distribution by categories
-- **Account Balance Trends**: Account balances over time
-- **Budget Performance**: Plan vs actual budget execution
-
-### **Data Export**
-
-- CSV export of transactions
-- PDF reports with charts
-- JSON backup files
-
-## 💾 Backup System
-
-### **Personalized Backups**
-
-Each user has their own backup system with complete isolation:
-
-```typescript
-// BackupService architecture
-export class BackupService {
-  static async exportAllData(options: { userId?: string }) {
-    // Export all user data types
-    const [
-      users, categories, trades, screenshots,
-      financeAccounts, transactions, transactionCategories,
-      budgets, budgetCategories, financialGoals
-    ] = await Promise.all([
-      // Parallel queries with userId filtering
-    ]);
-
-    return {
-      users, categories, trades, screenshots,
-      financeAccounts, transactions, transactionCategories,
-      budgets, budgetCategories, financialGoals,
-      metadata: {
-        version: this.BACKUP_VERSION,
-        timestamp: new Date().toISOString(),
-        totalRecords: /* calculation */
-      }
-    };
-  }
-}
-```
-
-**Backup Features:**
-
-- ✅ **Create personal backups** with all user data
-- ✅ **JSON export** with download capability
-- ✅ **File restoration** with merge/replace options
-- ✅ **Automatic validation** of backup structure
-- ✅ **Versioning** for backward compatibility
-
-## 🚀 Quick Start
-
-### **Prerequisites**
-
-- Node.js 18.17+ and npm/yarn/pnpm
-- PostgreSQL database (local or cloud)
-- Git for repository cloning
-
-### **1. Clone and Install**
+### Installation
 
 ```bash
-# Clone repository
-git clone https://github.com/erikkopcha/bit-chain.git
+git clone https://github.com/your-org/bit-chain.git
 cd bit-chain
-
-# Install dependencies
-npm install
-# or
-yarn install
-# or
 pnpm install
 ```
 
-### **2. Environment Configuration**
+### Environment Setup
 
-Copy `.env.example` to `.env.local` and update the values:
-
-```env
-# Database (Neon example)
-DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
-
-# NextAuth
-NEXTAUTH_SECRET="your-super-secret-jwt-key-here"
-NEXTAUTH_URL="http://localhost:3000"
-
-# Optional API keys for crypto data
-CRYPTOPANIC_API_KEY="your_cryptopanic_api_key"
-COINGECKO_API_KEY="your_coingecko_api_key" # Pro plan
-```
-
-### **3. Database Initialization**
+Copy the example env file and fill in your values:
 
 ```bash
-# Generate Prisma client
-npx prisma generate
-
-# Apply migrations
-npx prisma migrate dev --name init
-
-# Optional: seed with test data
-npx prisma db seed
+cp apps/web/.env.example apps/web/.env
 ```
 
-### **4. Development Run**
+| Variable                        | Description                                  | Required      |
+| ------------------------------- | -------------------------------------------- | ------------- |
+| `DATABASE_URL`                  | PostgreSQL connection string                 | ✅            |
+| `NEXTAUTH_SECRET`               | NextAuth JWT signing secret                  | ✅            |
+| `NEXTAUTH_URL`                  | Web app URL (e.g. http://localhost:3000)     | ✅            |
+| `NEXT_PUBLIC_API_URL`           | Override API base (default `/api`)           | optional      |
+| `CRYPTOPANIC_API_KEY`           | Crypto news API                              | optional      |
+| `COINGECKO_API_KEY`             | CoinGecko API                                | optional      |
+| `MOBILE_JWT_SECRET`             | 64-char base64 for mobile JWT                | ✅ (mobile)   |
+| `MOBILE_JWT_ACCESS_TTL_MINUTES` | Access token TTL (default 15)                | optional      |
+| `MOBILE_JWT_REFRESH_TTL_DAYS`   | Refresh token TTL (default 30)               | optional      |
+| `MONOBANK_ENCRYPTION_KEY`       | 32-byte base64 for Monobank token encryption | ✅ (Monobank) |
+
+> **Security note:** Generate secrets with:
+>
+> ```bash
+> # MOBILE_JWT_SECRET (64 bytes)
+> node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
+>
+> # MONOBANK_ENCRYPTION_KEY (32 bytes)
+> node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+> ```
+
+For mobile, copy `apps/mobile/.env.example` to `apps/mobile/.env.local` and set `EXPO_PUBLIC_API_URL` to your API base (e.g. ngrok URL) for local development.
+
+### Database
 
 ```bash
-# In the root monorepo directory:
-npm run dev
+pnpm db:migrate
+pnpm db:seed
+```
 
-# Or run mobile and web separately:
-cd apps/web && npm run dev
-cd apps/mobile && npx expo start
+## Running the App
+
+```bash
+# Development (Turbopack)
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## ⚙️ Configuration
-
-### **Prisma Configuration**
-
-```prisma
-// prisma/schema.prisma
-generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+```bash
+# Production build
+pnpm build
+pnpm start
 ```
-
-### **Next.js Configuration**
-
-```javascript
-// next.config.ts
-const nextConfig = {
-  images: {
-    domains: ['assets.coingecko.com', 'crypto.com'],
-  },
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
-};
-```
-
-### **TailwindCSS Configuration**
-
-```javascript
-// tailwind.config.js
-module.exports = {
-  darkMode: ['class'],
-  content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
-  ],
-  theme: {
-    extend: {
-      colors: {
-        border: 'hsl(var(--border))',
-        background: 'hsl(var(--background))',
-        // ... color system
-      },
-    },
-  },
-};
-```
-
-## 🏃‍♂️ Development
-
-### **Available Commands**
 
 ```bash
-# Development
-npm run dev          # Run dev server
-npm run build        # Production build
-npm run start        # Run production server
-npm run lint         # ESLint check
-npm run type-check   # TypeScript check
-
-# Database
-npx prisma studio    # Prisma Studio (DB GUI)
-npx prisma migrate dev    # Create migration
-npx prisma db push   # Push schema without migration
-npx prisma generate  # Generate client
-
-# Utilities
-npm run format       # Prettier formatting
-npm run analyze      # Bundle analyzer
-
-# sync
-npm run monobank:sync-all -- --email "email@example.com" --from "2026-01-01" --force
-
+# Mobile (Expo)
+pnpm mobile:start
+# or
+pnpm mobile:ios
 ```
 
-### **Development Structure**
+## Available Scripts
 
-```
-Development Workflow:
-1. Feature branch creation
-2. TypeScript strict mode
-3. ESLint + Prettier auto formatting
-4. Pre-commit hooks with lint-staged
-5. Automatic testing on CI/CD
-6. Review process before merge
-```
+| Script                   | Description                                               |
+| ------------------------ | --------------------------------------------------------- |
+| `pnpm dev`               | Start Next.js dev server with Turbopack                   |
+| `pnpm build`             | Prisma generate + Next.js build                           |
+| `pnpm start`             | Build and start production server                         |
+| `pnpm lint`              | ESLint check                                              |
+| `pnpm lint:fix`          | ESLint with auto-fix                                      |
+| `pnpm format:check`      | Prettier check                                            |
+| `pnpm format:fix`        | Prettier write                                            |
+| `pnpm type-check`        | TypeScript check (web)                                    |
+| `pnpm type-check:all`    | TypeScript check (web + mobile)                           |
+| `pnpm validate`          | lint:fix, format:fix, type-check, knip, build             |
+| `pnpm db:migrate`        | `prisma migrate deploy`                                   |
+| `pnpm db:seed`           | Seed database                                             |
+| `pnpm db:remove-demo`    | Remove demo data                                          |
+| `pnpm monobank:sync-all` | Sync Monobank transactions (requires `--email`, `--from`) |
+| `pnpm mobile:start`      | Expo start                                                |
+| `pnpm mobile:ios`        | Expo run:ios                                              |
+| `pnpm mobile:type-check` | TypeScript check (mobile)                                 |
 
-## 🚀 Deployment
+## Key Features
 
-### **Vercel Deployment (Recommended)**
+- **Finance module** — Accounts, transactions, categories, budgets, goals, loans
+- **Trading module** — Trades, categories, screenshots, P&L, demo/live accounts
+- **Monobank integration** — Connect, sync transactions, opt-in account selection
+- **Web auth** — NextAuth JWT session, credentials provider
+- **Mobile auth** — Custom JWT access/refresh tokens, SecureStore, Bearer API
+- **Backup** — JSON export/import with merge/replace
 
-1. **Connect GitHub repository** to Vercel
-2. **Configure environment variables:**
-   ```env
-   DATABASE_URL=your_production_database_url
-   NEXTAUTH_SECRET=your_production_secret
-   NEXTAUTH_URL=https://yourdomain.com
-   ```
-3. **Automatic deployment** on push to main
+## License
 
-### **Railway Deployment**
-
-```bash
-# Install Railway CLI
-npm install -g @railway/cli
-
-# Login and initialize
-railway login
-railway init
-railway up
-```
-
-### **Self-hosted (Docker)**
-
-```dockerfile
-# Dockerfile
-FROM node:18-alpine AS deps
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN npm run build
-
-FROM node:18-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV production
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-## 📱 Responsiveness
-
-### **Responsive Design**
-
-```css
-/* Breakpoints system */
-sm: 640px   /* Mobile devices */
-md: 768px   /* Tablets */
-lg: 1024px  /* Desktops */
-xl: 1280px  /* Large screens */
-2xl: 1536px /* Ultra-wide displays */
-```
-
-**Mobile Optimization:**
-
-- Touch-friendly interfaces
-- Swipe gestures for navigation
-- Optimized forms for mobile keyboards
-- Progressive Web App capabilities
-
-## 🔧 Development Guidelines
-
-### **Code Style**
-
-```typescript
-// ESLint configuration
-{
-  "extends": [
-    "next/core-web-vitals",
-    "@typescript-eslint/recommended",
-    "prettier"
-  ],
-  "rules": {
-    "@typescript-eslint/no-unused-vars": "error",
-    "prefer-const": "error",
-    "no-var": "error"
-  }
-}
-```
-
-### **Commit Conventions**
-
-```text
-feat: add new functionality
-fix: bug fixes
-docs: documentation updates
-style: formatting, no logical changes
-refactor: refactoring without functionality changes
-test: adding or fixing tests
-chore: technical changes, dependency updates
-```
-
-### **Folder Structure Best Practices**
-
-- **Feature-based** organization in `features/`
-- **Shared components** in `components/ui`
-- **Custom hooks** in `hooks/`
-- **Type definitions** in `types/`
-- **API routes** grouped by domains
-
-## 🚀 Performance
-
-### **Optimization Features**
-
-- **Server-side rendering** with Next.js App Router
-- **Static generation** for public pages
-- **Image optimization** with Next.js Image component
-- **Code splitting** with dynamic imports
-- **Database query optimization** with Prisma
-- **Caching strategies** with React Query
-
-### **Bundle Analysis**
-
-```bash
-npm run analyze  # Analyze bundle size
-npm run build    # Check build performance
-```
-
-## 🧪 Testing
-
-### **Testing Strategy**
-
-- **Unit tests** with Jest and React Testing Library
-- **Integration tests** for API routes
-- **E2E tests** with Playwright
-- **Type checking** with TypeScript
-
-### **Testing Commands**
-
-```bash
-npm run test        # Run unit tests
-npm run test:e2e    # Run E2E tests
-npm run test:watch  # Watch mode
-npm run coverage    # Coverage report
-```
-
-## 🌐 API Documentation
-
-### **Authentication Endpoints**
-
-```text
-POST /api/auth/register - User registration
-POST /api/auth/signin   - User login
-GET  /api/auth/session  - Get current session
-```
-
-### **Trading Endpoints**
-
-```text
-GET    /api/trades         - Get user trades
-POST   /api/trades         - Create new trade
-PUT    /api/trades/:id     - Update trade
-DELETE /api/trades/:id     - Delete trade
-```
-
-### **Finance Endpoints**
-
-```text
-GET    /api/finance/accounts     - Get accounts
-POST   /api/finance/accounts     - Create account
-GET    /api/finance/transactions - Get transactions
-POST   /api/finance/transactions - Create transaction
-GET    /api/finance/reports      - Get financial reports
-```
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Create Pull Request
-
-## 📞 Support
-
-If you have questions or issues:
-
-- Create an [Issue](https://github.com/erikkopcha/bit-chain/issues)
-- Check [Documentation](https://github.com/erikkopcha/bit-chain/wiki)
-- Contact the developer
-
----
-
-**Made with ❤️ using Next.js, TypeScript, and modern web technologies**
+[MIT](LICENSE) © 2026 BitChain

@@ -130,20 +130,29 @@ model FinanceAccount {
 }
 
 model Transaction {
-  id          String              @id @default(cuid())
-  userId      String
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accountId   String
-  account     FinanceAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  categoryId  String
-  category    TransactionCategory @relation(fields: [categoryId], references: [id])
-  type        TransactionType
-  amount      Float
-  currency    String              @default("UAH")
-  description String?
-  date        DateTime            @default(now())
-  tags        String[] // Array of tags for flexible organization
-  isDemo      Boolean             @default(false)
+  id                      String              @id @default(cuid())
+  userId                  String
+  user                    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId               String
+  account                 FinanceAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categoryId              String
+  category                TransactionCategory @relation(fields: [categoryId], references: [id])
+  type                    TransactionType
+  amount                  Float
+  currency                String              @default("UAH")
+  /**
+   * When set, this expense is a loan repayment — amount is added to loan.paidAmount
+   */
+  loanId                  String?
+  loan                    Loan?               @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  /**
+   * When transaction is in different currency (e.g. EUR), Monobank provides amount in account currency (UAH).
+   */
+  amountInAccountCurrency Float?
+  description             String?
+  date                    DateTime            @default(now())
+  tags                    String[] // Array of tags for flexible organization
+  isDemo                  Boolean             @default(false)
 
   // Transfer specific fields
   transferToId     String? // For transfer transactions
@@ -213,20 +222,24 @@ model IntegrationAccount {
 }
 
 model TransactionCategory {
-  id        String                @id @default(cuid())
-  userId    String
-  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String // "Groceries", "Salary", "Entertainment"
-  type      TransactionType // INCOME or EXPENSE
-  parentId  String? // For hierarchical categories
-  parent    TransactionCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children  TransactionCategory[] @relation("CategoryHierarchy")
-  color     String // Hex color
-  icon      String // Icon identifier
-  isDefault Boolean               @default(false)
-  isActive  Boolean               @default(true)
-  isDemo    Boolean               @default(false)
-  createdAt DateTime              @default(now())
+  id              String                @id @default(cuid())
+  userId          String
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String // "Groceries", "Salary", "Entertainment"
+  type            TransactionType // INCOME or EXPENSE
+  /**
+   * When true, transaction form shows loan select for repayment attribution
+   */
+  isLoanRepayment Boolean               @default(false)
+  parentId        String? // For hierarchical categories
+  parent          TransactionCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children        TransactionCategory[] @relation("CategoryHierarchy")
+  color           String // Hex color
+  icon            String // Icon identifier
+  isDefault       Boolean               @default(false)
+  isActive        Boolean               @default(true)
+  isDemo          Boolean               @default(false)
+  createdAt       DateTime              @default(now())
 
   // Relations
   transactions     Transaction[]
@@ -237,21 +250,25 @@ model TransactionCategory {
 }
 
 model Loan {
-  id           String    @id @default(cuid())
+  id           String        @id @default(cuid())
   userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   name         String
+  /**
+   * Transactions marked as repayments for this loan
+   */
+  repayments   Transaction[]
   type         LoanType
-  totalAmount  Float     @default(0) // Original loan/debt amount
-  paidAmount   Float     @default(0) // Amount paid/received so far
-  currency     String    @default("UAH")
+  totalAmount  Float         @default(0) // Original loan/debt amount
+  paidAmount   Float         @default(0) // Amount paid/received so far
+  currency     String        @default("UAH")
   startDate    DateTime?
   dueDate      DateTime?
   interestRate Float?
   lender       String? // For LOAN: who you borrowed from. For DEBT: who owes you
   notes        String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   @@unique([userId, name])
   @@index([userId, type])

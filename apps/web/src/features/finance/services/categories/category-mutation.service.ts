@@ -6,8 +6,8 @@ import type {
   UpdateWebCategoryInput,
 } from './category-domain.schemas';
 import {
-  assertValidParentCategory,
   CategoryDomainError,
+  assertValidParentCategory,
   ensureUniqueCategoryName,
   normalizeCategoryName,
 } from './category-domain.shared';
@@ -66,6 +66,7 @@ export async function createMobileCategory(userId: string, input: CreateMobileCa
       icon: input.icon ?? '',
       isDefault: false,
       isActive: true,
+      isLoanRepayment: input.isLoanRepayment ?? false,
     },
     select: {
       id: true,
@@ -74,6 +75,7 @@ export async function createMobileCategory(userId: string, input: CreateMobileCa
       color: true,
       icon: true,
       isDefault: true,
+      isLoanRepayment: true,
     },
   });
 
@@ -84,6 +86,7 @@ export async function createMobileCategory(userId: string, input: CreateMobileCa
     color: category.color,
     icon: category.icon,
     isDefault: category.isDefault,
+    isLoanRepayment: category.isLoanRepayment,
     transactionCount: 0,
   };
 }
@@ -188,6 +191,7 @@ export async function updateMobileCategory(userId: string, input: UpdateMobileCa
       ...(input.name !== undefined && { name: normalizeCategoryName(input.name) }),
       ...(input.color !== undefined && { color: input.color }),
       ...(input.icon !== undefined && { icon: input.icon }),
+      ...(input.isLoanRepayment !== undefined && { isLoanRepayment: input.isLoanRepayment }),
     },
     select: {
       id: true,
@@ -196,6 +200,7 @@ export async function updateMobileCategory(userId: string, input: UpdateMobileCa
       color: true,
       icon: true,
       isDefault: true,
+      isLoanRepayment: true,
       _count: { select: { transactions: true } },
     },
   });
@@ -207,6 +212,7 @@ export async function updateMobileCategory(userId: string, input: UpdateMobileCa
     color: updatedCategory.color,
     icon: updatedCategory.icon,
     isDefault: updatedCategory.isDefault,
+    isLoanRepayment: updatedCategory.isLoanRepayment,
     transactionCount: updatedCategory._count.transactions,
   };
 }

@@ -3,8 +3,8 @@ import { syncMonobankAccounts } from '@/lib/integrations/monobank-sync';
 import { getMobileUser } from '@/lib/mobile-auth';
 import { prisma } from '@/lib/prisma';
 import {
-  err,
   MonobankSyncRequestSchema,
+  err,
   ok,
   type MonobankSyncResponse,
   type RateLimitResponse,
@@ -101,6 +101,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         imported: 0,
         syncedAt: new Date().toISOString(),
         message: 'No enabled accounts to sync. Enable import for at least one account first.',
+        remainingAccounts: 0,
       };
       return NextResponse.json(ok(response), { status: 200 });
     }
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       synced: true,
       imported: result.importedCount ?? 0,
       syncedAt: new Date().toISOString(),
+      remainingAccounts: result.remainingAccounts ?? 0,
     };
 
     return NextResponse.json(ok(response), { status: 200 });

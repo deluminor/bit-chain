@@ -2,6 +2,7 @@ import { accountKeys } from '@/features/finance/queries/accounts';
 import { transactionKeys } from '@/features/finance/queries/transactions';
 import axiosInstance from '@/lib/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRef } from 'react';
 
 export type IntegrationStatus = 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
 export type IntegrationProvider = 'MONOBANK';
@@ -94,23 +95,45 @@ export function useMonobankUpdateAccounts() {
   });
 }
 
+const CHAIN_DELAY_MS = 65_000;
+
+type SyncPayload = {
+  reason?: string;
+  force?: boolean;
+  fromDate?: Date;
+  limit?: number;
+  chain?: boolean;
+};
+
 export function useMonobankSync() {
   const queryClient = useQueryClient();
+  const mutateRef = useRef<((payload?: SyncPayload) => void) | null>(null);
 
-  return useMutation({
-    mutationFn: async (payload?: {
-      reason?: string;
-      force?: boolean;
-      fromDate?: Date;
-      limit?: number;
-    }) => {
-      const { data } = await axiosInstance.post('/integrations/monobank/sync', payload ?? {});
+  const mutation = useMutation({
+    mutationFn: async (payload?: SyncPayload) => {
+      const { data } = await axiosInstance.post<{
+        remainingAccounts?: number;
+        skipped?: boolean;
+      }>('/integrations/monobank/sync', payload ?? {});
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: monobankKeys.all });
-      queryClient.invalidateQueries({ queryKey: accountKeys.all });
-      queryClient.invalidateQueries({ queryKey: transactionKeys.all });
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: accountKeys.all }),
+        queryClient.refetchQueries({ queryKey: transactionKeys.all }),
+      ]);
+
+      const remaining = data?.remainingAccounts ?? 0;
+      const shouldChain = (variables?.chain ?? false) || variables?.reason === 'chain';
+      if (remaining > 0 && !data?.skipped && shouldChain && mutateRef.current) {
+        setTimeout(() => {
+          mutateRef.current?.({ reason: 'chain', chain: true, ...variables });
+        }, CHAIN_DELAY_MS);
+      }
     },
   });
+
+  mutateRef.current = mutation.mutate as (payload?: SyncPayload) => void;
+  return mutation;
 }

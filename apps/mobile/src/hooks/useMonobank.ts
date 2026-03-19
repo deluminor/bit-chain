@@ -9,12 +9,12 @@ import type {
   MonobankSyncResponse,
 } from '@bit-chain/api-contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRef } from 'react';
 import api from '~/src/lib/api';
 import { MONOBANK_QUERY_KEY } from '~/src/lib/query-keys';
 
-/**
- * Fetches Monobank integration status and accounts list.
- */
+const CHAIN_DELAY_MS = 65_000;
+
 export function useMonobankStatus() {
   return useQuery({
     queryKey: MONOBANK_QUERY_KEY,
@@ -70,14 +70,11 @@ export function useMonobankAccountsUpdate() {
   });
 }
 
-/**
- * Triggers a Monobank sync.
- * On success, invalidates dashboard and monobank queries.
- */
 export function useMonobankSync() {
   const queryClient = useQueryClient();
+  const mutateRef = useRef<((v?: MonobankSyncRequestInput) => void) | null>(null);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async (request: MonobankSyncRequestInput = {}): Promise<MonobankSyncResponse> => {
       const { data } = await api.post<ApiResponse<MonobankSyncResponse>>(
         '/integrations/monobank/sync',
@@ -86,11 +83,23 @@ export function useMonobankSync() {
       if (!data.ok) throw new Error(data.error.code);
       return data.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    onSuccess: async (response, variables) => {
       queryClient.invalidateQueries({ queryKey: MONOBANK_QUERY_KEY });
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['dashboard'] }),
+        queryClient.refetchQueries({ queryKey: ['accounts'] }),
+        queryClient.refetchQueries({ queryKey: ['transactions'] }),
+      ]);
+
+      const remaining = response.remainingAccounts ?? 0;
+      if (remaining > 0 && response.synced && mutateRef.current) {
+        setTimeout(() => {
+          mutateRef.current?.({ ...variables, force: false });
+        }, CHAIN_DELAY_MS);
+      }
     },
   });
+
+  mutateRef.current = mutation.mutate as (v?: MonobankSyncRequestInput) => void;
+  return mutation;
 }

@@ -140,6 +140,9 @@ model Transaction {
   type            TransactionType
   amount          Float
   currency        String           @default("UAH")
+  loanId          String?
+  loan            Loan?            @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  amountInAccountCurrency Float?
   description     String?
   date            DateTime         @default(now())
   tags            String[]         // Array of tags for flexible organization
@@ -213,12 +216,13 @@ model IntegrationAccount {
 }
 
 model TransactionCategory {
-  id           String        @id @default(cuid())
-  userId       String
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name         String       // "Groceries", "Salary", "Entertainment"
-  type         TransactionType // INCOME or EXPENSE
-  parentId     String?      // For hierarchical categories
+  id                   String        @id @default(cuid())
+  userId               String
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                 String       // "Groceries", "Salary", "Entertainment"
+  type                 TransactionType // INCOME or EXPENSE
+  isLoanRepayment      Boolean       @default(false)
+  parentId             String?      // For hierarchical categories
   parent       TransactionCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children     TransactionCategory[] @relation("CategoryHierarchy")
   color        String       // Hex color
@@ -237,10 +241,11 @@ model TransactionCategory {
 }
 
 model Loan {
-  id             String      @id @default(cuid())
+  id             String        @id @default(cuid())
   userId         String
-  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   name           String
+  repayments     Transaction[]
   type           LoanType
   totalAmount    Float       @default(0) // Original loan/debt amount
   paidAmount     Float       @default(0) // Amount paid/received so far

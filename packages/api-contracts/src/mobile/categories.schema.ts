@@ -12,6 +12,7 @@ export const CategoryListItemSchema = z.object({
   /** Optional emoji icon, e.g. "🍔" */
   icon: z.string().nullable().optional(),
   isDefault: z.boolean(),
+  isLoanRepayment: z.boolean().optional(),
   transactionCount: z.number().int().nonnegative(),
 });
 
@@ -31,6 +32,7 @@ export const CreateCategoryRequestSchema = z.object({
   type: CategoryTypeSchema,
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   icon: z.string().min(1).optional(),
+  isLoanRepayment: z.boolean().optional(),
 });
 
 export type CreateCategoryRequest = z.infer<typeof CreateCategoryRequestSchema>;
@@ -43,6 +45,7 @@ export const UpdateCategoryRequestSchema = z.object({
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional(),
   icon: z.string().min(1).optional(),
+  isLoanRepayment: z.boolean().optional(),
 });
 
 export type UpdateCategoryRequest = z.infer<typeof UpdateCategoryRequestSchema>;

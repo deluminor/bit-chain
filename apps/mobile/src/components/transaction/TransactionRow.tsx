@@ -14,6 +14,10 @@ export function TransactionRow({ transaction, hideDate = false }: TransactionRow
   const label = transaction.description ?? transaction.categoryName ?? 'Transaction';
   const amount = `${sign}${formatCurrency(transaction.amount, transaction.currency)}`;
   const dotColor = transaction.categoryColor ?? colors.bgMuted;
+  const showAccountCurrency =
+    transaction.amountInAccountCurrency != null &&
+    transaction.accountCurrency &&
+    transaction.currency !== transaction.accountCurrency;
 
   return (
     <View style={styles.row}>
@@ -37,6 +41,11 @@ export function TransactionRow({ transaction, hideDate = false }: TransactionRow
 
       <View style={styles.rightCol}>
         <PrivacyAmount value={amount} color={color} size={fontSize.base} style={styles.amount} />
+        {showAccountCurrency && (
+          <Text style={styles.amountInAccountCurrency}>
+            {formatCurrency(transaction.amountInAccountCurrency!, transaction.accountCurrency!)}
+          </Text>
+        )}
         {!hideDate && <Text style={styles.date}>{formatRelativeDate(transaction.date)}</Text>}
       </View>
     </View>

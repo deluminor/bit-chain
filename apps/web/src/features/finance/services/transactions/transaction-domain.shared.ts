@@ -5,12 +5,15 @@ export const transactionDetailsSelect = {
   type: true,
   amount: true,
   currency: true,
+  amountInAccountCurrency: true,
   description: true,
   date: true,
   tags: true,
   transferToId: true,
   transferAmount: true,
   transferCurrency: true,
+  loanId: true,
+  loan: { select: { name: true } },
   isRecurring: true,
   recurringPattern: true,
   createdAt: true,
@@ -63,6 +66,7 @@ export const balanceEffectSelect = {
   categoryId: true,
   transferToId: true,
   transferAmount: true,
+  loanId: true,
 } satisfies Prisma.TransactionSelect;
 
 export type TransactionDetails = Prisma.TransactionGetPayload<{

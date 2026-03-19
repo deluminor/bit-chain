@@ -53,6 +53,10 @@ export const rowStyles = StyleSheet.create({
   amount: {
     fontWeight: fontWeight.semibold,
   },
+  amountInAccountCurrency: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+  },
   date: {
     color: colors.textDisabled,
     fontSize: fontSize.xs,

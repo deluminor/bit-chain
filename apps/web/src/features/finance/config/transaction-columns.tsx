@@ -1,13 +1,13 @@
 import { Badge } from '@/components/ui/badge';
-import { Transaction } from '../queries/transactions';
 import {
+  BASE_CURRENCY,
   convertToBaseCurrencySafe,
   formatCurrency,
   formatEuroAmount,
-  BASE_CURRENCY,
 } from '@/lib/currency';
-import { useMemo, useState, useEffect } from 'react';
-import { Plus, Minus, ArrowRightLeft, Calendar, Tag } from 'lucide-react';
+import { ArrowRightLeft, Calendar, Minus, Plus, Tag } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Transaction } from '../queries/transactions';
 
 interface AmountCellProps {
   transaction: Transaction;
@@ -18,8 +18,13 @@ interface AmountCellProps {
 function AmountCell({ transaction, amountColor, currency }: AmountCellProps) {
   const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const accountCurrency = transaction.account?.currency;
+  const showMonobankEquivalent =
+    transaction.amountInAccountCurrency != null && accountCurrency && currency !== accountCurrency;
 
   useEffect(() => {
+    if (showMonobankEquivalent) return;
+
     const convertAmount = async () => {
       if (currency === BASE_CURRENCY) {
         setConvertedAmount(transaction.amount);
@@ -38,7 +43,7 @@ function AmountCell({ transaction, amountColor, currency }: AmountCellProps) {
     };
 
     convertAmount();
-  }, [transaction.amount, currency]);
+  }, [transaction.amount, currency, showMonobankEquivalent]);
 
   return (
     <div className={`font-semibold text-right ${amountColor}`}>
@@ -49,7 +54,14 @@ function AmountCell({ transaction, amountColor, currency }: AmountCellProps) {
           useLargeNumberFormat: false,
         })}
       </div>
-      {currency !== BASE_CURRENCY && (
+      {showMonobankEquivalent && (
+        <div className="text-xs text-muted-foreground mt-1">
+          {formatCurrency(Math.abs(transaction.amountInAccountCurrency!), accountCurrency!, {
+            useLargeNumberFormat: false,
+          })}
+        </div>
+      )}
+      {!showMonobankEquivalent && currency !== BASE_CURRENCY && (
         <div className="text-xs text-muted-foreground mt-1">
           {isConverting
             ? 'Converting...'

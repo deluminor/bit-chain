@@ -1,14 +1,16 @@
 import { prisma } from '@/lib/prisma';
 import { applyBalanceEffects, revertBalanceEffects } from './transaction-balance.service';
 import {
-  balanceEffectSelect,
-  type TransactionDetails,
-  transactionDetailsSelect,
   TransactionDomainError,
+  balanceEffectSelect,
+  transactionDetailsSelect,
+  type TransactionDetails,
 } from './transaction-domain.shared';
 import {
   requireActiveAccount,
   resolveCategoryForType,
+  validateLoanForRepayment,
+  validateLoanForRepaymentWithLock,
   validateTransferDestination,
 } from './transaction-validation.service';
 import type { CreateTransactionInput, UpdateTransactionInput } from './transaction.schemas';
@@ -24,9 +26,18 @@ export async function createTransaction(
     await validateTransferDestination(userId, input.accountId, input.transferToId);
   }
 
+  const loanId = input.loanId ?? null;
+  if (input.type === 'EXPENSE' && loanId) {
+    await validateLoanForRepayment(userId, loanId, input.amount);
+  }
+
   const transactionCurrency = input.currency ?? account.currency;
 
   return prisma.$transaction(async tx => {
+    if (input.type === 'EXPENSE' && loanId) {
+      await validateLoanForRepaymentWithLock(tx, userId, loanId, input.amount);
+    }
+
     const transaction = await tx.transaction.create({
       data: {
         ...input,
@@ -34,6 +45,7 @@ export async function createTransaction(
         userId,
         date: input.date || new Date(),
         currency: transactionCurrency,
+        loanId,
       },
       select: transactionDetailsSelect,
     });
@@ -45,6 +57,13 @@ export async function createTransaction(
       transferToId: input.transferToId ?? null,
       transferAmount: input.transferAmount,
     });
+
+    if (input.type === 'EXPENSE' && loanId) {
+      await tx.loan.update({
+        where: { id: loanId },
+        data: { paidAmount: { increment: input.amount } },
+      });
+    }
 
     return transaction;
   });
@@ -83,9 +102,14 @@ export async function updateTransaction(
     await validateTransferDestination(userId, nextAccountId, nextTransferToId ?? undefined);
   }
 
+  const nextLoanId =
+    updateData.loanId !== undefined ? updateData.loanId : existingTransaction.loanId;
+  const nextAmount = updateData.amount ?? existingTransaction.amount;
+
   const normalizedUpdateData = {
     ...updateData,
     categoryId,
+    loanId: nextType === 'EXPENSE' ? nextLoanId : null,
     ...(nextType !== 'TRANSFER'
       ? {
           transferToId: null,
@@ -96,6 +120,17 @@ export async function updateTransaction(
   };
 
   return prisma.$transaction(async tx => {
+    if (nextType === 'EXPENSE' && nextLoanId) {
+      await validateLoanForRepaymentWithLock(tx, userId, nextLoanId, nextAmount);
+    }
+
+    if (existingTransaction.loanId && existingTransaction.type === 'EXPENSE') {
+      await tx.loan.update({
+        where: { id: existingTransaction.loanId },
+        data: { paidAmount: { decrement: existingTransaction.amount } },
+      });
+    }
+
     await revertBalanceEffects(tx, existingTransaction);
 
     const updatedTransaction = await tx.transaction.update({
@@ -122,6 +157,13 @@ export async function updateTransaction(
       transferAmount: nextTransferAmount,
     });
 
+    if (nextLoanId && nextType === 'EXPENSE') {
+      await tx.loan.update({
+        where: { id: nextLoanId },
+        data: { paidAmount: { increment: newAmount } },
+      });
+    }
+
     return updatedTransaction;
   });
 }
@@ -143,6 +185,13 @@ export async function deleteTransaction(userId: string, transactionId: string): 
   }
 
   await prisma.$transaction(async tx => {
+    if (existingTransaction.loanId && existingTransaction.type === 'EXPENSE') {
+      await tx.loan.update({
+        where: { id: existingTransaction.loanId },
+        data: { paidAmount: { decrement: existingTransaction.amount } },
+      });
+    }
+
     await revertBalanceEffects(tx, existingTransaction);
 
     await tx.transaction.delete({

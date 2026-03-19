@@ -180,16 +180,27 @@ export function createTransactionColumns(accountFilter?: string): DataTableColum
         }
 
         const amountColor = getAmountColor(transaction.type);
+        const accountCurrency = transaction.account.currency;
+        const showAccountCurrency =
+          transaction.amountInAccountCurrency != null && transaction.currency !== accountCurrency;
+
         return (
-          <div className={`font-semibold ${amountColor}`}>
-            {transaction.type === 'EXPENSE' && '-'}
-            {transaction.type === 'INCOME' && '+'}
-            {formatCurrency(
-              Math.abs(transaction.amount),
-              transaction.currency || transaction.account.currency,
-              {
-                useLargeNumberFormat: false,
-              },
+          <div className="flex flex-col items-end">
+            <div className={`font-semibold ${amountColor}`}>
+              {transaction.type === 'EXPENSE' && '-'}
+              {transaction.type === 'INCOME' && '+'}
+              {formatCurrency(
+                Math.abs(transaction.amount),
+                transaction.currency || accountCurrency,
+                { useLargeNumberFormat: false },
+              )}
+            </div>
+            {showAccountCurrency && (
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {formatCurrency(Math.abs(transaction.amountInAccountCurrency!), accountCurrency, {
+                  useLargeNumberFormat: false,
+                })}
+              </div>
             )}
           </div>
         );

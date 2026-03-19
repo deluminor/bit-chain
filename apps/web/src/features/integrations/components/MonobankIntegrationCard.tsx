@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +12,7 @@ import {
 } from '@/features/integrations/queries/monobank';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle2, CreditCard, RefreshCw, Settings2, ShieldAlert, Wallet } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { MonobankAccountsDialog } from './monobank-integration/MonobankAccountsDialog';
 import { MonobankConnectDialog } from './monobank-integration/MonobankConnectDialog';
 import { formatSyncTime } from './monobank-integration/monobank-integration.utils';
@@ -77,7 +77,7 @@ export function MonobankIntegrationCard() {
 
   const handleSync = async () => {
     try {
-      await syncMutation.mutateAsync({ reason: 'manual' });
+      await syncMutation.mutateAsync({ reason: 'manual', chain: true });
       toast({
         title: 'Sync started',
         description: 'Monobank data is refreshing in the background.',

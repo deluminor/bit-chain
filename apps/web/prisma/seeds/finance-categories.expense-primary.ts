@@ -136,6 +136,14 @@ export const DEFAULT_FINANCE_EXPENSE_PRIMARY_CATEGORIES: DefaultCategoryData[] =
     isDefault: true,
   },
   {
+    name: 'Loan repayment',
+    type: TransactionType.EXPENSE,
+    color: '#64748B',
+    icon: 'Banknote',
+    isDefault: true,
+    isLoanRepayment: true,
+  },
+  {
     name: 'Shopping',
     type: TransactionType.EXPENSE,
     color: '#A855F7',

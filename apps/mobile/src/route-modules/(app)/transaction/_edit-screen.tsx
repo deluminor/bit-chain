@@ -5,12 +5,12 @@ import { TransactionForm } from '~/src/components/transaction/TransactionForm';
 import type { TransactionSubmitPayload } from '~/src/components/transaction/_types';
 import { ErrorScreen, LoadingScreen } from '~/src/components/ui';
 import {
-  type CreateTransactionPayload,
-  type UpdateTransactionPayload,
   useCreateTransaction,
   useDeleteTransaction,
   useTransactionById,
   useUpdateTransaction,
+  type CreateTransactionPayload,
+  type UpdateTransactionPayload,
 } from '~/src/hooks/useTransactions';
 import { styles } from './_styles';
 
@@ -56,6 +56,7 @@ export default function EditTransactionScreen() {
           typeof existingTransaction.transferAmount === 'number'
             ? existingTransaction.transferAmount.toString()
             : '',
+        loanId: existingTransaction.loanId || '',
         description: existingTransaction.description || '',
         date: new Date(existingTransaction.date),
       }
@@ -88,6 +89,7 @@ export default function EditTransactionScreen() {
       transferToId: values.transferToId,
       transferAmount: values.transferAmount,
       transferCurrency: values.transferCurrency,
+      loanId: values.loanId,
       description: values.description,
       date: values.date,
     };

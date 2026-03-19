@@ -55,6 +55,7 @@ export const createMobileCategoryInputSchema = z.object({
   type: mobileCategoryTypeSchema,
   color: z.string().regex(/^#[0-9A-F]{6}$/i),
   icon: z.string().min(1).optional(),
+  isLoanRepayment: z.boolean().optional(),
 });
 
 /**
@@ -68,6 +69,7 @@ export const updateMobileCategoryInputSchema = z.object({
     .regex(/^#[0-9A-F]{6}$/i)
     .optional(),
   icon: z.string().min(1).optional(),
+  isLoanRepayment: z.boolean().optional(),
 });
 
 /**

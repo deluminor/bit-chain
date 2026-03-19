@@ -1,6 +1,6 @@
 import { PrismaClient } from '../src/generated/prisma';
-import { DEFAULT_FINANCE_CATEGORIES } from './seeds/finance-categories';
 import { DEFAULT_FINANCE_ACCOUNTS } from './seeds/finance-accounts';
+import { DEFAULT_FINANCE_CATEGORIES } from './seeds/finance-categories';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +8,6 @@ async function seedFinanceCategories(userId: string) {
   console.log('🏷️ Seeding finance categories...');
 
   for (const categoryData of DEFAULT_FINANCE_CATEGORIES) {
-    // Create parent category
     const parentCategory = await prisma.transactionCategory.upsert({
       where: {
         userId_name_type: {
@@ -25,10 +24,10 @@ async function seedFinanceCategories(userId: string) {
         color: categoryData.color,
         icon: categoryData.icon,
         isDefault: categoryData.isDefault,
+        isLoanRepayment: categoryData.isLoanRepayment ?? false,
       },
     });
 
-    // Create child categories if they exist
     if (categoryData.children && categoryData.children.length > 0) {
       for (const childData of categoryData.children) {
         await prisma.transactionCategory.upsert({
@@ -47,6 +46,7 @@ async function seedFinanceCategories(userId: string) {
             color: childData.color,
             icon: childData.icon,
             isDefault: childData.isDefault,
+            isLoanRepayment: childData.isLoanRepayment ?? false,
             parentId: parentCategory.id,
           },
         });
@@ -56,6 +56,28 @@ async function seedFinanceCategories(userId: string) {
 
   const categoryCount = await prisma.transactionCategory.count({ where: { userId } });
   console.log(`✅ Created ${categoryCount} transaction categories`);
+}
+
+async function ensureLoanRepaymentCategory(userId: string) {
+  await prisma.transactionCategory.upsert({
+    where: {
+      userId_name_type: {
+        userId,
+        name: 'Loan repayment',
+        type: 'EXPENSE',
+      },
+    },
+    update: { isLoanRepayment: true },
+    create: {
+      userId,
+      name: 'Loan repayment',
+      type: 'EXPENSE',
+      color: '#64748B',
+      icon: 'Banknote',
+      isDefault: true,
+      isLoanRepayment: true,
+    },
+  });
 }
 
 async function seedFinanceAccounts(userId: string) {
@@ -95,7 +117,7 @@ async function seedSampleBudget(userId: string) {
     where: {
       userId,
       type: 'EXPENSE',
-      parentId: null, // Only parent categories
+      parentId: null,
     },
     take: 5,
   });
@@ -128,7 +150,6 @@ async function seedSampleBudget(userId: string) {
     },
   });
 
-  // Create budget categories
   const budgetAmounts = [8000, 5000, 3000, 4000, 5000]; // Sample amounts
   for (let i = 0; i < expenseCategories.length; i++) {
     await prisma.budgetCategory.upsert({
@@ -196,6 +217,8 @@ async function main() {
     for (const user of users) {
       console.log(`\n👤 Seeding finance data for user: ${user.email}`);
 
+      await ensureLoanRepaymentCategory(user.id);
+
       // Check if user already has finance data
       const existingAccounts = await prisma.financeAccount.count({ where: { userId: user.id } });
       const existingCategories = await prisma.transactionCategory.count({
@@ -203,7 +226,7 @@ async function main() {
       });
 
       if (existingAccounts > 0 || existingCategories > 0) {
-        console.log(`ℹ️ User ${user.email} already has finance data, skipping...`);
+        console.log(`ℹ️ User ${user.email} already has finance data, skipping full seed...`);
         continue;
       }
 

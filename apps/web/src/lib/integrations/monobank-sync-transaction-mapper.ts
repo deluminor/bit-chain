@@ -215,6 +215,7 @@ export function mapMonobankStatementsToTransactions({
 
       const txAmount = isCrossCurrency && operationAmount != null ? operationAmount : amount;
       const txCurrency = isCrossCurrency ? operationCurrency : accountCurrency;
+      const amountInAccountCurrency = isCrossCurrency ? amount : undefined;
 
       return {
         userId,
@@ -223,6 +224,7 @@ export function mapMonobankStatementsToTransactions({
         type: classification.type,
         amount: txAmount,
         currency: txCurrency,
+        amountInAccountCurrency,
         description,
         date: new Date(statement.time * 1000),
         tags: [],

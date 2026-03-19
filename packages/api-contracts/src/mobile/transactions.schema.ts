@@ -16,8 +16,10 @@ export const TransactionListItemSchema = z.object({
   description: z.string().nullable(),
   date: z.string().datetime(),
   currency: z.string(),
+  amountInAccountCurrency: z.number().nullable().optional(),
   accountId: z.string(),
   accountName: z.string(),
+  accountCurrency: z.string().optional(),
   categoryId: z.string().nullable(),
   categoryName: z.string().nullable(),
   /** Hex color of the category, e.g. "#22c55e" */
@@ -26,6 +28,8 @@ export const TransactionListItemSchema = z.object({
   transferToAccountName: z.string().nullable().optional(),
   transferAmount: z.number().nullable().optional(),
   transferCurrency: z.string().nullable().optional(),
+  loanId: z.string().nullable().optional(),
+  loanName: z.string().nullable().optional(),
 });
 
 export type TransactionListItem = z.infer<typeof TransactionListItemSchema>;

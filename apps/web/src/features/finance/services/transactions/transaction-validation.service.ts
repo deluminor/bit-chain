@@ -1,3 +1,4 @@
+import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { TransactionDomainError, type TransactionType } from './transaction-domain.shared';
 
@@ -155,6 +156,70 @@ export async function resolveCategoryForType(
     }
 
     return fallbackCategory.id;
+  }
+}
+
+export async function validateLoanForRepayment(
+  userId: string,
+  loanId: string | undefined | null,
+  amount: number,
+): Promise<void> {
+  if (!loanId) return;
+
+  const loan = await prisma.loan.findFirst({
+    where: { id: loanId, userId },
+    select: { id: true, totalAmount: true, paidAmount: true },
+  });
+
+  if (!loan) {
+    throw new TransactionDomainError('Loan not found', 400);
+  }
+
+  const remaining = loan.totalAmount - loan.paidAmount;
+  if (amount > remaining) {
+    throw new TransactionDomainError(
+      `Repayment amount exceeds remaining balance (${remaining} left)`,
+      400,
+    );
+  }
+}
+
+type LoanRow = { id: string; totalAmount: number; paidAmount: number };
+
+/**
+ * Validates loan for repayment inside a transaction with row lock (FOR UPDATE).
+ * Prevents race conditions when multiple repayments are created concurrently.
+ *
+ * @param tx - Prisma transaction client
+ * @param userId - Authenticated user ID
+ * @param loanId - Loan to validate
+ * @param amount - Repayment amount
+ */
+export async function validateLoanForRepaymentWithLock(
+  tx: Omit<Prisma.TransactionClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>,
+  userId: string,
+  loanId: string | undefined | null,
+  amount: number,
+): Promise<void> {
+  if (!loanId) return;
+
+  const rows = await tx.$queryRaw<LoanRow[]>`
+    SELECT id, "totalAmount", "paidAmount" FROM "Loan"
+    WHERE id = ${loanId} AND "userId" = ${userId}
+    FOR UPDATE
+  `;
+
+  const loan = rows[0];
+  if (!loan) {
+    throw new TransactionDomainError('Loan not found', 400);
+  }
+
+  const remaining = loan.totalAmount - loan.paidAmount;
+  if (amount > remaining) {
+    throw new TransactionDomainError(
+      `Repayment amount exceeds remaining balance (${remaining} left)`,
+      400,
+    );
   }
 }
 

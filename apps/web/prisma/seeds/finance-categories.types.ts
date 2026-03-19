@@ -10,5 +10,6 @@ export interface DefaultCategoryData {
   color: string;
   icon: string;
   isDefault: boolean;
+  isLoanRepayment?: boolean;
   children?: Omit<DefaultCategoryData, 'children'>[];
 }

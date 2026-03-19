@@ -15,6 +15,7 @@ import {
   ACCOUNTS_QUERY_KEY,
   BUDGETS_QUERY_KEY,
   DASHBOARD_QUERY_KEY,
+  LOANS_QUERY_KEY,
   TRANSACTION_BY_ID_QUERY_KEY,
   TRANSACTIONS_QUERY_KEY,
 } from '~/src/lib/query-keys';
@@ -100,6 +101,8 @@ const NestedTransactionSchema = z
     transferTo: z.object({ name: z.string() }).optional().nullable(),
     transferAmount: z.number().nullable().optional(),
     transferCurrency: z.string().nullable().optional(),
+    loanId: z.string().nullable().optional(),
+    loan: z.object({ name: z.string() }).optional().nullable(),
   })
   .transform(t => ({
     id: t.id,
@@ -117,6 +120,8 @@ const NestedTransactionSchema = z
     transferToAccountName: t.transferTo?.name ?? null,
     transferAmount: t.transferAmount ?? null,
     transferCurrency: t.transferCurrency ?? null,
+    loanId: t.loanId ?? null,
+    loanName: t.loan?.name ?? null,
   }));
 
 /** API returns { transaction } (mobile route) or { ok: true, data: { transaction } } */
@@ -254,6 +259,7 @@ export const createTransactionSchema = z
     transferToId: z.string().optional(),
     transferAmount: z.number().positive().optional(),
     transferCurrency: z.string().min(3).max(3).optional(),
+    loanId: z.string().optional().nullable(),
   })
   .refine(
     data => {
@@ -317,6 +323,7 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: LOANS_QUERY_KEY });
     },
   });
 }
@@ -349,6 +356,7 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: LOANS_QUERY_KEY });
 
       const mapped = parseMutationTransactionResponse(response);
       if (mapped && payload.id) {
@@ -381,6 +389,7 @@ export function useDeleteTransaction() {
       queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: BUDGETS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: LOANS_QUERY_KEY });
     },
   });
 }

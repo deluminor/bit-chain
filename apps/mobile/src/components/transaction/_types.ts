@@ -5,6 +5,8 @@ export interface TransactionRowData {
   description: string | null;
   date: string;
   currency: string;
+  amountInAccountCurrency?: number | null;
+  accountCurrency?: string;
   accountName: string;
   categoryName: string | null;
   categoryColor?: string | null;
@@ -22,8 +24,8 @@ export type TransactionFormValues = {
   accountId: string;
   categoryId: string;
   transferToId: string;
-  /** Amount received in the destination account (cross-currency transfers). */
   transferAmount?: string;
+  loanId?: string;
   description: string;
   date: Date;
 };
@@ -37,6 +39,7 @@ export interface TransactionSubmitPayload {
   transferToId?: string;
   transferAmount?: number;
   transferCurrency?: string;
+  loanId?: string | null;
   description?: string;
   date?: Date;
 }

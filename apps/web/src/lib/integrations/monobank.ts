@@ -59,19 +59,10 @@ const CURRENCY_CODE_MAP: Record<number, string> = {
   980: 'UAH',
   840: 'USD',
   978: 'EUR',
-  985: 'PLN',
-  826: 'GBP',
-  392: 'JPY',
   348: 'HUF',
-  124: 'CAD',
-  756: 'CHF',
-  203: 'CZK',
 };
 
-const CURRENCY_DECIMALS: Record<string, number> = {
-  JPY: 0,
-  HUF: 0,
-};
+const CURRENCY_DECIMALS: Record<string, number> = {};
 
 export const MONOBANK_ACCOUNT_TYPE_MAP: Record<
   string,

@@ -13,7 +13,6 @@ import {
 import { getMobileUser } from '@/lib/mobile-auth';
 import { err, ok, type TransactionsListResponse } from '@bit-chain/api-contracts';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 
 /**
  * GET /api/mobile/transactions
@@ -48,36 +47,38 @@ export async function POST(request: NextRequest) {
     try {
       user = await getMobileUser(request);
     } catch {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(err('UNAUTHORIZED', 'Invalid or missing access token'), {
+        status: 401,
+      });
     }
 
-    const body = await request.json();
-    const validatedData = createTransactionSchema.parse(body);
-    const transaction = await createTransaction(user.id, validatedData);
-
-    return NextResponse.json(
-      {
-        transaction,
-        message: 'Transaction created successfully',
-      },
-      { status: 201 },
-    );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const firstIssue = error.errors[0];
+    const body = await request.json().catch(() => ({}));
+    const parsed = createTransactionSchema.safeParse(body);
+    if (!parsed.success) {
+      const firstIssue = parsed.error.errors[0];
       const path = firstIssue && firstIssue.path.length > 0 ? `${firstIssue.path.join('.')}: ` : '';
       return NextResponse.json(
-        { error: `${path}${firstIssue?.message ?? 'Validation error'}`, details: error.errors },
-        { status: 400 },
+        err('VALIDATION_ERROR', `${path}${firstIssue?.message ?? 'Invalid request body'}`),
+        { status: 422 },
       );
     }
 
+    const transaction = await createTransaction(user.id, parsed.data);
+
+    return NextResponse.json(ok({ transaction, message: 'Transaction created successfully' }), {
+      status: 201,
+    });
+  } catch (error) {
     if (error instanceof TransactionDomainError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json(err('VALIDATION_ERROR', error.message), {
+        status: error.status,
+      });
     }
 
-    console.error('Error creating transaction:', error);
-    return NextResponse.json({ error: 'Failed to create transaction' }, { status: 500 });
+    console.error('[mobile/transactions POST] Error:', error);
+    return NextResponse.json(err('INTERNAL_ERROR', 'Failed to create transaction'), {
+      status: 500,
+    });
   }
 }
 
@@ -87,33 +88,38 @@ export async function PUT(request: NextRequest) {
     try {
       user = await getMobileUser(request);
     } catch {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(err('UNAUTHORIZED', 'Invalid or missing access token'), {
+        status: 401,
+      });
     }
 
-    const body = await request.json();
-    const validatedData = updateTransactionSchema.parse(body);
-    const transaction = await updateTransaction(user.id, validatedData);
-
-    return NextResponse.json({
-      transaction,
-      message: 'Transaction updated successfully',
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const firstIssue = error.errors[0];
+    const body = await request.json().catch(() => ({}));
+    const parsed = updateTransactionSchema.safeParse(body);
+    if (!parsed.success) {
+      const firstIssue = parsed.error.errors[0];
       const path = firstIssue && firstIssue.path.length > 0 ? `${firstIssue.path.join('.')}: ` : '';
       return NextResponse.json(
-        { error: `${path}${firstIssue?.message ?? 'Validation error'}`, details: error.errors },
-        { status: 400 },
+        err('VALIDATION_ERROR', `${path}${firstIssue?.message ?? 'Invalid request body'}`),
+        { status: 422 },
       );
     }
 
+    const transaction = await updateTransaction(user.id, parsed.data);
+
+    return NextResponse.json(ok({ transaction, message: 'Transaction updated successfully' }), {
+      status: 200,
+    });
+  } catch (error) {
     if (error instanceof TransactionDomainError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json(err('VALIDATION_ERROR', error.message), {
+        status: error.status,
+      });
     }
 
-    console.error('Error updating transaction:', error);
-    return NextResponse.json({ error: 'Failed to update transaction' }, { status: 500 });
+    console.error('[mobile/transactions PUT] Error:', error);
+    return NextResponse.json(err('INTERNAL_ERROR', 'Failed to update transaction'), {
+      status: 500,
+    });
   }
 }
 
@@ -123,23 +129,31 @@ export async function DELETE(request: NextRequest) {
     try {
       user = await getMobileUser(request);
     } catch {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(err('UNAUTHORIZED', 'Invalid or missing access token'), {
+        status: 401,
+      });
     }
 
     const transactionId = new URL(request.url).searchParams.get('id');
     if (!transactionId) {
-      return NextResponse.json({ error: 'Transaction ID is required' }, { status: 400 });
+      return NextResponse.json(err('VALIDATION_ERROR', 'Transaction ID is required'), {
+        status: 400,
+      });
     }
 
     await deleteTransaction(user.id, transactionId);
 
-    return NextResponse.json({ message: 'Transaction deleted successfully' });
+    return NextResponse.json(ok({ message: 'Transaction deleted successfully' }), { status: 200 });
   } catch (error) {
     if (error instanceof TransactionDomainError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json(err('VALIDATION_ERROR', error.message), {
+        status: error.status,
+      });
     }
 
-    console.error('Error deleting transaction:', error);
-    return NextResponse.json({ error: 'Failed to delete transaction' }, { status: 500 });
+    console.error('[mobile/transactions DELETE] Error:', error);
+    return NextResponse.json(err('INTERNAL_ERROR', 'Failed to delete transaction'), {
+      status: 500,
+    });
   }
 }

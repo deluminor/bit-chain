@@ -3,6 +3,7 @@ export interface Transaction {
   type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
   amount: number;
   currency: string;
+  amountInAccountCurrency?: number | null;
   description?: string;
   date: string;
   tags: string[];

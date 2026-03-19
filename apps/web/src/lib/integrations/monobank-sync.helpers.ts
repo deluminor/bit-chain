@@ -170,12 +170,12 @@ type FromTimestampParams = {
 
 export const buildFromTimestamp = (params: FromTimestampParams): number => {
   const minimumSeconds = params.nowSeconds - MAX_LOOKBACK_SECONDS;
-  const candidate = params.fromDate ?? params.lastSyncedAt ?? new Date(params.nowSeconds * 1000);
+  const candidate = params.fromDate ?? params.lastSyncedAt ?? new Date(minimumSeconds * 1000);
   const candidateSeconds = Math.floor(candidate.getTime() / 1000);
 
   const withOverlap = params.lastSyncedAt
     ? Math.max(candidateSeconds - OVERLAP_SECONDS, minimumSeconds)
-    : candidateSeconds;
+    : minimumSeconds;
 
   return Math.max(withOverlap, minimumSeconds);
 };

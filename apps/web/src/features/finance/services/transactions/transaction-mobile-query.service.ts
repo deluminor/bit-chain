@@ -1,6 +1,6 @@
 import type { Prisma } from '@/generated/prisma';
-import type { TransactionsListResponse } from '@bit-chain/api-contracts';
 import { prisma } from '@/lib/prisma';
+import type { TransactionsListResponse } from '@bit-chain/api-contracts';
 import type { MobileTransactionsQuery } from './transaction-query.params';
 
 /**
@@ -46,11 +46,14 @@ export async function listMobileTransactions(
         description: true,
         date: true,
         currency: true,
+        amountInAccountCurrency: true,
         accountId: true,
         transferToId: true,
         transferAmount: true,
         transferCurrency: true,
-        account: { select: { name: true } },
+        loanId: true,
+        loan: { select: { name: true } },
+        account: { select: { name: true, currency: true } },
         categoryId: true,
         category: { select: { name: true, color: true } },
         transferTo: { select: { name: true } },
@@ -118,8 +121,10 @@ export async function listMobileTransactions(
       description: transaction.description,
       date: transaction.date.toISOString(),
       currency: transaction.currency,
+      amountInAccountCurrency: transaction.amountInAccountCurrency ?? null,
       accountId: transaction.accountId,
       accountName: transaction.account.name,
+      accountCurrency: transaction.account.currency,
       categoryId: transaction.categoryId,
       categoryName: transaction.category?.name ?? null,
       categoryColor: transaction.category?.color ?? null,
@@ -127,6 +132,8 @@ export async function listMobileTransactions(
       transferToAccountName: transaction.transferTo?.name ?? null,
       transferAmount: transaction.transferAmount,
       transferCurrency: transaction.transferCurrency,
+      loanId: transaction.loanId ?? null,
+      loanName: transaction.loan?.name ?? null,
     })),
     stats,
     transactionCount,

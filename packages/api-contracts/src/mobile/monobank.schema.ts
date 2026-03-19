@@ -96,33 +96,26 @@ export type MonobankAccountsUpdateResponse = z.infer<typeof MonobankAccountsUpda
 
 /** POST /api/mobile/integrations/monobank/sync — request body */
 export const MonobankSyncRequestSchema = z.object({
-  /** ISO 8601 date string. Defaults to last 30 days if omitted. */
   fromDate: z.string().datetime().optional(),
-  /** Force re-sync even if recently synced */
   force: z.boolean().optional().default(false),
 });
 
-/** Output type — `force` is always present (default applied by Zod) */
 export type MonobankSyncRequest = z.infer<typeof MonobankSyncRequestSchema>;
-/** Input type — use when constructing a sync request (force is optional) */
 export type MonobankSyncRequestInput = z.input<typeof MonobankSyncRequestSchema>;
 
 /** POST /api/mobile/integrations/monobank/sync — response data */
 export const MonobankSyncResponseSchema = z.object({
   synced: z.boolean(),
-  /** Number of new transactions imported */
   imported: z.number().int().nonnegative(),
-  /** ISO 8601 timestamp of sync completion */
   syncedAt: z.string().datetime(),
   message: z.string().optional(),
+  remainingAccounts: z.number().int().nonnegative().optional(),
 });
 
 export type MonobankSyncResponse = z.infer<typeof MonobankSyncResponseSchema>;
 
-/** Rate limit response (429) */
 export const RateLimitResponseSchema = z.object({
   rateLimited: z.literal(true),
-  /** Seconds until next sync is allowed */
   retryAfterSeconds: z.number().int().positive(),
   message: z.string(),
 });

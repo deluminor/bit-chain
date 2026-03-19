@@ -2622,6 +2622,37 @@ export namespace Prisma {
 
 
   /**
+   * Count Type LoanCountOutputType
+   */
+
+  export type LoanCountOutputType = {
+    repayments: number
+  }
+
+  export type LoanCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    repayments?: boolean | LoanCountOutputTypeCountRepaymentsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * LoanCountOutputType without action
+   */
+  export type LoanCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LoanCountOutputType
+     */
+    select?: LoanCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * LoanCountOutputType without action
+   */
+  export type LoanCountOutputTypeCountRepaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TransactionWhereInput
+  }
+
+
+  /**
    * Count Type BudgetCountOutputType
    */
 
@@ -8839,11 +8870,13 @@ export namespace Prisma {
 
   export type TransactionAvgAggregateOutputType = {
     amount: number | null
+    amountInAccountCurrency: number | null
     transferAmount: number | null
   }
 
   export type TransactionSumAggregateOutputType = {
     amount: number | null
+    amountInAccountCurrency: number | null
     transferAmount: number | null
   }
 
@@ -8855,6 +8888,8 @@ export namespace Prisma {
     type: $Enums.TransactionType | null
     amount: number | null
     currency: string | null
+    loanId: string | null
+    amountInAccountCurrency: number | null
     description: string | null
     date: Date | null
     isDemo: boolean | null
@@ -8879,6 +8914,8 @@ export namespace Prisma {
     type: $Enums.TransactionType | null
     amount: number | null
     currency: string | null
+    loanId: string | null
+    amountInAccountCurrency: number | null
     description: string | null
     date: Date | null
     isDemo: boolean | null
@@ -8903,6 +8940,8 @@ export namespace Prisma {
     type: number
     amount: number
     currency: number
+    loanId: number
+    amountInAccountCurrency: number
     description: number
     date: number
     tags: number
@@ -8924,11 +8963,13 @@ export namespace Prisma {
 
   export type TransactionAvgAggregateInputType = {
     amount?: true
+    amountInAccountCurrency?: true
     transferAmount?: true
   }
 
   export type TransactionSumAggregateInputType = {
     amount?: true
+    amountInAccountCurrency?: true
     transferAmount?: true
   }
 
@@ -8940,6 +8981,8 @@ export namespace Prisma {
     type?: true
     amount?: true
     currency?: true
+    loanId?: true
+    amountInAccountCurrency?: true
     description?: true
     date?: true
     isDemo?: true
@@ -8964,6 +9007,8 @@ export namespace Prisma {
     type?: true
     amount?: true
     currency?: true
+    loanId?: true
+    amountInAccountCurrency?: true
     description?: true
     date?: true
     isDemo?: true
@@ -8988,6 +9033,8 @@ export namespace Prisma {
     type?: true
     amount?: true
     currency?: true
+    loanId?: true
+    amountInAccountCurrency?: true
     description?: true
     date?: true
     tags?: true
@@ -9100,6 +9147,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency: string
+    loanId: string | null
+    amountInAccountCurrency: number | null
     description: string | null
     date: Date
     tags: string[]
@@ -9144,6 +9193,8 @@ export namespace Prisma {
     type?: boolean
     amount?: boolean
     currency?: boolean
+    loanId?: boolean
+    amountInAccountCurrency?: boolean
     description?: boolean
     date?: boolean
     tags?: boolean
@@ -9162,6 +9213,7 @@ export namespace Prisma {
     user?: boolean | UserDefaultArgs<ExtArgs>
     account?: boolean | FinanceAccountDefaultArgs<ExtArgs>
     category?: boolean | TransactionCategoryDefaultArgs<ExtArgs>
+    loan?: boolean | Transaction$loanArgs<ExtArgs>
     transferTo?: boolean | Transaction$transferToArgs<ExtArgs>
     integrationAccount?: boolean | Transaction$integrationAccountArgs<ExtArgs>
   }, ExtArgs["result"]["transaction"]>
@@ -9174,6 +9226,8 @@ export namespace Prisma {
     type?: boolean
     amount?: boolean
     currency?: boolean
+    loanId?: boolean
+    amountInAccountCurrency?: boolean
     description?: boolean
     date?: boolean
     tags?: boolean
@@ -9192,6 +9246,7 @@ export namespace Prisma {
     user?: boolean | UserDefaultArgs<ExtArgs>
     account?: boolean | FinanceAccountDefaultArgs<ExtArgs>
     category?: boolean | TransactionCategoryDefaultArgs<ExtArgs>
+    loan?: boolean | Transaction$loanArgs<ExtArgs>
     transferTo?: boolean | Transaction$transferToArgs<ExtArgs>
     integrationAccount?: boolean | Transaction$integrationAccountArgs<ExtArgs>
   }, ExtArgs["result"]["transaction"]>
@@ -9204,6 +9259,8 @@ export namespace Prisma {
     type?: boolean
     amount?: boolean
     currency?: boolean
+    loanId?: boolean
+    amountInAccountCurrency?: boolean
     description?: boolean
     date?: boolean
     tags?: boolean
@@ -9222,6 +9279,7 @@ export namespace Prisma {
     user?: boolean | UserDefaultArgs<ExtArgs>
     account?: boolean | FinanceAccountDefaultArgs<ExtArgs>
     category?: boolean | TransactionCategoryDefaultArgs<ExtArgs>
+    loan?: boolean | Transaction$loanArgs<ExtArgs>
     transferTo?: boolean | Transaction$transferToArgs<ExtArgs>
     integrationAccount?: boolean | Transaction$integrationAccountArgs<ExtArgs>
   }, ExtArgs["result"]["transaction"]>
@@ -9234,6 +9292,8 @@ export namespace Prisma {
     type?: boolean
     amount?: boolean
     currency?: boolean
+    loanId?: boolean
+    amountInAccountCurrency?: boolean
     description?: boolean
     date?: boolean
     tags?: boolean
@@ -9251,11 +9311,12 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type TransactionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "accountId" | "categoryId" | "type" | "amount" | "currency" | "description" | "date" | "tags" | "isDemo" | "transferToId" | "transferAmount" | "transferCurrency" | "isRecurring" | "recurringPattern" | "parentTransactionId" | "source" | "externalId" | "integrationAccountId" | "createdAt" | "updatedAt", ExtArgs["result"]["transaction"]>
+  export type TransactionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "accountId" | "categoryId" | "type" | "amount" | "currency" | "loanId" | "amountInAccountCurrency" | "description" | "date" | "tags" | "isDemo" | "transferToId" | "transferAmount" | "transferCurrency" | "isRecurring" | "recurringPattern" | "parentTransactionId" | "source" | "externalId" | "integrationAccountId" | "createdAt" | "updatedAt", ExtArgs["result"]["transaction"]>
   export type TransactionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     account?: boolean | FinanceAccountDefaultArgs<ExtArgs>
     category?: boolean | TransactionCategoryDefaultArgs<ExtArgs>
+    loan?: boolean | Transaction$loanArgs<ExtArgs>
     transferTo?: boolean | Transaction$transferToArgs<ExtArgs>
     integrationAccount?: boolean | Transaction$integrationAccountArgs<ExtArgs>
   }
@@ -9263,6 +9324,7 @@ export namespace Prisma {
     user?: boolean | UserDefaultArgs<ExtArgs>
     account?: boolean | FinanceAccountDefaultArgs<ExtArgs>
     category?: boolean | TransactionCategoryDefaultArgs<ExtArgs>
+    loan?: boolean | Transaction$loanArgs<ExtArgs>
     transferTo?: boolean | Transaction$transferToArgs<ExtArgs>
     integrationAccount?: boolean | Transaction$integrationAccountArgs<ExtArgs>
   }
@@ -9270,6 +9332,7 @@ export namespace Prisma {
     user?: boolean | UserDefaultArgs<ExtArgs>
     account?: boolean | FinanceAccountDefaultArgs<ExtArgs>
     category?: boolean | TransactionCategoryDefaultArgs<ExtArgs>
+    loan?: boolean | Transaction$loanArgs<ExtArgs>
     transferTo?: boolean | Transaction$transferToArgs<ExtArgs>
     integrationAccount?: boolean | Transaction$integrationAccountArgs<ExtArgs>
   }
@@ -9280,6 +9343,7 @@ export namespace Prisma {
       user: Prisma.$UserPayload<ExtArgs>
       account: Prisma.$FinanceAccountPayload<ExtArgs>
       category: Prisma.$TransactionCategoryPayload<ExtArgs>
+      loan: Prisma.$LoanPayload<ExtArgs> | null
       transferTo: Prisma.$FinanceAccountPayload<ExtArgs> | null
       integrationAccount: Prisma.$IntegrationAccountPayload<ExtArgs> | null
     }
@@ -9291,6 +9355,14 @@ export namespace Prisma {
       type: $Enums.TransactionType
       amount: number
       currency: string
+      /**
+       * * When set, this expense is a loan repayment — amount is added to loan.paidAmount
+       */
+      loanId: string | null
+      /**
+       * * When transaction is in different currency (e.g. EUR), Monobank provides amount in account currency (UAH).
+       */
+      amountInAccountCurrency: number | null
       description: string | null
       date: Date
       tags: string[]
@@ -9703,6 +9775,7 @@ export namespace Prisma {
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     account<T extends FinanceAccountDefaultArgs<ExtArgs> = {}>(args?: Subset<T, FinanceAccountDefaultArgs<ExtArgs>>): Prisma__FinanceAccountClient<$Result.GetResult<Prisma.$FinanceAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     category<T extends TransactionCategoryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TransactionCategoryDefaultArgs<ExtArgs>>): Prisma__TransactionCategoryClient<$Result.GetResult<Prisma.$TransactionCategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    loan<T extends Transaction$loanArgs<ExtArgs> = {}>(args?: Subset<T, Transaction$loanArgs<ExtArgs>>): Prisma__LoanClient<$Result.GetResult<Prisma.$LoanPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     transferTo<T extends Transaction$transferToArgs<ExtArgs> = {}>(args?: Subset<T, Transaction$transferToArgs<ExtArgs>>): Prisma__FinanceAccountClient<$Result.GetResult<Prisma.$FinanceAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     integrationAccount<T extends Transaction$integrationAccountArgs<ExtArgs> = {}>(args?: Subset<T, Transaction$integrationAccountArgs<ExtArgs>>): Prisma__IntegrationAccountClient<$Result.GetResult<Prisma.$IntegrationAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
@@ -9741,6 +9814,8 @@ export namespace Prisma {
     readonly type: FieldRef<"Transaction", 'TransactionType'>
     readonly amount: FieldRef<"Transaction", 'Float'>
     readonly currency: FieldRef<"Transaction", 'String'>
+    readonly loanId: FieldRef<"Transaction", 'String'>
+    readonly amountInAccountCurrency: FieldRef<"Transaction", 'Float'>
     readonly description: FieldRef<"Transaction", 'String'>
     readonly date: FieldRef<"Transaction", 'DateTime'>
     readonly tags: FieldRef<"Transaction", 'String[]'>
@@ -10149,6 +10224,25 @@ export namespace Prisma {
      * Limit how many Transactions to delete.
      */
     limit?: number
+  }
+
+  /**
+   * Transaction.loan
+   */
+  export type Transaction$loanArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Loan
+     */
+    select?: LoanSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Loan
+     */
+    omit?: LoanOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LoanInclude<ExtArgs> | null
+    where?: LoanWhereInput
   }
 
   /**
@@ -12642,6 +12736,7 @@ export namespace Prisma {
     userId: string | null
     name: string | null
     type: $Enums.TransactionType | null
+    isLoanRepayment: boolean | null
     parentId: string | null
     color: string | null
     icon: string | null
@@ -12656,6 +12751,7 @@ export namespace Prisma {
     userId: string | null
     name: string | null
     type: $Enums.TransactionType | null
+    isLoanRepayment: boolean | null
     parentId: string | null
     color: string | null
     icon: string | null
@@ -12670,6 +12766,7 @@ export namespace Prisma {
     userId: number
     name: number
     type: number
+    isLoanRepayment: number
     parentId: number
     color: number
     icon: number
@@ -12686,6 +12783,7 @@ export namespace Prisma {
     userId?: true
     name?: true
     type?: true
+    isLoanRepayment?: true
     parentId?: true
     color?: true
     icon?: true
@@ -12700,6 +12798,7 @@ export namespace Prisma {
     userId?: true
     name?: true
     type?: true
+    isLoanRepayment?: true
     parentId?: true
     color?: true
     icon?: true
@@ -12714,6 +12813,7 @@ export namespace Prisma {
     userId?: true
     name?: true
     type?: true
+    isLoanRepayment?: true
     parentId?: true
     color?: true
     icon?: true
@@ -12801,6 +12901,7 @@ export namespace Prisma {
     userId: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment: boolean
     parentId: string | null
     color: string
     icon: string
@@ -12832,6 +12933,7 @@ export namespace Prisma {
     userId?: boolean
     name?: boolean
     type?: boolean
+    isLoanRepayment?: boolean
     parentId?: boolean
     color?: boolean
     icon?: boolean
@@ -12852,6 +12954,7 @@ export namespace Prisma {
     userId?: boolean
     name?: boolean
     type?: boolean
+    isLoanRepayment?: boolean
     parentId?: boolean
     color?: boolean
     icon?: boolean
@@ -12868,6 +12971,7 @@ export namespace Prisma {
     userId?: boolean
     name?: boolean
     type?: boolean
+    isLoanRepayment?: boolean
     parentId?: boolean
     color?: boolean
     icon?: boolean
@@ -12884,6 +12988,7 @@ export namespace Prisma {
     userId?: boolean
     name?: boolean
     type?: boolean
+    isLoanRepayment?: boolean
     parentId?: boolean
     color?: boolean
     icon?: boolean
@@ -12893,7 +12998,7 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type TransactionCategoryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "type" | "parentId" | "color" | "icon" | "isDefault" | "isActive" | "isDemo" | "createdAt", ExtArgs["result"]["transactionCategory"]>
+  export type TransactionCategoryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "type" | "isLoanRepayment" | "parentId" | "color" | "icon" | "isDefault" | "isActive" | "isDemo" | "createdAt", ExtArgs["result"]["transactionCategory"]>
   export type TransactionCategoryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     parent?: boolean | TransactionCategory$parentArgs<ExtArgs>
@@ -12925,6 +13030,10 @@ export namespace Prisma {
       userId: string
       name: string
       type: $Enums.TransactionType
+      /**
+       * * When true, transaction form shows loan select for repayment attribution
+       */
+      isLoanRepayment: boolean
       parentId: string | null
       color: string
       icon: string
@@ -13364,6 +13473,7 @@ export namespace Prisma {
     readonly userId: FieldRef<"TransactionCategory", 'String'>
     readonly name: FieldRef<"TransactionCategory", 'String'>
     readonly type: FieldRef<"TransactionCategory", 'TransactionType'>
+    readonly isLoanRepayment: FieldRef<"TransactionCategory", 'Boolean'>
     readonly parentId: FieldRef<"TransactionCategory", 'String'>
     readonly color: FieldRef<"TransactionCategory", 'String'>
     readonly icon: FieldRef<"TransactionCategory", 'String'>
@@ -14155,6 +14265,8 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
+    repayments?: boolean | Loan$repaymentsArgs<ExtArgs>
+    _count?: boolean | LoanCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["loan"]>
 
   export type LoanSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -14213,6 +14325,8 @@ export namespace Prisma {
   export type LoanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "type" | "totalAmount" | "paidAmount" | "currency" | "startDate" | "dueDate" | "interestRate" | "lender" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["loan"]>
   export type LoanInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
+    repayments?: boolean | Loan$repaymentsArgs<ExtArgs>
+    _count?: boolean | LoanCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type LoanIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -14225,6 +14339,10 @@ export namespace Prisma {
     name: "Loan"
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
+      /**
+       * * Transactions marked as repayments for this loan
+       */
+      repayments: Prisma.$TransactionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -14636,6 +14754,7 @@ export namespace Prisma {
   export interface Prisma__LoanClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    repayments<T extends Loan$repaymentsArgs<ExtArgs> = {}>(args?: Subset<T, Loan$repaymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -15072,6 +15191,30 @@ export namespace Prisma {
      * Limit how many Loans to delete.
      */
     limit?: number
+  }
+
+  /**
+   * Loan.repayments
+   */
+  export type Loan$repaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Transaction
+     */
+    select?: TransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Transaction
+     */
+    omit?: TransactionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TransactionInclude<ExtArgs> | null
+    where?: TransactionWhereInput
+    orderBy?: TransactionOrderByWithRelationInput | TransactionOrderByWithRelationInput[]
+    cursor?: TransactionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: TransactionScalarFieldEnum | TransactionScalarFieldEnum[]
   }
 
   /**
@@ -21079,6 +21222,8 @@ export namespace Prisma {
     type: 'type',
     amount: 'amount',
     currency: 'currency',
+    loanId: 'loanId',
+    amountInAccountCurrency: 'amountInAccountCurrency',
     description: 'description',
     date: 'date',
     tags: 'tags',
@@ -21140,6 +21285,7 @@ export namespace Prisma {
     userId: 'userId',
     name: 'name',
     type: 'type',
+    isLoanRepayment: 'isLoanRepayment',
     parentId: 'parentId',
     color: 'color',
     icon: 'icon',
@@ -21971,6 +22117,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFilter<"Transaction"> | $Enums.TransactionType
     amount?: FloatFilter<"Transaction"> | number
     currency?: StringFilter<"Transaction"> | string
+    loanId?: StringNullableFilter<"Transaction"> | string | null
+    amountInAccountCurrency?: FloatNullableFilter<"Transaction"> | number | null
     description?: StringNullableFilter<"Transaction"> | string | null
     date?: DateTimeFilter<"Transaction"> | Date | string
     tags?: StringNullableListFilter<"Transaction">
@@ -21989,6 +22137,7 @@ export namespace Prisma {
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     account?: XOR<FinanceAccountScalarRelationFilter, FinanceAccountWhereInput>
     category?: XOR<TransactionCategoryScalarRelationFilter, TransactionCategoryWhereInput>
+    loan?: XOR<LoanNullableScalarRelationFilter, LoanWhereInput> | null
     transferTo?: XOR<FinanceAccountNullableScalarRelationFilter, FinanceAccountWhereInput> | null
     integrationAccount?: XOR<IntegrationAccountNullableScalarRelationFilter, IntegrationAccountWhereInput> | null
   }
@@ -22001,6 +22150,8 @@ export namespace Prisma {
     type?: SortOrder
     amount?: SortOrder
     currency?: SortOrder
+    loanId?: SortOrderInput | SortOrder
+    amountInAccountCurrency?: SortOrderInput | SortOrder
     description?: SortOrderInput | SortOrder
     date?: SortOrder
     tags?: SortOrder
@@ -22019,6 +22170,7 @@ export namespace Prisma {
     user?: UserOrderByWithRelationInput
     account?: FinanceAccountOrderByWithRelationInput
     category?: TransactionCategoryOrderByWithRelationInput
+    loan?: LoanOrderByWithRelationInput
     transferTo?: FinanceAccountOrderByWithRelationInput
     integrationAccount?: IntegrationAccountOrderByWithRelationInput
   }
@@ -22035,6 +22187,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFilter<"Transaction"> | $Enums.TransactionType
     amount?: FloatFilter<"Transaction"> | number
     currency?: StringFilter<"Transaction"> | string
+    loanId?: StringNullableFilter<"Transaction"> | string | null
+    amountInAccountCurrency?: FloatNullableFilter<"Transaction"> | number | null
     description?: StringNullableFilter<"Transaction"> | string | null
     date?: DateTimeFilter<"Transaction"> | Date | string
     tags?: StringNullableListFilter<"Transaction">
@@ -22053,6 +22207,7 @@ export namespace Prisma {
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     account?: XOR<FinanceAccountScalarRelationFilter, FinanceAccountWhereInput>
     category?: XOR<TransactionCategoryScalarRelationFilter, TransactionCategoryWhereInput>
+    loan?: XOR<LoanNullableScalarRelationFilter, LoanWhereInput> | null
     transferTo?: XOR<FinanceAccountNullableScalarRelationFilter, FinanceAccountWhereInput> | null
     integrationAccount?: XOR<IntegrationAccountNullableScalarRelationFilter, IntegrationAccountWhereInput> | null
   }, "id" | "source_externalId">
@@ -22065,6 +22220,8 @@ export namespace Prisma {
     type?: SortOrder
     amount?: SortOrder
     currency?: SortOrder
+    loanId?: SortOrderInput | SortOrder
+    amountInAccountCurrency?: SortOrderInput | SortOrder
     description?: SortOrderInput | SortOrder
     date?: SortOrder
     tags?: SortOrder
@@ -22098,6 +22255,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeWithAggregatesFilter<"Transaction"> | $Enums.TransactionType
     amount?: FloatWithAggregatesFilter<"Transaction"> | number
     currency?: StringWithAggregatesFilter<"Transaction"> | string
+    loanId?: StringNullableWithAggregatesFilter<"Transaction"> | string | null
+    amountInAccountCurrency?: FloatNullableWithAggregatesFilter<"Transaction"> | number | null
     description?: StringNullableWithAggregatesFilter<"Transaction"> | string | null
     date?: DateTimeWithAggregatesFilter<"Transaction"> | Date | string
     tags?: StringNullableListFilter<"Transaction">
@@ -22316,6 +22475,7 @@ export namespace Prisma {
     userId?: StringFilter<"TransactionCategory"> | string
     name?: StringFilter<"TransactionCategory"> | string
     type?: EnumTransactionTypeFilter<"TransactionCategory"> | $Enums.TransactionType
+    isLoanRepayment?: BoolFilter<"TransactionCategory"> | boolean
     parentId?: StringNullableFilter<"TransactionCategory"> | string | null
     color?: StringFilter<"TransactionCategory"> | string
     icon?: StringFilter<"TransactionCategory"> | string
@@ -22335,6 +22495,7 @@ export namespace Prisma {
     userId?: SortOrder
     name?: SortOrder
     type?: SortOrder
+    isLoanRepayment?: SortOrder
     parentId?: SortOrderInput | SortOrder
     color?: SortOrder
     icon?: SortOrder
@@ -22358,6 +22519,7 @@ export namespace Prisma {
     userId?: StringFilter<"TransactionCategory"> | string
     name?: StringFilter<"TransactionCategory"> | string
     type?: EnumTransactionTypeFilter<"TransactionCategory"> | $Enums.TransactionType
+    isLoanRepayment?: BoolFilter<"TransactionCategory"> | boolean
     parentId?: StringNullableFilter<"TransactionCategory"> | string | null
     color?: StringFilter<"TransactionCategory"> | string
     icon?: StringFilter<"TransactionCategory"> | string
@@ -22377,6 +22539,7 @@ export namespace Prisma {
     userId?: SortOrder
     name?: SortOrder
     type?: SortOrder
+    isLoanRepayment?: SortOrder
     parentId?: SortOrderInput | SortOrder
     color?: SortOrder
     icon?: SortOrder
@@ -22397,6 +22560,7 @@ export namespace Prisma {
     userId?: StringWithAggregatesFilter<"TransactionCategory"> | string
     name?: StringWithAggregatesFilter<"TransactionCategory"> | string
     type?: EnumTransactionTypeWithAggregatesFilter<"TransactionCategory"> | $Enums.TransactionType
+    isLoanRepayment?: BoolWithAggregatesFilter<"TransactionCategory"> | boolean
     parentId?: StringNullableWithAggregatesFilter<"TransactionCategory"> | string | null
     color?: StringWithAggregatesFilter<"TransactionCategory"> | string
     icon?: StringWithAggregatesFilter<"TransactionCategory"> | string
@@ -22425,6 +22589,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"Loan"> | Date | string
     updatedAt?: DateTimeFilter<"Loan"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    repayments?: TransactionListRelationFilter
   }
 
   export type LoanOrderByWithRelationInput = {
@@ -22443,6 +22608,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
+    repayments?: TransactionOrderByRelationAggregateInput
   }
 
   export type LoanWhereUniqueInput = Prisma.AtLeast<{
@@ -22465,6 +22631,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"Loan"> | Date | string
     updatedAt?: DateTimeFilter<"Loan"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    repayments?: TransactionListRelationFilter
   }, "id" | "userId_name">
 
   export type LoanOrderByWithAggregationInput = {
@@ -23441,6 +23608,7 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -23457,6 +23625,7 @@ export namespace Prisma {
     user: UserCreateNestedOneWithoutTransactionsInput
     account: FinanceAccountCreateNestedOneWithoutTransactionsInput
     category: TransactionCategoryCreateNestedOneWithoutTransactionsInput
+    loan?: LoanCreateNestedOneWithoutRepaymentsInput
     transferTo?: FinanceAccountCreateNestedOneWithoutTransfersToInput
     integrationAccount?: IntegrationAccountCreateNestedOneWithoutTransactionsInput
   }
@@ -23469,6 +23638,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -23491,6 +23662,7 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -23507,6 +23679,7 @@ export namespace Prisma {
     user?: UserUpdateOneRequiredWithoutTransactionsNestedInput
     account?: FinanceAccountUpdateOneRequiredWithoutTransactionsNestedInput
     category?: TransactionCategoryUpdateOneRequiredWithoutTransactionsNestedInput
+    loan?: LoanUpdateOneWithoutRepaymentsNestedInput
     transferTo?: FinanceAccountUpdateOneWithoutTransfersToNestedInput
     integrationAccount?: IntegrationAccountUpdateOneWithoutTransactionsNestedInput
   }
@@ -23519,6 +23692,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -23544,6 +23719,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -23566,6 +23743,7 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -23589,6 +23767,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -23825,6 +24005,7 @@ export namespace Prisma {
     id?: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     color: string
     icon: string
     isDefault?: boolean
@@ -23843,6 +24024,7 @@ export namespace Prisma {
     userId: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     parentId?: string | null
     color: string
     icon: string
@@ -23859,6 +24041,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
     isDefault?: BoolFieldUpdateOperationsInput | boolean
@@ -23877,6 +24060,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
@@ -23894,6 +24078,7 @@ export namespace Prisma {
     userId: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     parentId?: string | null
     color: string
     icon: string
@@ -23907,6 +24092,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
     isDefault?: BoolFieldUpdateOperationsInput | boolean
@@ -23920,6 +24106,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
@@ -23944,6 +24131,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutLoansInput
+    repayments?: TransactionCreateNestedManyWithoutLoanInput
   }
 
   export type LoanUncheckedCreateInput = {
@@ -23961,6 +24149,7 @@ export namespace Prisma {
     notes?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    repayments?: TransactionUncheckedCreateNestedManyWithoutLoanInput
   }
 
   export type LoanUpdateInput = {
@@ -23978,6 +24167,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutLoansNestedInput
+    repayments?: TransactionUpdateManyWithoutLoanNestedInput
   }
 
   export type LoanUncheckedUpdateInput = {
@@ -23995,6 +24185,7 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    repayments?: TransactionUncheckedUpdateManyWithoutLoanNestedInput
   }
 
   export type LoanCreateManyInput = {
@@ -25180,6 +25371,11 @@ export namespace Prisma {
     isNot?: TransactionCategoryWhereInput
   }
 
+  export type LoanNullableScalarRelationFilter = {
+    is?: LoanWhereInput | null
+    isNot?: LoanWhereInput | null
+  }
+
   export type FinanceAccountNullableScalarRelationFilter = {
     is?: FinanceAccountWhereInput | null
     isNot?: FinanceAccountWhereInput | null
@@ -25203,6 +25399,8 @@ export namespace Prisma {
     type?: SortOrder
     amount?: SortOrder
     currency?: SortOrder
+    loanId?: SortOrder
+    amountInAccountCurrency?: SortOrder
     description?: SortOrder
     date?: SortOrder
     tags?: SortOrder
@@ -25222,6 +25420,7 @@ export namespace Prisma {
 
   export type TransactionAvgOrderByAggregateInput = {
     amount?: SortOrder
+    amountInAccountCurrency?: SortOrder
     transferAmount?: SortOrder
   }
 
@@ -25233,6 +25432,8 @@ export namespace Prisma {
     type?: SortOrder
     amount?: SortOrder
     currency?: SortOrder
+    loanId?: SortOrder
+    amountInAccountCurrency?: SortOrder
     description?: SortOrder
     date?: SortOrder
     isDemo?: SortOrder
@@ -25257,6 +25458,8 @@ export namespace Prisma {
     type?: SortOrder
     amount?: SortOrder
     currency?: SortOrder
+    loanId?: SortOrder
+    amountInAccountCurrency?: SortOrder
     description?: SortOrder
     date?: SortOrder
     isDemo?: SortOrder
@@ -25275,6 +25478,7 @@ export namespace Prisma {
 
   export type TransactionSumOrderByAggregateInput = {
     amount?: SortOrder
+    amountInAccountCurrency?: SortOrder
     transferAmount?: SortOrder
   }
 
@@ -25523,6 +25727,7 @@ export namespace Prisma {
     userId?: SortOrder
     name?: SortOrder
     type?: SortOrder
+    isLoanRepayment?: SortOrder
     parentId?: SortOrder
     color?: SortOrder
     icon?: SortOrder
@@ -25537,6 +25742,7 @@ export namespace Prisma {
     userId?: SortOrder
     name?: SortOrder
     type?: SortOrder
+    isLoanRepayment?: SortOrder
     parentId?: SortOrder
     color?: SortOrder
     icon?: SortOrder
@@ -25551,6 +25757,7 @@ export namespace Prisma {
     userId?: SortOrder
     name?: SortOrder
     type?: SortOrder
+    isLoanRepayment?: SortOrder
     parentId?: SortOrder
     color?: SortOrder
     icon?: SortOrder
@@ -26794,6 +27001,12 @@ export namespace Prisma {
     connect?: TransactionCategoryWhereUniqueInput
   }
 
+  export type LoanCreateNestedOneWithoutRepaymentsInput = {
+    create?: XOR<LoanCreateWithoutRepaymentsInput, LoanUncheckedCreateWithoutRepaymentsInput>
+    connectOrCreate?: LoanCreateOrConnectWithoutRepaymentsInput
+    connect?: LoanWhereUniqueInput
+  }
+
   export type FinanceAccountCreateNestedOneWithoutTransfersToInput = {
     create?: XOR<FinanceAccountCreateWithoutTransfersToInput, FinanceAccountUncheckedCreateWithoutTransfersToInput>
     connectOrCreate?: FinanceAccountCreateOrConnectWithoutTransfersToInput
@@ -26845,6 +27058,16 @@ export namespace Prisma {
     upsert?: TransactionCategoryUpsertWithoutTransactionsInput
     connect?: TransactionCategoryWhereUniqueInput
     update?: XOR<XOR<TransactionCategoryUpdateToOneWithWhereWithoutTransactionsInput, TransactionCategoryUpdateWithoutTransactionsInput>, TransactionCategoryUncheckedUpdateWithoutTransactionsInput>
+  }
+
+  export type LoanUpdateOneWithoutRepaymentsNestedInput = {
+    create?: XOR<LoanCreateWithoutRepaymentsInput, LoanUncheckedCreateWithoutRepaymentsInput>
+    connectOrCreate?: LoanCreateOrConnectWithoutRepaymentsInput
+    upsert?: LoanUpsertWithoutRepaymentsInput
+    disconnect?: LoanWhereInput | boolean
+    delete?: LoanWhereInput | boolean
+    connect?: LoanWhereUniqueInput
+    update?: XOR<XOR<LoanUpdateToOneWithWhereWithoutRepaymentsInput, LoanUpdateWithoutRepaymentsInput>, LoanUncheckedUpdateWithoutRepaymentsInput>
   }
 
   export type FinanceAccountUpdateOneWithoutTransfersToNestedInput = {
@@ -27173,6 +27396,20 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput
   }
 
+  export type TransactionCreateNestedManyWithoutLoanInput = {
+    create?: XOR<TransactionCreateWithoutLoanInput, TransactionUncheckedCreateWithoutLoanInput> | TransactionCreateWithoutLoanInput[] | TransactionUncheckedCreateWithoutLoanInput[]
+    connectOrCreate?: TransactionCreateOrConnectWithoutLoanInput | TransactionCreateOrConnectWithoutLoanInput[]
+    createMany?: TransactionCreateManyLoanInputEnvelope
+    connect?: TransactionWhereUniqueInput | TransactionWhereUniqueInput[]
+  }
+
+  export type TransactionUncheckedCreateNestedManyWithoutLoanInput = {
+    create?: XOR<TransactionCreateWithoutLoanInput, TransactionUncheckedCreateWithoutLoanInput> | TransactionCreateWithoutLoanInput[] | TransactionUncheckedCreateWithoutLoanInput[]
+    connectOrCreate?: TransactionCreateOrConnectWithoutLoanInput | TransactionCreateOrConnectWithoutLoanInput[]
+    createMany?: TransactionCreateManyLoanInputEnvelope
+    connect?: TransactionWhereUniqueInput | TransactionWhereUniqueInput[]
+  }
+
   export type EnumLoanTypeFieldUpdateOperationsInput = {
     set?: $Enums.LoanType
   }
@@ -27183,6 +27420,34 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutLoansInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutLoansInput, UserUpdateWithoutLoansInput>, UserUncheckedUpdateWithoutLoansInput>
+  }
+
+  export type TransactionUpdateManyWithoutLoanNestedInput = {
+    create?: XOR<TransactionCreateWithoutLoanInput, TransactionUncheckedCreateWithoutLoanInput> | TransactionCreateWithoutLoanInput[] | TransactionUncheckedCreateWithoutLoanInput[]
+    connectOrCreate?: TransactionCreateOrConnectWithoutLoanInput | TransactionCreateOrConnectWithoutLoanInput[]
+    upsert?: TransactionUpsertWithWhereUniqueWithoutLoanInput | TransactionUpsertWithWhereUniqueWithoutLoanInput[]
+    createMany?: TransactionCreateManyLoanInputEnvelope
+    set?: TransactionWhereUniqueInput | TransactionWhereUniqueInput[]
+    disconnect?: TransactionWhereUniqueInput | TransactionWhereUniqueInput[]
+    delete?: TransactionWhereUniqueInput | TransactionWhereUniqueInput[]
+    connect?: TransactionWhereUniqueInput | TransactionWhereUniqueInput[]
+    update?: TransactionUpdateWithWhereUniqueWithoutLoanInput | TransactionUpdateWithWhereUniqueWithoutLoanInput[]
+    updateMany?: TransactionUpdateManyWithWhereWithoutLoanInput | TransactionUpdateManyWithWhereWithoutLoanInput[]
+    deleteMany?: TransactionScalarWhereInput | TransactionScalarWhereInput[]
+  }
+
+  export type TransactionUncheckedUpdateManyWithoutLoanNestedInput = {
+    create?: XOR<TransactionCreateWithoutLoanInput, TransactionUncheckedCreateWithoutLoanInput> | TransactionCreateWithoutLoanInput[] | TransactionUncheckedCreateWithoutLoanInput[]
+    connectOrCreate?: TransactionCreateOrConnectWithoutLoanInput | TransactionCreateOrConnectWithoutLoanInput[]
+    upsert?: TransactionUpsertWithWhereUniqueWithoutLoanInput | TransactionUpsertWithWhereUniqueWithoutLoanInput[]
+    createMany?: TransactionCreateManyLoanInputEnvelope
+    set?: TransactionWhereUniqueInput | TransactionWhereUniqueInput[]
+    disconnect?: TransactionWhereUniqueInput | TransactionWhereUniqueInput[]
+    delete?: TransactionWhereUniqueInput | TransactionWhereUniqueInput[]
+    connect?: TransactionWhereUniqueInput | TransactionWhereUniqueInput[]
+    update?: TransactionUpdateWithWhereUniqueWithoutLoanInput | TransactionUpdateWithWhereUniqueWithoutLoanInput[]
+    updateMany?: TransactionUpdateManyWithWhereWithoutLoanInput | TransactionUpdateManyWithWhereWithoutLoanInput[]
+    deleteMany?: TransactionScalarWhereInput | TransactionScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutBudgetsInput = {
@@ -27931,6 +28196,7 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -27946,6 +28212,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     account: FinanceAccountCreateNestedOneWithoutTransactionsInput
     category: TransactionCategoryCreateNestedOneWithoutTransactionsInput
+    loan?: LoanCreateNestedOneWithoutRepaymentsInput
     transferTo?: FinanceAccountCreateNestedOneWithoutTransfersToInput
     integrationAccount?: IntegrationAccountCreateNestedOneWithoutTransactionsInput
   }
@@ -27957,6 +28224,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -27988,6 +28257,7 @@ export namespace Prisma {
     id?: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     color: string
     icon: string
     isDefault?: boolean
@@ -28004,6 +28274,7 @@ export namespace Prisma {
     id?: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     parentId?: string | null
     color: string
     icon: string
@@ -28138,6 +28409,7 @@ export namespace Prisma {
     notes?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    repayments?: TransactionCreateNestedManyWithoutLoanInput
   }
 
   export type LoanUncheckedCreateWithoutUserInput = {
@@ -28154,6 +28426,7 @@ export namespace Prisma {
     notes?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    repayments?: TransactionUncheckedCreateNestedManyWithoutLoanInput
   }
 
   export type LoanCreateOrConnectWithoutUserInput = {
@@ -28384,6 +28657,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFilter<"Transaction"> | $Enums.TransactionType
     amount?: FloatFilter<"Transaction"> | number
     currency?: StringFilter<"Transaction"> | string
+    loanId?: StringNullableFilter<"Transaction"> | string | null
+    amountInAccountCurrency?: FloatNullableFilter<"Transaction"> | number | null
     description?: StringNullableFilter<"Transaction"> | string | null
     date?: DateTimeFilter<"Transaction"> | Date | string
     tags?: StringNullableListFilter<"Transaction">
@@ -28425,6 +28700,7 @@ export namespace Prisma {
     userId?: StringFilter<"TransactionCategory"> | string
     name?: StringFilter<"TransactionCategory"> | string
     type?: EnumTransactionTypeFilter<"TransactionCategory"> | $Enums.TransactionType
+    isLoanRepayment?: BoolFilter<"TransactionCategory"> | boolean
     parentId?: StringNullableFilter<"TransactionCategory"> | string | null
     color?: StringFilter<"TransactionCategory"> | string
     icon?: StringFilter<"TransactionCategory"> | string
@@ -29132,6 +29408,7 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -29147,6 +29424,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutTransactionsInput
     category: TransactionCategoryCreateNestedOneWithoutTransactionsInput
+    loan?: LoanCreateNestedOneWithoutRepaymentsInput
     transferTo?: FinanceAccountCreateNestedOneWithoutTransfersToInput
     integrationAccount?: IntegrationAccountCreateNestedOneWithoutTransactionsInput
   }
@@ -29158,6 +29436,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -29190,6 +29470,7 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -29206,6 +29487,7 @@ export namespace Prisma {
     user: UserCreateNestedOneWithoutTransactionsInput
     account: FinanceAccountCreateNestedOneWithoutTransactionsInput
     category: TransactionCategoryCreateNestedOneWithoutTransactionsInput
+    loan?: LoanCreateNestedOneWithoutRepaymentsInput
     integrationAccount?: IntegrationAccountCreateNestedOneWithoutTransactionsInput
   }
 
@@ -29217,6 +29499,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -29494,6 +29778,7 @@ export namespace Prisma {
     id?: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     color: string
     icon: string
     isDefault?: boolean
@@ -29511,6 +29796,7 @@ export namespace Prisma {
     userId: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     parentId?: string | null
     color: string
     icon: string
@@ -29525,6 +29811,45 @@ export namespace Prisma {
   export type TransactionCategoryCreateOrConnectWithoutTransactionsInput = {
     where: TransactionCategoryWhereUniqueInput
     create: XOR<TransactionCategoryCreateWithoutTransactionsInput, TransactionCategoryUncheckedCreateWithoutTransactionsInput>
+  }
+
+  export type LoanCreateWithoutRepaymentsInput = {
+    id?: string
+    name: string
+    type: $Enums.LoanType
+    totalAmount?: number
+    paidAmount?: number
+    currency?: string
+    startDate?: Date | string | null
+    dueDate?: Date | string | null
+    interestRate?: number | null
+    lender?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutLoansInput
+  }
+
+  export type LoanUncheckedCreateWithoutRepaymentsInput = {
+    id?: string
+    userId: string
+    name: string
+    type: $Enums.LoanType
+    totalAmount?: number
+    paidAmount?: number
+    currency?: string
+    startDate?: Date | string | null
+    dueDate?: Date | string | null
+    interestRate?: number | null
+    lender?: string | null
+    notes?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LoanCreateOrConnectWithoutRepaymentsInput = {
+    where: LoanWhereUniqueInput
+    create: XOR<LoanCreateWithoutRepaymentsInput, LoanUncheckedCreateWithoutRepaymentsInput>
   }
 
   export type FinanceAccountCreateWithoutTransfersToInput = {
@@ -29720,6 +30045,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
     isDefault?: BoolFieldUpdateOperationsInput | boolean
@@ -29737,6 +30063,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
@@ -29746,6 +30073,51 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     children?: TransactionCategoryUncheckedUpdateManyWithoutParentNestedInput
     budgetCategories?: BudgetCategoryUncheckedUpdateManyWithoutCategoryNestedInput
+  }
+
+  export type LoanUpsertWithoutRepaymentsInput = {
+    update: XOR<LoanUpdateWithoutRepaymentsInput, LoanUncheckedUpdateWithoutRepaymentsInput>
+    create: XOR<LoanCreateWithoutRepaymentsInput, LoanUncheckedCreateWithoutRepaymentsInput>
+    where?: LoanWhereInput
+  }
+
+  export type LoanUpdateToOneWithWhereWithoutRepaymentsInput = {
+    where?: LoanWhereInput
+    data: XOR<LoanUpdateWithoutRepaymentsInput, LoanUncheckedUpdateWithoutRepaymentsInput>
+  }
+
+  export type LoanUpdateWithoutRepaymentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    type?: EnumLoanTypeFieldUpdateOperationsInput | $Enums.LoanType
+    totalAmount?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    interestRate?: NullableFloatFieldUpdateOperationsInput | number | null
+    lender?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutLoansNestedInput
+  }
+
+  export type LoanUncheckedUpdateWithoutRepaymentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    type?: EnumLoanTypeFieldUpdateOperationsInput | $Enums.LoanType
+    totalAmount?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    interestRate?: NullableFloatFieldUpdateOperationsInput | number | null
+    lender?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type FinanceAccountUpsertWithoutTransfersToInput = {
@@ -30069,6 +30441,7 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -30085,6 +30458,7 @@ export namespace Prisma {
     user: UserCreateNestedOneWithoutTransactionsInput
     account: FinanceAccountCreateNestedOneWithoutTransactionsInput
     category: TransactionCategoryCreateNestedOneWithoutTransactionsInput
+    loan?: LoanCreateNestedOneWithoutRepaymentsInput
     transferTo?: FinanceAccountCreateNestedOneWithoutTransfersToInput
   }
 
@@ -30096,6 +30470,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -30263,6 +30639,7 @@ export namespace Prisma {
     id?: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     color: string
     icon: string
     isDefault?: boolean
@@ -30280,6 +30657,7 @@ export namespace Prisma {
     userId: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     parentId?: string | null
     color: string
     icon: string
@@ -30300,6 +30678,7 @@ export namespace Prisma {
     id?: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     color: string
     icon: string
     isDefault?: boolean
@@ -30317,6 +30696,7 @@ export namespace Prisma {
     userId: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     color: string
     icon: string
     isDefault?: boolean
@@ -30343,6 +30723,7 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -30358,6 +30739,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutTransactionsInput
     account: FinanceAccountCreateNestedOneWithoutTransactionsInput
+    loan?: LoanCreateNestedOneWithoutRepaymentsInput
     transferTo?: FinanceAccountCreateNestedOneWithoutTransfersToInput
     integrationAccount?: IntegrationAccountCreateNestedOneWithoutTransactionsInput
   }
@@ -30369,6 +30751,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -30482,6 +30866,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
     isDefault?: BoolFieldUpdateOperationsInput | boolean
@@ -30499,6 +30884,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
@@ -30610,6 +30996,68 @@ export namespace Prisma {
     create: XOR<UserCreateWithoutLoansInput, UserUncheckedCreateWithoutLoansInput>
   }
 
+  export type TransactionCreateWithoutLoanInput = {
+    id?: string
+    type: $Enums.TransactionType
+    amount: number
+    currency?: string
+    amountInAccountCurrency?: number | null
+    description?: string | null
+    date?: Date | string
+    tags?: TransactionCreatetagsInput | string[]
+    isDemo?: boolean
+    transferAmount?: number | null
+    transferCurrency?: string | null
+    isRecurring?: boolean
+    recurringPattern?: $Enums.RecurringPattern | null
+    parentTransactionId?: string | null
+    source?: $Enums.IntegrationProvider | null
+    externalId?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutTransactionsInput
+    account: FinanceAccountCreateNestedOneWithoutTransactionsInput
+    category: TransactionCategoryCreateNestedOneWithoutTransactionsInput
+    transferTo?: FinanceAccountCreateNestedOneWithoutTransfersToInput
+    integrationAccount?: IntegrationAccountCreateNestedOneWithoutTransactionsInput
+  }
+
+  export type TransactionUncheckedCreateWithoutLoanInput = {
+    id?: string
+    userId: string
+    accountId: string
+    categoryId: string
+    type: $Enums.TransactionType
+    amount: number
+    currency?: string
+    amountInAccountCurrency?: number | null
+    description?: string | null
+    date?: Date | string
+    tags?: TransactionCreatetagsInput | string[]
+    isDemo?: boolean
+    transferToId?: string | null
+    transferAmount?: number | null
+    transferCurrency?: string | null
+    isRecurring?: boolean
+    recurringPattern?: $Enums.RecurringPattern | null
+    parentTransactionId?: string | null
+    source?: $Enums.IntegrationProvider | null
+    externalId?: string | null
+    integrationAccountId?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TransactionCreateOrConnectWithoutLoanInput = {
+    where: TransactionWhereUniqueInput
+    create: XOR<TransactionCreateWithoutLoanInput, TransactionUncheckedCreateWithoutLoanInput>
+  }
+
+  export type TransactionCreateManyLoanInputEnvelope = {
+    data: TransactionCreateManyLoanInput | TransactionCreateManyLoanInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UserUpsertWithoutLoansInput = {
     update: XOR<UserUpdateWithoutLoansInput, UserUncheckedUpdateWithoutLoansInput>
     create: XOR<UserCreateWithoutLoansInput, UserUncheckedCreateWithoutLoansInput>
@@ -30655,6 +31103,22 @@ export namespace Prisma {
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     backups?: BackupUncheckedUpdateManyWithoutUserNestedInput
     mobileSessions?: MobileSessionUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type TransactionUpsertWithWhereUniqueWithoutLoanInput = {
+    where: TransactionWhereUniqueInput
+    update: XOR<TransactionUpdateWithoutLoanInput, TransactionUncheckedUpdateWithoutLoanInput>
+    create: XOR<TransactionCreateWithoutLoanInput, TransactionUncheckedCreateWithoutLoanInput>
+  }
+
+  export type TransactionUpdateWithWhereUniqueWithoutLoanInput = {
+    where: TransactionWhereUniqueInput
+    data: XOR<TransactionUpdateWithoutLoanInput, TransactionUncheckedUpdateWithoutLoanInput>
+  }
+
+  export type TransactionUpdateManyWithWhereWithoutLoanInput = {
+    where: TransactionScalarWhereInput
+    data: XOR<TransactionUpdateManyMutationInput, TransactionUncheckedUpdateManyWithoutLoanInput>
   }
 
   export type UserCreateWithoutBudgetsInput = {
@@ -31004,6 +31468,7 @@ export namespace Prisma {
     id?: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     color: string
     icon: string
     isDefault?: boolean
@@ -31021,6 +31486,7 @@ export namespace Prisma {
     userId: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     parentId?: string | null
     color: string
     icon: string
@@ -31105,6 +31571,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
     isDefault?: BoolFieldUpdateOperationsInput | boolean
@@ -31122,6 +31589,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
@@ -31447,6 +31915,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -31468,6 +31938,7 @@ export namespace Prisma {
     id?: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     parentId?: string | null
     color: string
     icon: string
@@ -31702,6 +32173,7 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -31717,6 +32189,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     account?: FinanceAccountUpdateOneRequiredWithoutTransactionsNestedInput
     category?: TransactionCategoryUpdateOneRequiredWithoutTransactionsNestedInput
+    loan?: LoanUpdateOneWithoutRepaymentsNestedInput
     transferTo?: FinanceAccountUpdateOneWithoutTransfersToNestedInput
     integrationAccount?: IntegrationAccountUpdateOneWithoutTransactionsNestedInput
   }
@@ -31728,6 +32201,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -31752,6 +32227,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -31773,6 +32250,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
     isDefault?: BoolFieldUpdateOperationsInput | boolean
@@ -31789,6 +32267,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
@@ -31805,6 +32284,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
@@ -31943,6 +32423,7 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    repayments?: TransactionUpdateManyWithoutLoanNestedInput
   }
 
   export type LoanUncheckedUpdateWithoutUserInput = {
@@ -31959,6 +32440,7 @@ export namespace Prisma {
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    repayments?: TransactionUncheckedUpdateManyWithoutLoanNestedInput
   }
 
   export type LoanUncheckedUpdateManyWithoutUserInput = {
@@ -32188,6 +32670,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -32213,6 +32697,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -32252,6 +32738,7 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32267,6 +32754,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutTransactionsNestedInput
     category?: TransactionCategoryUpdateOneRequiredWithoutTransactionsNestedInput
+    loan?: LoanUpdateOneWithoutRepaymentsNestedInput
     transferTo?: FinanceAccountUpdateOneWithoutTransfersToNestedInput
     integrationAccount?: IntegrationAccountUpdateOneWithoutTransactionsNestedInput
   }
@@ -32278,6 +32766,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32302,6 +32792,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32324,6 +32816,7 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32340,6 +32833,7 @@ export namespace Prisma {
     user?: UserUpdateOneRequiredWithoutTransactionsNestedInput
     account?: FinanceAccountUpdateOneRequiredWithoutTransactionsNestedInput
     category?: TransactionCategoryUpdateOneRequiredWithoutTransactionsNestedInput
+    loan?: LoanUpdateOneWithoutRepaymentsNestedInput
     integrationAccount?: IntegrationAccountUpdateOneWithoutTransactionsNestedInput
   }
 
@@ -32351,6 +32845,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32375,6 +32871,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32529,6 +33027,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -32550,6 +33050,7 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32566,6 +33067,7 @@ export namespace Prisma {
     user?: UserUpdateOneRequiredWithoutTransactionsNestedInput
     account?: FinanceAccountUpdateOneRequiredWithoutTransactionsNestedInput
     category?: TransactionCategoryUpdateOneRequiredWithoutTransactionsNestedInput
+    loan?: LoanUpdateOneWithoutRepaymentsNestedInput
     transferTo?: FinanceAccountUpdateOneWithoutTransfersToNestedInput
   }
 
@@ -32577,6 +33079,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32601,6 +33105,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32622,6 +33128,7 @@ export namespace Prisma {
     userId: string
     name: string
     type: $Enums.TransactionType
+    isLoanRepayment?: boolean
     color: string
     icon: string
     isDefault?: boolean
@@ -32637,6 +33144,8 @@ export namespace Prisma {
     type: $Enums.TransactionType
     amount: number
     currency?: string
+    loanId?: string | null
+    amountInAccountCurrency?: number | null
     description?: string | null
     date?: Date | string
     tags?: TransactionCreatetagsInput | string[]
@@ -32665,6 +33174,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
     isDefault?: BoolFieldUpdateOperationsInput | boolean
@@ -32682,6 +33192,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
     isDefault?: BoolFieldUpdateOperationsInput | boolean
@@ -32698,6 +33209,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    isLoanRepayment?: BoolFieldUpdateOperationsInput | boolean
     color?: StringFieldUpdateOperationsInput | string
     icon?: StringFieldUpdateOperationsInput | string
     isDefault?: BoolFieldUpdateOperationsInput | boolean
@@ -32711,6 +33223,7 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32726,6 +33239,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutTransactionsNestedInput
     account?: FinanceAccountUpdateOneRequiredWithoutTransactionsNestedInput
+    loan?: LoanUpdateOneWithoutRepaymentsNestedInput
     transferTo?: FinanceAccountUpdateOneWithoutTransfersToNestedInput
     integrationAccount?: IntegrationAccountUpdateOneWithoutTransactionsNestedInput
   }
@@ -32737,6 +33251,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32761,6 +33277,8 @@ export namespace Prisma {
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     amount?: FloatFieldUpdateOperationsInput | number
     currency?: StringFieldUpdateOperationsInput | string
+    loanId?: NullableStringFieldUpdateOperationsInput | string | null
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: TransactionUpdatetagsInput | string[]
@@ -32797,6 +33315,110 @@ export namespace Prisma {
     budgetId?: StringFieldUpdateOperationsInput | string
     planned?: FloatFieldUpdateOperationsInput | number
     actual?: FloatFieldUpdateOperationsInput | number
+  }
+
+  export type TransactionCreateManyLoanInput = {
+    id?: string
+    userId: string
+    accountId: string
+    categoryId: string
+    type: $Enums.TransactionType
+    amount: number
+    currency?: string
+    amountInAccountCurrency?: number | null
+    description?: string | null
+    date?: Date | string
+    tags?: TransactionCreatetagsInput | string[]
+    isDemo?: boolean
+    transferToId?: string | null
+    transferAmount?: number | null
+    transferCurrency?: string | null
+    isRecurring?: boolean
+    recurringPattern?: $Enums.RecurringPattern | null
+    parentTransactionId?: string | null
+    source?: $Enums.IntegrationProvider | null
+    externalId?: string | null
+    integrationAccountId?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TransactionUpdateWithoutLoanInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    date?: DateTimeFieldUpdateOperationsInput | Date | string
+    tags?: TransactionUpdatetagsInput | string[]
+    isDemo?: BoolFieldUpdateOperationsInput | boolean
+    transferAmount?: NullableFloatFieldUpdateOperationsInput | number | null
+    transferCurrency?: NullableStringFieldUpdateOperationsInput | string | null
+    isRecurring?: BoolFieldUpdateOperationsInput | boolean
+    recurringPattern?: NullableEnumRecurringPatternFieldUpdateOperationsInput | $Enums.RecurringPattern | null
+    parentTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: NullableEnumIntegrationProviderFieldUpdateOperationsInput | $Enums.IntegrationProvider | null
+    externalId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutTransactionsNestedInput
+    account?: FinanceAccountUpdateOneRequiredWithoutTransactionsNestedInput
+    category?: TransactionCategoryUpdateOneRequiredWithoutTransactionsNestedInput
+    transferTo?: FinanceAccountUpdateOneWithoutTransfersToNestedInput
+    integrationAccount?: IntegrationAccountUpdateOneWithoutTransactionsNestedInput
+  }
+
+  export type TransactionUncheckedUpdateWithoutLoanInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    accountId?: StringFieldUpdateOperationsInput | string
+    categoryId?: StringFieldUpdateOperationsInput | string
+    type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    date?: DateTimeFieldUpdateOperationsInput | Date | string
+    tags?: TransactionUpdatetagsInput | string[]
+    isDemo?: BoolFieldUpdateOperationsInput | boolean
+    transferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAmount?: NullableFloatFieldUpdateOperationsInput | number | null
+    transferCurrency?: NullableStringFieldUpdateOperationsInput | string | null
+    isRecurring?: BoolFieldUpdateOperationsInput | boolean
+    recurringPattern?: NullableEnumRecurringPatternFieldUpdateOperationsInput | $Enums.RecurringPattern | null
+    parentTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: NullableEnumIntegrationProviderFieldUpdateOperationsInput | $Enums.IntegrationProvider | null
+    externalId?: NullableStringFieldUpdateOperationsInput | string | null
+    integrationAccountId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TransactionUncheckedUpdateManyWithoutLoanInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    accountId?: StringFieldUpdateOperationsInput | string
+    categoryId?: StringFieldUpdateOperationsInput | string
+    type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    amountInAccountCurrency?: NullableFloatFieldUpdateOperationsInput | number | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    date?: DateTimeFieldUpdateOperationsInput | Date | string
+    tags?: TransactionUpdatetagsInput | string[]
+    isDemo?: BoolFieldUpdateOperationsInput | boolean
+    transferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAmount?: NullableFloatFieldUpdateOperationsInput | number | null
+    transferCurrency?: NullableStringFieldUpdateOperationsInput | string | null
+    isRecurring?: BoolFieldUpdateOperationsInput | boolean
+    recurringPattern?: NullableEnumRecurringPatternFieldUpdateOperationsInput | $Enums.RecurringPattern | null
+    parentTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: NullableEnumIntegrationProviderFieldUpdateOperationsInput | $Enums.IntegrationProvider | null
+    externalId?: NullableStringFieldUpdateOperationsInput | string | null
+    integrationAccountId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BudgetCreateManyParentTemplateInput = {

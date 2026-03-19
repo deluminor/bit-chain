@@ -19,6 +19,7 @@ export const createTransactionSchema = z.object({
   transferToId: z.string().cuid().optional(),
   transferAmount: z.number().positive().optional(),
   transferCurrency: z.string().min(3).max(3).optional(),
+  loanId: z.string().cuid().optional().nullable(),
   isRecurring: z.boolean().default(false),
   recurringPattern: z
     .enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'])

@@ -24,7 +24,7 @@ import { useMonobankAutoSync } from '@/features/integrations/hooks/useMonobankAu
 import { useMonobankSync } from '@/features/integrations/queries/monobank';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 export function AccountList() {
   const { data: accountsData, isLoading, error, refetch } = useAccounts(true);
@@ -163,6 +163,38 @@ export function AccountList() {
     setSelectedAccount(null);
   };
 
+  const handleSync = useCallback(() => {
+    syncMutation.mutate({ reason: 'manual_reload', force: true, chain: true });
+  }, [syncMutation]);
+
+  const handleCreateAccount = useCallback(() => {
+    setShowCreateDialog(true);
+  }, []);
+
+  const handleSelectDeleteAccount = useCallback((account: FinanceAccount) => {
+    setSelectedAccount(account);
+    setShowDeleteDialog(true);
+  }, []);
+
+  const handleEditAccount = useCallback((account: FinanceAccount) => {
+    setSelectedAccount(account);
+    setShowEditDialog(true);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setShowEditDialog(false);
+    setSelectedAccount(null);
+  }, []);
+
+  const handleCancelDelete = useCallback(() => {
+    setShowDeleteDialog(false);
+    setSelectedAccount(null);
+  }, []);
+
+  const handleConfirmDelete = useCallback(() => {
+    handleDeleteAccount();
+  }, [handleDeleteAccount]);
+
   if (error) {
     return (
       <AnimatedDiv variant="slideUp" className="container">
@@ -197,17 +229,11 @@ export function AccountList() {
           hasActiveFilters={hasActiveFilters}
           isSyncing={syncMutation.isPending}
           onClearFilters={resetFilters}
-          onSync={() => syncMutation.mutate({ reason: 'manual_reload', force: true })}
-          onCreateAccount={() => setShowCreateDialog(true)}
-          onEditAccount={account => {
-            setSelectedAccount(account);
-            setShowEditDialog(true);
-          }}
+          onSync={handleSync}
+          onCreateAccount={handleCreateAccount}
+          onEditAccount={handleEditAccount}
           onToggleAccountStatus={handleToggleActive}
-          onDeleteAccount={account => {
-            setSelectedAccount(account);
-            setShowDeleteDialog(true);
-          }}
+          onDeleteAccount={handleSelectDeleteAccount}
         />
 
         <AccountDialogs
@@ -220,17 +246,9 @@ export function AccountList() {
           onEditDialogChange={setShowEditDialog}
           onDeleteDialogChange={setShowDeleteDialog}
           onFormSuccess={handleFormSuccess}
-          onCancelEdit={() => {
-            setShowEditDialog(false);
-            setSelectedAccount(null);
-          }}
-          onCancelDelete={() => {
-            setShowDeleteDialog(false);
-            setSelectedAccount(null);
-          }}
-          onConfirmDelete={() => {
-            void handleDeleteAccount();
-          }}
+          onCancelEdit={handleCancelEdit}
+          onCancelDelete={handleCancelDelete}
+          onConfirmDelete={handleConfirmDelete}
         />
       </div>
     </AnimatedDiv>

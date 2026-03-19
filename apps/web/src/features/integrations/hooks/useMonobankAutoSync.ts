@@ -32,7 +32,7 @@ export function useMonobankAutoSync(reason: string) {
       }
 
       lastSyncRef.current = now;
-      syncMutation.mutate({ reason });
+      syncMutation.mutate({ reason, chain: false });
     };
 
     triggerSync();

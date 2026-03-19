@@ -13,6 +13,7 @@ import {
 import { colors } from '~/src/design/tokens';
 import { useAccounts } from '~/src/hooks/useAccounts';
 import { useCategories } from '~/src/hooks/useCategories';
+import { useLoans } from '~/src/hooks/useLoans';
 import { createTransactionSchema } from '~/src/hooks/useTransactions';
 import { formatCurrency } from '~/src/utils/format';
 import { formStyles as styles } from './_styles';
@@ -30,9 +31,11 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const { data: accountsData } = useAccounts({ includeInactive: Boolean(initialValues?.id) });
   const { data: categoriesData } = useCategories();
+  const { data: loansData } = useLoans(false);
 
   const accounts = accountsData?.accounts ?? [];
   const categories = categoriesData?.categories ?? [];
+  const unpaidLoans = loansData?.loans ?? [];
 
   const [type, setType] = useState<'INCOME' | 'EXPENSE' | 'TRANSFER'>(
     initialValues?.type || 'EXPENSE',
@@ -45,9 +48,15 @@ export function TransactionForm({
   const [categoryId, setCategoryId] = useState(initialValues?.categoryId || '');
   const [transferToId, setTransferToId] = useState(initialValues?.transferToId || '');
   const [transferAmount, setTransferAmount] = useState(initialValues?.transferAmount || '');
+  const [loanId, setLoanId] = useState(initialValues?.loanId || '');
   const [description, setDescription] = useState(initialValues?.description || '');
 
   const availableCategories = categories.filter(c => c.type === type);
+  const selectedCategory = availableCategories.find(c => c.id === categoryId);
+  const isLoanRepaymentCategory =
+    selectedCategory?.isLoanRepayment === true ||
+    selectedCategory?.name?.toLowerCase() === 'loan repayment';
+  const showLoanSelect = type === 'EXPENSE' && isLoanRepaymentCategory && unpaidLoans.length > 0;
 
   const activeAccountId = accountId || defaultAccountId;
   const fromAccount = accounts.find(a => a.id === activeAccountId);
@@ -61,14 +70,22 @@ export function TransactionForm({
   useEffect(() => {
     if (availableCategories.length === 0) {
       if (categoryId) setCategoryId('');
+      if (loanId) setLoanId('');
       return;
     }
 
     const stillValid = availableCategories.some(category => category.id === categoryId);
     if (!stillValid) {
       setCategoryId(availableCategories[0]!.id);
+      setLoanId('');
     }
-  }, [availableCategories, categoryId]);
+  }, [availableCategories, categoryId, loanId]);
+
+  useEffect(() => {
+    if (!showLoanSelect && loanId) {
+      setLoanId('');
+    }
+  }, [showLoanSelect, loanId]);
 
   const parseAmountInput = (raw: string): number => {
     const normalized = raw.replace(/\s+/g, '').replace(',', '.');
@@ -81,6 +98,11 @@ export function TransactionForm({
       ? parseAmountInput(transferAmount)
       : undefined;
 
+    if (showLoanSelect && !loanId) {
+      Alert.alert('Validation Error', 'Please select a loan to attribute this repayment to.');
+      return;
+    }
+
     const payload = {
       type,
       amount: parseAmountInput(amount),
@@ -89,6 +111,7 @@ export function TransactionForm({
       transferToId: type === 'TRANSFER' ? transferToId : undefined,
       transferAmount: parsedTransferAmount,
       transferCurrency: parsedTransferAmount ? toAccount?.currency : undefined,
+      loanId: showLoanSelect && loanId ? loanId : undefined,
       description: description.trim() || undefined,
       date: initialValues?.date || new Date(),
     };
@@ -216,6 +239,33 @@ export function TransactionForm({
             </ScrollView>
           </View>
         ) : null}
+
+        {showLoanSelect && (
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Apply to Loan</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+            >
+              {unpaidLoans.map(loan => (
+                <Pressable
+                  key={loan.id}
+                  style={[styles.chip, loanId === loan.id && styles.chipActive]}
+                  onPress={() => setLoanId(loan.id)}
+                >
+                  <Text
+                    style={[styles.chipText, loanId === loan.id && styles.chipTextActive]}
+                    numberOfLines={1}
+                  >
+                    {loan.name} ({formatCurrency(loan.totalAmount - loan.paidAmount, loan.currency)}{' '}
+                    left)
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {isCrossCurrency && (
           <View style={styles.fieldGroup}>

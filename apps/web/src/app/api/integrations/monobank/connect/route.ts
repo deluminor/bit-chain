@@ -7,6 +7,7 @@ import {
   fetchMonobankClientInfo,
   mapCurrencyCode,
   normalizeMonobankAmount,
+  registerMonobankWebhook,
 } from '@/lib/integrations/monobank';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
@@ -131,6 +132,17 @@ export async function POST(request: NextRequest) {
           accountType: entry.account.type,
         },
       });
+    }
+
+    // Register Monobank webhook non-blocking — failures must not break the connect flow
+    const appUrl = process.env.NEXTAUTH_URL;
+    if (appUrl) {
+      const webhookUrl = `${appUrl}/api/integrations/monobank/webhook`;
+      registerMonobankWebhook(activeToken, webhookUrl).catch(error => {
+        console.warn('[monobank-connect] Webhook registration failed (non-fatal):', error);
+      });
+    } else {
+      console.warn('[monobank-connect] NEXTAUTH_URL is not set — skipping webhook registration');
     }
 
     const updatedIntegration = await prisma.integration.findUnique({

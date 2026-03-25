@@ -1,3 +1,5 @@
+import { createVerify } from 'node:crypto';
+
 const MONOBANK_API_URL = 'https://api.monobank.ua';
 
 export interface MonobankAccount {
@@ -134,6 +136,58 @@ export const fetchMonobankStatement = (
     `/personal/statement/${accountId}/${from}${toSegment}`,
     token,
   );
+};
+
+/**
+ * Registers a webhook URL with Monobank for real-time transaction notifications.
+ * @throws on non-200 response
+ */
+export const registerMonobankWebhook = async (token: string, webhookUrl: string): Promise<void> => {
+  const response = await fetch(`${MONOBANK_API_URL}/personal/webhook`, {
+    method: 'POST',
+    cache: 'no-store',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-Token': token,
+    },
+    body: JSON.stringify({ webHookUrl: webhookUrl }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw createMonobankError(
+      `Monobank webhook registration error (${response.status}): ${body}`,
+      response.status,
+    );
+  }
+};
+
+/**
+ * Verifies the Ed25519 signature on an incoming Monobank webhook request.
+ *
+ * @param rawBody - Raw request body bytes
+ * @param signatureBase64 - Value of the X-Sign header
+ * @param publicKeyBase64 - Monobank server public key from /bank/sync
+ */
+export const verifyMonobankWebhookSignature = (
+  rawBody: Buffer,
+  signatureBase64: string,
+  publicKeyBase64: string,
+): boolean => {
+  try {
+    const publicKeyDer = Buffer.from(publicKeyBase64, 'base64');
+    const signature = Buffer.from(signatureBase64, 'base64');
+
+    const verifier = createVerify('Ed25519');
+    verifier.update(rawBody);
+    return verifier.verify(
+      { key: publicKeyDer, format: 'der', type: 'spki' },
+      signature,
+    );
+  } catch {
+    return false;
+  }
 };
 
 export const fetchMonobankServerSync = async () => {

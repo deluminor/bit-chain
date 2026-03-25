@@ -82,8 +82,9 @@ export function useMonobankConnect() {
 
 export function useMonobankUpdateAccounts() {
   const queryClient = useQueryClient();
+  const syncMutateRef = useRef<((payload?: SyncPayload) => void) | null>(null);
 
-  return useMutation({
+  const updateMutation = useMutation({
     mutationFn: async (payload: MonobankAccountsUpdatePayload) => {
       const { data } = await axiosInstance.patch('/integrations/monobank/accounts', payload);
       return data;
@@ -91,8 +92,40 @@ export function useMonobankUpdateAccounts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: monobankKeys.all });
       queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      // Kick off historical sync immediately after enabling accounts
+      syncMutateRef.current?.({ force: true, chain: true, reason: 'post_accounts_update' });
     },
   });
+
+  // Keep a stable ref to the sync mutate fn to avoid circular hook deps
+  const syncMutation = useMutation({
+    mutationFn: async (payload?: SyncPayload) => {
+      const { data } = await axiosInstance.post<{
+        remainingAccounts?: number;
+        skipped?: boolean;
+      }>('/integrations/monobank/sync', payload ?? {});
+      return data;
+    },
+    onSuccess: async (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: monobankKeys.all });
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: accountKeys.all }),
+        queryClient.refetchQueries({ queryKey: transactionKeys.all }),
+      ]);
+
+      const remaining = data?.remainingAccounts ?? 0;
+      const shouldChain = (variables?.chain ?? false) || variables?.reason === 'chain';
+      if (remaining > 0 && !data?.skipped && shouldChain && syncMutateRef.current) {
+        setTimeout(() => {
+          syncMutateRef.current?.({ reason: 'chain', chain: true, ...variables });
+        }, CHAIN_DELAY_MS);
+      }
+    },
+  });
+
+  syncMutateRef.current = syncMutation.mutate as (payload?: SyncPayload) => void;
+
+  return updateMutation;
 }
 
 const CHAIN_DELAY_MS = 65_000;

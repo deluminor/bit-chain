@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     padding: spacing.base,
     paddingTop: spacing.xs,
     gap: spacing.sm,
-    paddingBottom: spacing['5xl'],
+    paddingBottom: spacing['5xl'] + spacing.base,
   },
   sectionTitle: {
     color: colors.textDisabled,

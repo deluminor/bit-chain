@@ -76,7 +76,7 @@ export function StatCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.bgSurface,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.base,

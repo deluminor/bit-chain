@@ -27,7 +27,7 @@ export default function GoalsScreen() {
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<GoalItem | null>(null);
 
-  const goals = data?.goals ?? [];
+  const goals = [...(data?.goals ?? [])].sort((a, b) => b.targetAmount - a.targetAmount);
   const summary = data?.summary;
 
   const handleOpenCreate = () => {

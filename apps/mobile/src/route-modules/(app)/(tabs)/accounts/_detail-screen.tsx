@@ -1,18 +1,23 @@
 import { ACCOUNT_TYPE_META, ACCOUNT_TYPE_META_FALLBACK } from '@/constants/accountTypes';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useEffect } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type { AccountRowData } from '~/src/components/account/AccountRow';
 import { Card, ErrorScreen, LoadingScreen, StatCard } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
-import { useAccounts } from '~/src/hooks/useAccounts';
+import { useAccounts, useUpdateAccount } from '~/src/hooks/useAccounts';
 import { formatCurrency } from '~/src/utils/format';
 import { styles } from './_detail-styles';
+import { AccountEditModal } from './_edit-modal';
 
 export default function AccountDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
   const { data, isLoading, error, refetch } = useAccounts();
+  const { mutateAsync: updateAccount, isPending: isUpdating } = useUpdateAccount();
+
+  const [editingAccount, setEditingAccount] = useState<AccountRowData | null>(null);
 
   const account = data?.accounts.find(item => item.id === id);
 
@@ -21,6 +26,21 @@ export default function AccountDetailScreen() {
       navigation.setOptions({ title: account.name });
     }
   }, [account?.name, navigation]);
+
+  const handleSave = async (changes: {
+    name?: string;
+    balance?: number;
+    description?: string | null;
+    color?: string | null;
+  }) => {
+    if (!account) return;
+    try {
+      await updateAccount({ id: account.id, ...changes });
+      setEditingAccount(null);
+    } catch {
+      Alert.alert('Error', 'Failed to update account');
+    }
+  };
 
   if (isLoading && !data) return <LoadingScreen />;
   if (error && !data) return <ErrorScreen message="Failed to load accounts." onRetry={refetch} />;
@@ -38,7 +58,18 @@ export default function AccountDetailScreen() {
           <View style={[styles.avatar, { backgroundColor: `${color}20` }]}>
             <Text style={styles.avatarIcon}>{meta.icon}</Text>
           </View>
-          <Text style={styles.accountName}>{account.name}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.accountName}>{account.name}</Text>
+            {!account.isMonobank && (
+              <Pressable
+                style={styles.editBtn}
+                onPress={() => setEditingAccount(account)}
+                hitSlop={8}
+              >
+                <Text style={styles.editBtnText}>Edit</Text>
+              </Pressable>
+            )}
+          </View>
           <Text style={styles.accountType}>{meta.label}</Text>
 
           {account.description != null && (
@@ -97,6 +128,13 @@ export default function AccountDetailScreen() {
           )}
         </Card>
       </ScrollView>
+
+      <AccountEditModal
+        account={editingAccount}
+        isUpdating={isUpdating}
+        onSave={handleSave}
+        onClose={() => setEditingAccount(null)}
+      />
     </SafeAreaView>
   );
 }

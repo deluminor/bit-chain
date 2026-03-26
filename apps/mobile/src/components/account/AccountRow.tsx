@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { PrivacyAmount } from '~/src/components/ui';
 import { ACCOUNT_TYPE_META, ACCOUNT_TYPE_META_FALLBACK } from '~/src/constants/accountTypes';
 import { colors, fontSize } from '~/src/design/tokens';
@@ -8,13 +8,17 @@ import type { AccountRowProps } from './_types';
 
 export type { AccountRowData } from './_types';
 
-export function AccountRow({ account }: AccountRowProps) {
+export function AccountRow({ account, onPress }: AccountRowProps) {
   const meta = ACCOUNT_TYPE_META[account.type] ?? ACCOUNT_TYPE_META_FALLBACK;
   const color = account.color ?? meta.defaultColor;
   const balanceColor = account.balance < 0 ? colors.expense : colors.textPrimary;
 
   return (
-    <View style={styles.row}>
+    <Pressable
+      style={({ pressed }) => [styles.row, pressed && onPress && styles.rowPressed]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
       <View style={[styles.avatar, { backgroundColor: `${color}20` }]}>
         <Text style={styles.avatarIcon}>{meta.icon}</Text>
       </View>
@@ -44,6 +48,6 @@ export function AccountRow({ account }: AccountRowProps) {
         />
         <Text style={styles.currency}>{account.currency}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }

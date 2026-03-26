@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { colors, fontSize, fontWeight, radius, spacing } from '~/src/design/tokens';
 
 export const styles = StyleSheet.create({
@@ -9,7 +9,7 @@ export const styles = StyleSheet.create({
   scroll: {
     padding: spacing.base,
     gap: spacing.md,
-    paddingBottom: spacing['5xl'],
+    paddingBottom: spacing['5xl'] + spacing.base,
   },
   avatar: {
     width: 64,
@@ -83,5 +83,99 @@ export const styles = StyleSheet.create({
     color: colors.brand,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
+  },
+
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
+  editBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.brand,
+  },
+  editBtnText: {
+    color: colors.brand,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+
+  modalRoot: {
+    flex: 1,
+    backgroundColor: colors.bgBase,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.base,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    paddingTop: Platform.OS === 'ios' ? spacing.lg : spacing.base,
+  },
+  modalTitle: {
+    color: colors.textPrimary,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+  },
+  modalCancel: {
+    color: colors.textSecondary,
+    fontSize: fontSize.base,
+  },
+  modalSave: {
+    color: colors.brand,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+  },
+  modalSaveDisabled: {
+    opacity: 0.4,
+  },
+  modalScroll: {
+    padding: spacing.base,
+    paddingBottom: spacing['5xl'] + spacing.base,
+    gap: spacing.sm,
+  },
+
+  fieldLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    marginBottom: 4,
+    marginTop: spacing.sm,
+  },
+  fieldInput: {
+    backgroundColor: colors.bgSurface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    color: colors.textPrimary,
+    fontSize: fontSize.base,
+  },
+  fieldInputMultiline: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+
+  colorSwatches: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  colorSwatch: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  colorSwatchActive: {
+    borderWidth: 3,
+    borderColor: colors.white,
   },
 });

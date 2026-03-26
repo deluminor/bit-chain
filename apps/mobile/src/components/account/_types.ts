@@ -15,4 +15,5 @@ export interface AccountRowData {
 
 export interface AccountRowProps {
   account: AccountRowData;
+  onPress?: () => void;
 }

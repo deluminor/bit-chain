@@ -1,6 +1,8 @@
 import { ACCOUNT_FILTERS } from '@/route-modules/(app)/(tabs)/accounts/_constants';
+import { AccountEditModal } from '@/route-modules/(app)/(tabs)/accounts/_edit-modal';
 import { styles } from '@/route-modules/(app)/(tabs)/accounts/_styles';
 import type { FilterKey } from '@/route-modules/(app)/(tabs)/accounts/_types';
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
@@ -15,7 +17,7 @@ import {
   SyncButton,
 } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
-import { useAccounts } from '~/src/hooks/useAccounts';
+import { useAccounts, useUpdateAccount } from '~/src/hooks/useAccounts';
 import { useMonobankSync } from '~/src/hooks/useMonobank';
 import { convertCurrency, useCurrencyStore } from '~/src/lib/currency';
 import { formatCurrency } from '~/src/utils/format';
@@ -23,12 +25,35 @@ import { formatCurrency } from '~/src/utils/format';
 export default function AccountsScreen() {
   const { data, isLoading, isRefetching, error, refetch } = useAccounts();
   const { mutate: sync, isPending: isSyncing } = useMonobankSync();
+  const { mutateAsync: updateAccount, isPending: isUpdating } = useUpdateAccount();
   const baseCurrency = useCurrencyStore(s => s.baseCurrency);
   const [heroTotal, setHeroTotal] = useState<number | null>(null);
+  const [editingAccount, setEditingAccount] = useState<AccountRowData | null>(null);
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKey>('ALL');
   const insets = useSafeAreaInsets();
+
+  const handleAccountPress = (acc: AccountRowData) => {
+    if (!acc.isMonobank) {
+      setEditingAccount(acc);
+    }
+  };
+
+  const handleAccountSave = async (changes: {
+    name?: string;
+    balance?: number;
+    description?: string | null;
+    color?: string | null;
+  }) => {
+    if (!editingAccount) return;
+    try {
+      await updateAccount({ id: editingAccount.id, ...changes });
+      setEditingAccount(null);
+    } catch {
+      Alert.alert('Error', 'Failed to update account');
+    }
+  };
 
   const handleSync = () => {
     sync(
@@ -54,11 +79,15 @@ export default function AccountsScreen() {
 
   const accounts: AccountRowData[] = data?.accounts ?? [];
 
-  const filtered = accounts.filter(acc => {
-    const matchType = filter === 'ALL' || acc.type === filter;
-    const matchSearch = search === '' || acc.name.toLowerCase().includes(search.toLowerCase());
-    return matchType && matchSearch;
-  });
+  const filtered = useMemo(
+    () =>
+      accounts.filter(acc => {
+        const matchType = filter === 'ALL' || acc.type === filter;
+        const matchSearch = search === '' || acc.name.toLowerCase().includes(search.toLowerCase());
+        return matchType && matchSearch;
+      }),
+    [accounts, filter, search],
+  );
 
   const balancesByCurrency = useMemo(
     () =>
@@ -92,7 +121,7 @@ export default function AccountsScreen() {
 
   const refetchCb = useCallback(() => {
     refetch();
-    sync({}, { onError: () => {} }); // trigger sync silently
+    sync({}, { onError: err => console.warn('[accounts/sync]', err.message) });
   }, [refetch, sync]);
 
   useEffect(() => {
@@ -165,7 +194,7 @@ export default function AccountsScreen() {
         </Card>
 
         <View style={styles.searchWrap}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search-outline" size={16} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search accounts..."
@@ -196,7 +225,10 @@ export default function AccountsScreen() {
         </ScrollView>
 
         <Text style={styles.countLabel}>
-          {filtered.length} {filter === 'ALL' ? 'ACCOUNTS' : `${filter.replace('_', ' ')}S`}
+          {filtered.length}{' '}
+          {filter === 'ALL'
+            ? 'ACCOUNTS'
+            : (ACCOUNT_FILTERS.find(f => f.key === filter)?.label ?? filter).toUpperCase()}
         </Text>
 
         {filtered.length === 0 ? (
@@ -207,13 +239,22 @@ export default function AccountsScreen() {
           <View style={styles.listCard}>
             {filtered.map((acc, idx) => (
               <View key={acc.id}>
-                <AccountRow account={acc} />
+                <AccountRow
+                  account={acc}
+                  onPress={acc.isMonobank ? undefined : () => handleAccountPress(acc)}
+                />
                 {idx < filtered.length - 1 && <Separator />}
               </View>
             ))}
           </View>
         )}
       </ScrollView>
+      <AccountEditModal
+        account={editingAccount}
+        isUpdating={isUpdating}
+        onSave={handleAccountSave}
+        onClose={() => setEditingAccount(null)}
+      />
     </SafeAreaView>
   );
 }

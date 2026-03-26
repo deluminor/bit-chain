@@ -8,6 +8,9 @@ export const rowStyles = StyleSheet.create({
     paddingVertical: spacing.md,
     gap: spacing.md,
   },
+  rowPressed: {
+    opacity: 0.6,
+  },
   avatar: {
     width: 44,
     height: 44,

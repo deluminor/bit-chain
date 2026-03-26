@@ -1,65 +1,42 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
-import { colors, fontSize, fontWeight } from '~/src/design/tokens';
+import { Animated, Easing } from 'react-native';
+import { AnimatedTabBar } from '~/src/components/ui/AnimatedTabBar';
+import { colors } from '~/src/design/tokens';
 
-type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+type SceneInterpolatorProps = { current: { progress: Animated.Value } };
 
-
-interface TabIconProps {
-  name: IoniconsName;
-  focused: boolean;
-  size: number;
+function tabSceneInterpolator({ current }: SceneInterpolatorProps) {
+  const opacity = current.progress.interpolate({
+    inputRange: [-1, 0, 1],
+    outputRange: [0, 1, 0],
+    extrapolate: 'clamp',
+  });
+  const scale = current.progress.interpolate({
+    inputRange: [-1, 0, 1],
+    outputRange: [0.96, 1, 0.96],
+    extrapolate: 'clamp',
+  });
+  return { sceneStyle: { opacity, transform: [{ scale }] } };
 }
-
-function TabIcon({ name, focused, size }: TabIconProps) {
-  return (
-    <Ionicons name={name} size={size} color={focused ? colors.tabActive : colors.tabInactive} />
-  );
-}
-
-
-const ICONS: Record<string, { focused: IoniconsName; default: IoniconsName }> = {
-  dashboard: { focused: 'home', default: 'home-outline' },
-  accounts: { focused: 'wallet', default: 'wallet-outline' },
-  transactions: { focused: 'list', default: 'list-outline' },
-  categories: { focused: 'grid', default: 'grid-outline' },
-  settings: { focused: 'settings', default: 'settings-outline' },
-};
-
 
 export default function TabsLayout() {
   return (
     <Tabs
-      screenOptions={({ route }) => {
-        const iconSet = ICONS[route.name];
-
-        return {
-          // Hide the navigator header globally by default, but allow screens to opt-in
-          headerShown: false,
-
-          // Header styles (for screens that set headerShown: true)
-          headerStyle: { backgroundColor: colors.bgBase },
-          headerTintColor: colors.textPrimary,
-          headerShadowVisible: false,
-          headerTitleAlign: 'left',
-
-          // Tab bar
-          tabBarStyle: styles.tabBar,
-          tabBarActiveTintColor: colors.tabActive,
-          tabBarInactiveTintColor: colors.tabInactive,
-          tabBarLabelStyle: styles.tabLabel,
-
-          // Icon
-          tabBarIcon: ({ focused, size }) =>
-            iconSet ? (
-              <TabIcon
-                name={focused ? iconSet.focused : iconSet.default}
-                focused={focused}
-                size={size}
-              />
-            ) : null,
-        };
+      tabBar={props => <AnimatedTabBar {...props} />}
+      screenOptions={{
+        headerShown: false,
+        headerStyle: { backgroundColor: colors.bgBase },
+        headerTintColor: colors.textPrimary,
+        headerShadowVisible: false,
+        headerTitleAlign: 'left',
+        sceneStyleInterpolator: tabSceneInterpolator,
+        transitionSpec: {
+          animation: 'timing',
+          config: {
+            duration: 240,
+            easing: Easing.bezier(0.4, 0, 0.2, 1),
+          },
+        },
       }}
     >
       <Tabs.Screen name="dashboard" options={{ title: 'Dashboard' }} />
@@ -70,20 +47,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  headerTitle: {
-    fontWeight: fontWeight.semibold,
-    fontSize: fontSize.lg,
-    color: colors.textPrimary,
-  },
-  tabBar: {
-    backgroundColor: colors.bgBase,
-    borderTopColor: colors.border,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  tabLabel: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-  },
-});

@@ -26,7 +26,16 @@ export const deleteWebAccountInputSchema = z.object({
   force: z.boolean().default(false),
 });
 
+export const updateMobileAccountInputSchema = z.object({
+  id: z.string().trim().min(1, 'Account ID is required'),
+  name: z.string().trim().min(1, 'Name cannot be empty').max(50, 'Name too long').optional(),
+  balance: z.number().optional(),
+  description: z.string().trim().max(200).nullable().optional(),
+  color: z.string().trim().nullable().optional(),
+});
+
 export type WebAccountsQuery = z.infer<typeof webAccountsQuerySchema>;
 export type CreateWebAccountInput = z.infer<typeof createWebAccountInputSchema>;
 export type UpdateWebAccountInput = z.infer<typeof updateWebAccountInputSchema>;
 export type DeleteWebAccountInput = z.infer<typeof deleteWebAccountInputSchema>;
+export type UpdateMobileAccountInput = z.infer<typeof updateMobileAccountInputSchema>;

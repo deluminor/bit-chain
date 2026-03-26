@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import type {
   CreateWebAccountInput,
   DeleteWebAccountInput,
+  UpdateMobileAccountInput,
   UpdateWebAccountInput,
   WebAccountsQuery,
 } from './account-domain.schemas';
@@ -152,6 +153,48 @@ export async function deleteWebAccount(userId: string, input: DeleteWebAccountIn
   return {
     deletedTransactions: input.force ? account._count.transactions : 0,
   };
+}
+
+export async function updateMobileAccount(userId: string, input: UpdateMobileAccountInput) {
+  const { id, ...changes } = input;
+
+  const account = await prisma.financeAccount.findFirst({
+    where: { id, userId, isDemo: false },
+    include: {
+      integrationAccounts: { select: { id: true }, take: 1 },
+    },
+  });
+
+  if (!account) {
+    throw new AccountDomainError('Account not found', 404, 'NOT_FOUND');
+  }
+
+  if (account.integrationAccounts.length > 0) {
+    throw new AccountDomainError(
+      'Monobank-synced accounts cannot be edited manually',
+      403,
+      'FORBIDDEN',
+    );
+  }
+
+  if (changes.name && changes.name !== account.name) {
+    await ensureUniqueAccountName(userId, changes.name, id);
+  }
+
+  return prisma.financeAccount.update({
+    where: { id },
+    data: changes,
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      balance: true,
+      currency: true,
+      description: true,
+      isActive: true,
+      color: true,
+    },
+  });
 }
 
 export async function listMobileAccounts(userId: string, options?: { includeInactive?: boolean }) {

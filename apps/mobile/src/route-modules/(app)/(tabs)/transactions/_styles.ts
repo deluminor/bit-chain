@@ -1,9 +1,9 @@
 import { StyleSheet } from 'react-native';
 
+import { colors, fontSize, fontWeight, radius, spacing } from '~/src/design/tokens';
 import { filterChipStyles } from '~/src/styles/filterChip.styles';
 import { searchBarStyles } from '~/src/styles/searchBar.styles';
 import { tabHeaderStyles } from '~/src/styles/tabHeader.styles';
-import { colors, fontSize, fontWeight, radius, spacing } from '~/src/design/tokens';
 
 const screenStyles = StyleSheet.create({
   safe: {
@@ -14,7 +14,7 @@ const screenStyles = StyleSheet.create({
     padding: spacing.base,
     paddingTop: spacing.xs,
     gap: spacing.sm,
-    paddingBottom: spacing['5xl'],
+    paddingBottom: spacing['5xl'] + spacing.base,
   },
   headerBlock: {
     gap: spacing.md,

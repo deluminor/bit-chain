@@ -44,7 +44,7 @@ export const styles = StyleSheet.create({
   scroll: {
     padding: spacing.base,
     gap: spacing.sm,
-    paddingBottom: spacing['5xl'],
+    paddingBottom: spacing['5xl'] + spacing.base,
   },
 
   card: {

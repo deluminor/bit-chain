@@ -13,7 +13,7 @@ const screenStyles = StyleSheet.create({
     padding: spacing.base,
     paddingTop: spacing.xs,
     gap: spacing.md,
-    paddingBottom: spacing['5xl'],
+    paddingBottom: spacing['5xl'] + spacing.base,
   },
   monobankBanner: {
     backgroundColor: colors.brandDim,

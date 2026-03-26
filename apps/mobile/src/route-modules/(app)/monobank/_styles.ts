@@ -8,7 +8,7 @@ export const accountsStyles = StyleSheet.create({
   },
   list: {
     padding: spacing.base,
-    paddingBottom: spacing['5xl'],
+    paddingBottom: spacing['5xl'] + spacing.base,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -62,7 +62,7 @@ export const connectStyles = StyleSheet.create({
   scroll: {
     padding: spacing.base,
     gap: spacing.lg,
-    paddingBottom: spacing['5xl'],
+    paddingBottom: spacing['5xl'] + spacing.base,
   },
   cardTitle: {
     color: colors.textPrimary,

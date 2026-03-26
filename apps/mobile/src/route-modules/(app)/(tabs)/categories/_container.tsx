@@ -67,6 +67,7 @@ export default function CategoriesScreen() {
         onPress: async () => {
           try {
             await deleteCategory(cat.id);
+            setShowForm(false);
           } catch {
             Alert.alert('Error', 'Failed to delete category');
           }
@@ -108,7 +109,10 @@ export default function CategoriesScreen() {
     return <ErrorScreen message={`Failed to load: ${msg}`} onRetry={refetch} />;
   }
 
-  const categories = data?.categories ?? [];
+  const categories = [...(data?.categories ?? [])].sort((a, b) => {
+    if (a.isDefault === b.isDefault) return 0;
+    return a.isDefault ? -1 : 1;
+  });
   const filtered = filter === 'ALL' ? categories : categories.filter(c => c.type === filter);
 
   return (
@@ -192,7 +196,7 @@ export default function CategoriesScreen() {
           </View>
         ) : (
           <View style={styles.listCard}>
-            <CategoryList categories={filtered} onEdit={handleEdit} onDelete={handleDelete} />
+            <CategoryList categories={filtered} onEdit={handleEdit} />
           </View>
         )}
       </ScrollView>
@@ -202,6 +206,7 @@ export default function CategoriesScreen() {
         initial={editingCategory}
         onClose={() => setShowForm(false)}
         onSubmit={handleSubmit}
+        onDelete={editingCategory ? () => handleDelete(editingCategory) : undefined}
         isLoading={isCreating || isUpdating}
       />
     </SafeAreaView>

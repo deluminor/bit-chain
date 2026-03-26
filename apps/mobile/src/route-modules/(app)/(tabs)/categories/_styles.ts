@@ -103,6 +103,19 @@ export const formStyles = StyleSheet.create({
     padding: spacing.base,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    gap: spacing.sm,
+  },
+  deleteBtn: {
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  deleteBtnText: {
+    color: colors.error,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
   },
   submitBtn: {
     backgroundColor: colors.brand,
@@ -126,7 +139,7 @@ const screenStyles = StyleSheet.create({
     padding: spacing.base,
     paddingTop: spacing.xs,
     gap: spacing.sm,
-    paddingBottom: spacing['5xl'],
+    paddingBottom: spacing['5xl'] + spacing.base,
   },
   headerBlock: {
     gap: spacing.md,
@@ -181,44 +194,12 @@ export const rowStyles = StyleSheet.create({
   icon: {
     fontSize: fontSize.base,
   },
-  rowActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-    flexShrink: 0,
-    minWidth: 160,
-  },
   rowTypeWrap: {
     minWidth: 90,
     alignItems: 'flex-end',
   },
-  rowButtonsWrap: {
-    width: 60,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.xs,
-  },
-  rowActionBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.sm,
-    backgroundColor: colors.bgMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowActionPlaceholder: {
-    width: 28,
-    height: 28,
-  },
-  rowActionBtnDanger: {
-    backgroundColor: colors.errorSubtle,
-  },
-  rowActionIcon: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: fontWeight.semibold,
-    textAlign: 'center',
+  rowPressed: {
+    opacity: 0.6,
   },
 });
 

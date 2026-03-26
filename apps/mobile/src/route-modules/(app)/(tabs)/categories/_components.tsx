@@ -22,15 +22,16 @@ const isEmoji = (str: string) => str.length > 0 && /\P{ASCII}/u.test(str);
 export function CategoryRow({
   category: cat,
   onEdit,
-  onDelete,
 }: {
   category: CategoryListItem;
   onEdit: (cat: CategoryListItem) => void;
-  onDelete: (cat: CategoryListItem) => void;
 }) {
   const isIncome = cat.type === 'INCOME';
   return (
-    <View style={rowStyles.row}>
+    <Pressable
+      style={({ pressed }) => [rowStyles.row, pressed && rowStyles.rowPressed]}
+      onPress={() => onEdit(cat)}
+    >
       <View style={[rowStyles.dot, { backgroundColor: cat.color ?? colors.textMuted }]} />
       <View style={rowStyles.info}>
         <View style={rowStyles.nameRow}>
@@ -48,50 +49,25 @@ export function CategoryRow({
           {cat.transactionCount} {cat.transactionCount === 1 ? 'transaction' : 'transactions'}
         </Text>
       </View>
-      <View style={rowStyles.rowActions}>
-        <View style={rowStyles.rowTypeWrap}>
-          <Badge label={isIncome ? 'INCOME' : 'EXPENSE'} variant={isIncome ? 'success' : 'error'} />
-        </View>
-        <View style={rowStyles.rowButtonsWrap}>
-          {!cat.isDefault ? (
-            <>
-              <Pressable style={rowStyles.rowActionBtn} onPress={() => onEdit(cat)} hitSlop={8}>
-                <Text style={rowStyles.rowActionIcon}>✎</Text>
-              </Pressable>
-              <Pressable
-                style={[rowStyles.rowActionBtn, rowStyles.rowActionBtnDanger]}
-                onPress={() => onDelete(cat)}
-                hitSlop={8}
-              >
-                <Text style={[rowStyles.rowActionIcon, { color: colors.expense }]}>✕</Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <View style={rowStyles.rowActionPlaceholder} />
-              <View style={rowStyles.rowActionPlaceholder} />
-            </>
-          )}
-        </View>
+      <View style={rowStyles.rowTypeWrap}>
+        <Badge label={isIncome ? 'INCOME' : 'EXPENSE'} variant={isIncome ? 'success' : 'error'} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
 export function CategoryList({
   categories,
   onEdit,
-  onDelete,
 }: {
   categories: CategoryListItem[];
   onEdit: (cat: CategoryListItem) => void;
-  onDelete: (cat: CategoryListItem) => void;
 }) {
   return (
     <>
       {categories.map((cat, index) => (
         <View key={cat.id}>
-          <CategoryRow category={cat} onEdit={onEdit} onDelete={onDelete} />
+          <CategoryRow category={cat} onEdit={onEdit} />
           {index < categories.length - 1 && <Separator />}
         </View>
       ))}
@@ -104,12 +80,14 @@ export function CategoryForm({
   initial,
   onClose,
   onSubmit,
+  onDelete,
   isLoading,
 }: {
   visible: boolean;
   initial?: CategoryListItem | null;
   onClose: () => void;
   onSubmit: (data: typeof DEFAULT_CATEGORY_FORM) => void;
+  onDelete?: () => void;
   isLoading: boolean;
 }) {
   const [form, setForm] = useState<typeof DEFAULT_CATEGORY_FORM>(() =>
@@ -128,6 +106,8 @@ export function CategoryForm({
       setForm(f => ({ ...f, [key]: value })),
     [],
   );
+
+  const canDelete = !!initial && !initial.isDefault && !!onDelete;
 
   return (
     <Modal
@@ -215,6 +195,15 @@ export function CategoryForm({
           </ScrollView>
 
           <View style={formStyles.footer}>
+            {canDelete && (
+              <Pressable
+                style={[formStyles.deleteBtn, isLoading && { opacity: 0.6 }]}
+                onPress={onDelete}
+                disabled={isLoading}
+              >
+                <Text style={formStyles.deleteBtnText}>Delete Category</Text>
+              </Pressable>
+            )}
             <Pressable
               style={[formStyles.submitBtn, isLoading && { opacity: 0.6 }]}
               onPress={() => onSubmit(form)}

@@ -181,6 +181,21 @@ export async function updateMobileAccount(userId: string, input: UpdateMobileAcc
     await ensureUniqueAccountName(userId, changes.name, id);
   }
 
+  const hasChanges = Object.keys(changes).length > 0;
+
+  if (!hasChanges) {
+    return {
+      id: account.id,
+      name: account.name,
+      type: account.type,
+      balance: account.balance,
+      currency: account.currency,
+      description: account.description,
+      isActive: account.isActive,
+      color: account.color,
+    };
+  }
+
   return prisma.financeAccount.update({
     where: { id },
     data: changes,

@@ -66,7 +66,9 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     if (error instanceof AccountDomainError) {
       return NextResponse.json(err(error.code, error.message), { status: error.status });
     }
-    console.error('[mobile/accounts] patch error:', error);
+    const errDetails =
+      error instanceof Error ? { name: error.name, message: error.message } : String(error);
+    console.error('[mobile/accounts] patch error:', errDetails);
     return NextResponse.json(err('INTERNAL_ERROR', 'Failed to update account'), { status: 500 });
   }
 }

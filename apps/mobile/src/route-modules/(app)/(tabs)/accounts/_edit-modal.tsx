@@ -82,11 +82,27 @@ export function AccountEditModal({ account, isUpdating, onSave, onClose }: Accou
     const nextDescription = normalizedDescription.length > 0 ? normalizedDescription : null;
     const nextColor = form.color.trim() || null;
 
+    const nextName = trimmedName !== account.name ? trimmedName : undefined;
+    const nextBalance = parsedBalance !== account.balance ? parsedBalance : undefined;
+    const nextDesc =
+      nextDescription !== (account.description ?? null) ? nextDescription : undefined;
+    const nextCol = nextColor !== (account.color ?? null) ? nextColor : undefined;
+
+    if (
+      nextName === undefined &&
+      nextBalance === undefined &&
+      nextDesc === undefined &&
+      nextCol === undefined
+    ) {
+      onClose();
+      return;
+    }
+
     await onSave({
-      name: trimmedName !== account.name ? trimmedName : undefined,
-      balance: parsedBalance !== account.balance ? parsedBalance : undefined,
-      description: nextDescription !== (account.description ?? null) ? nextDescription : undefined,
-      color: nextColor !== (account.color ?? null) ? nextColor : undefined,
+      name: nextName,
+      balance: nextBalance,
+      description: nextDesc,
+      color: nextCol,
     });
   };
 

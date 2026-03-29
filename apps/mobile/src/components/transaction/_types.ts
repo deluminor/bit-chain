@@ -10,6 +10,8 @@ export interface TransactionRowData {
   accountName: string;
   categoryName: string | null;
   categoryColor?: string | null;
+  transferAmount?: number | null;
+  transferCurrency?: string | null;
 }
 
 export interface TransactionRowProps {

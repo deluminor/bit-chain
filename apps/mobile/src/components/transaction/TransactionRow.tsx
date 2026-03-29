@@ -12,12 +12,23 @@ export function TransactionRow({ transaction, hideDate = false }: TransactionRow
   const { color, sign, bgColor, icon } = TYPE_CONFIG[transaction.type];
 
   const label = transaction.description ?? transaction.categoryName ?? 'Transaction';
-  const amount = `${sign}${formatCurrency(transaction.amount, transaction.currency)}`;
   const dotColor = transaction.categoryColor ?? colors.bgMuted;
-  const showAccountCurrency =
-    transaction.amountInAccountCurrency != null &&
-    transaction.accountCurrency &&
-    transaction.currency !== transaction.accountCurrency;
+
+  const isTransfer = transaction.type === 'TRANSFER';
+  const hasTransferAmount =
+    isTransfer && transaction.transferAmount != null && transaction.transferCurrency != null;
+
+  const primaryAmount = hasTransferAmount
+    ? `${sign}${formatCurrency(transaction.transferAmount!, transaction.transferCurrency!)}`
+    : `${sign}${formatCurrency(transaction.amount, transaction.currency)}`;
+
+  const secondaryAmount = hasTransferAmount
+    ? formatCurrency(transaction.amount, transaction.currency)
+    : transaction.amountInAccountCurrency != null &&
+        transaction.accountCurrency &&
+        transaction.currency !== transaction.accountCurrency
+      ? formatCurrency(transaction.amountInAccountCurrency!, transaction.accountCurrency!)
+      : null;
 
   return (
     <View style={styles.row}>
@@ -40,11 +51,14 @@ export function TransactionRow({ transaction, hideDate = false }: TransactionRow
       </View>
 
       <View style={styles.rightCol}>
-        <PrivacyAmount value={amount} color={color} size={fontSize.base} style={styles.amount} />
-        {showAccountCurrency && (
-          <Text style={styles.amountInAccountCurrency}>
-            {formatCurrency(transaction.amountInAccountCurrency!, transaction.accountCurrency!)}
-          </Text>
+        <PrivacyAmount
+          value={primaryAmount}
+          color={color}
+          size={fontSize.base}
+          style={styles.amount}
+        />
+        {secondaryAmount != null && (
+          <Text style={styles.amountInAccountCurrency}>{secondaryAmount}</Text>
         )}
         {!hideDate && <Text style={styles.date}>{formatRelativeDate(transaction.date)}</Text>}
       </View>

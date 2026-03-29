@@ -97,9 +97,11 @@ export function TransactionList({
     setItems(prev => {
       const seen = new Set(prev.map(tx => tx.id));
       const next: TransactionRowData[] = [...prev];
+
       for (const tx of data.transactions) {
         if (!seen.has(tx.id)) next.push(tx);
       }
+
       return next;
     });
   }, [data, isPlaceholderData]);
@@ -208,7 +210,7 @@ const styles = StyleSheet.create({
   scroll: {
     padding: spacing.base,
     paddingTop: spacing.xs,
-    gap: spacing.sm,
+    // gap: spacing.sm,
     paddingBottom: spacing['5xl'] + spacing.base,
   },
   sectionTitle: {
@@ -216,8 +218,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.5,
-    marginTop: spacing.sm,
-    marginBottom: 4,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
   },
   rowCard: {
     backgroundColor: colors.bgSurface,

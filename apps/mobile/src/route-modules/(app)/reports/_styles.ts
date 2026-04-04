@@ -45,6 +45,12 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  modeRow: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.sm,
+    gap: spacing.xs,
+  },
   periodRow: {
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,

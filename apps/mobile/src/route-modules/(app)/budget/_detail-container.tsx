@@ -70,30 +70,29 @@ export default function BudgetDetailScreen() {
       return;
     }
 
-    const sourceDate = new Date(budget.startDate);
-    const nextMonthDate = new Date(sourceDate);
-    nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+    const sourceStart = new Date(budget.startDate);
+    const sourceEnd = new Date(budget.endDate);
+    const sourceMidpoint = new Date((sourceStart.getTime() + sourceEnd.getTime()) / 2);
+
     const nextMonthStart = new Date(
-      nextMonthDate.getFullYear(),
-      nextMonthDate.getMonth(),
-      1,
-      0,
-      0,
-      0,
-      0,
+      Date.UTC(sourceMidpoint.getUTCFullYear(), sourceMidpoint.getUTCMonth() + 1, 1, 0, 0, 0, 0),
     );
     const nextMonthEnd = new Date(
-      nextMonthDate.getFullYear(),
-      nextMonthDate.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
+      Date.UTC(
+        sourceMidpoint.getUTCFullYear(),
+        sourceMidpoint.getUTCMonth() + 2,
+        0,
+        23,
+        59,
+        59,
+        999,
+      ),
     );
+
     const nextMonthLabel = nextMonthStart.toLocaleDateString('en-US', {
       month: 'long',
       year: 'numeric',
+      timeZone: 'UTC',
     });
 
     createBudget(

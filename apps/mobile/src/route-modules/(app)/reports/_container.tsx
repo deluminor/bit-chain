@@ -1,10 +1,9 @@
 import { styles } from '@/route-modules/(app)/reports/_styles';
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Platform,
   Pressable,
   ScrollView,
@@ -16,18 +15,55 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SummaryCard } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
 import { useReport } from '~/src/hooks/useReports';
-import { PERIOD_OPTIONS, getPeriodRange, usePeriodStore } from '~/src/lib/period';
 import { formatCurrency } from '~/src/utils/format';
 
+const MONTH_LABELS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
+
+type ReportMode = 'month' | 'year';
+
 export default function ReportsScreen() {
-  const { period, setPeriod } = usePeriodStore();
-  const { dateFrom, dateTo } = getPeriodRange(period);
+  const now = useMemo(() => new Date(), []);
+  const [mode, setMode] = useState<ReportMode>('month');
+  const [selectedYear, setSelectedYear] = useState(now.getUTCFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getUTCMonth());
+  const yearOptions = useMemo(() => {
+    const currentYear = now.getUTCFullYear();
+    return Array.from({ length: 7 }, (_, index) => currentYear - 5 + index);
+  }, [now]);
+
+  const { dateFrom, dateTo } = useMemo(() => {
+    if (mode === 'year') {
+      const yearStart = new Date(Date.UTC(selectedYear, 0, 1, 0, 0, 0, 0));
+      const yearEnd = new Date(Date.UTC(selectedYear, 11, 31, 23, 59, 59, 999));
+      return { dateFrom: yearStart.toISOString(), dateTo: yearEnd.toISOString() };
+    }
+
+    const monthStart = new Date(Date.UTC(selectedYear, selectedMonth, 1, 0, 0, 0, 0));
+    const monthEnd = new Date(Date.UTC(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999));
+    return { dateFrom: monthStart.toISOString(), dateTo: monthEnd.toISOString() };
+  }, [mode, selectedMonth, selectedYear]);
+
   const { data, isLoading, isRefetching, refetch } = useReport({ dateFrom, dateTo });
 
   const [isExporting, setIsExporting] = useState(false);
 
   const currency = data?.baseCurrency ?? 'EUR';
   const netFlow = (data?.totalIncome ?? 0) - (data?.totalExpenses ?? 0);
+  const selectedPeriodLabel =
+    mode === 'year' ? `${selectedYear}` : `${MONTH_LABELS[selectedMonth]} ${selectedYear}`;
 
   const handleExport = async () => {
     if (!data) {
@@ -61,7 +97,7 @@ export default function ReportsScreen() {
               <Text style={styles.headerSubtitleText}>
                 {data
                   ? `${data.dateFrom.slice(0, 10)} – ${data.dateTo.slice(0, 10)}`
-                  : 'Select a period'}
+                  : selectedPeriodLabel}
               </Text>
             </View>
           ),
@@ -85,25 +121,60 @@ export default function ReportsScreen() {
       />
 
       <View style={styles.periodWrap}>
-        <FlatList
-          data={[...PERIOD_OPTIONS]}
-          keyExtractor={o => o.key}
+        <View style={styles.modeRow}>
+          {(['month', 'year'] as const).map(option => (
+            <Pressable
+              key={option}
+              style={[styles.periodChip, mode === option && styles.periodChipActive]}
+              onPress={() => setMode(option)}
+            >
+              <Text style={[styles.periodChipText, mode === option && styles.periodChipTextActive]}>
+                {option === 'month' ? 'Month' : 'Year'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.periodRow}
-          renderItem={({ item: o }) => (
+        >
+          {mode === 'month' &&
+            MONTH_LABELS.map((label, monthIndex) => (
+              <Pressable
+                key={label}
+                style={[styles.periodChip, selectedMonth === monthIndex && styles.periodChipActive]}
+                onPress={() => setSelectedMonth(monthIndex)}
+              >
+                <Text
+                  style={[
+                    styles.periodChipText,
+                    selectedMonth === monthIndex && styles.periodChipTextActive,
+                  ]}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+
+          {yearOptions.map(year => (
             <Pressable
-              style={[styles.periodChip, period === o.key && styles.periodChipActive]}
-              onPress={() => setPeriod(o.key)}
+              key={year}
+              style={[styles.periodChip, selectedYear === year && styles.periodChipActive]}
+              onPress={() => setSelectedYear(year)}
             >
               <Text
-                style={[styles.periodChipText, period === o.key && styles.periodChipTextActive]}
+                style={[
+                  styles.periodChipText,
+                  selectedYear === year && styles.periodChipTextActive,
+                ]}
               >
-                {o.short}
+                {year}
               </Text>
             </Pressable>
-          )}
-        />
+          ))}
+        </ScrollView>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>

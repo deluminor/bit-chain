@@ -1,7 +1,6 @@
 import type {
   ApiResponse,
   DashboardExpensesTrendResponse,
-  DashboardHistoryResponse,
   DashboardSummary,
   TransactionsListResponse,
 } from '@bit-chain/api-contracts';
@@ -12,7 +11,6 @@ import { QUERY_CONFIG } from '~/src/lib/constants';
 import { convertCurrency } from '~/src/lib/currency';
 import {
   DASHBOARD_EXPENSES_TREND_QUERY_KEY,
-  DASHBOARD_HISTORY_QUERY_KEY,
   DASHBOARD_QUERY_KEY,
 } from '~/src/lib/query-keys';
 
@@ -48,30 +46,6 @@ export function useDashboard(filters?: DashboardFilters) {
       const query = params.toString();
       const { data } = await api.get<ApiResponse<DashboardSummary>>(
         `/dashboard/summary${query ? `?${query}` : ''}`,
-      );
-      if (!data.ok) throw new Error(data.error.code);
-      return data.data;
-    },
-    staleTime: QUERY_CONFIG.STALE_TIME_DASHBOARD,
-  });
-}
-
-export interface DashboardHistoryFilters {
-  dateFrom?: string;
-  dateTo?: string;
-}
-
-export function useDashboardHistory(filters?: DashboardHistoryFilters) {
-  return useQuery({
-    queryKey: [...DASHBOARD_HISTORY_QUERY_KEY, filters] as const,
-    queryFn: async (): Promise<DashboardHistoryResponse> => {
-      const params = new URLSearchParams();
-      if (filters?.dateFrom) params.set('dateFrom', filters.dateFrom);
-      if (filters?.dateTo) params.set('dateTo', filters.dateTo);
-
-      const query = params.toString();
-      const { data } = await api.get<ApiResponse<DashboardHistoryResponse>>(
-        `/dashboard/history${query ? `?${query}` : ''}`,
       );
       if (!data.ok) throw new Error(data.error.code);
       return data.data;

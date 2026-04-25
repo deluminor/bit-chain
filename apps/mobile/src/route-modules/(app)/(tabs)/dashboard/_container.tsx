@@ -10,14 +10,12 @@ import {
   Card,
   ComparisonLineChartWidget,
   ErrorScreen,
-  LineChartWidget,
   LoadingScreen,
   PrivacyAmount,
   ProgressBar,
   SectionHeader,
   Separator,
   SyncButton,
-  type ActiveLineChartPoint,
 } from '~/src/components/ui';
 import { colors } from '~/src/design/tokens';
 import { useBudgets } from '~/src/hooks/useBudgets';
@@ -25,16 +23,12 @@ import { useConvertedStats } from '~/src/hooks/useConvertedStats';
 import {
   useDashboard,
   useDashboardExpensesTrend,
-  useDashboardHistory,
 } from '~/src/hooks/useDashboard';
 import {
   useCurrentMonthBudgets,
   useDashboardBudgetLimitStatus,
   useDashboardExpenseComparison,
   useDashboardExpenseTrendStats,
-  useDashboardTotalInBase,
-  useDashboardTrendPoints,
-  useDashboardTrendStats,
 } from '~/src/hooks/useDashboardCharts';
 import { useMonobankSync } from '~/src/hooks/useMonobank';
 import { BASE_CURRENCY, useCurrencyStore } from '~/src/lib/currency';
@@ -51,18 +45,14 @@ export default function DashboardScreen() {
     dateFrom: dateRange.dateFrom,
     dateTo: dateRange.dateTo,
   });
-  const { data: historyData, refetch: refetchHistory } = useDashboardHistory();
   const { data: expensesTrendData, refetch: refetchExpensesTrend } = useDashboardExpensesTrend();
   const { data: budgetsData } = useBudgets();
   const { mutate: sync, isPending: isSyncing } = useMonobankSync();
   const router = useRouter();
   const baseCurrency = useCurrencyStore(s => s.baseCurrency);
   const isPrivate = usePrivacyStore(s => s.isPrivate);
-  const [activeTrendPoint, setActiveTrendPoint] = useState<ActiveLineChartPoint | null>(null);
   const [isTrendDragging, setIsTrendDragging] = useState(false);
 
-  const totalInBase = useDashboardTotalInBase(data);
-  const trendPoints = useDashboardTrendPoints(historyData, totalInBase);
   const currentMonthBudgets = useCurrentMonthBudgets(budgetsData);
   const {
     points: expenseComparisonPoints,
@@ -70,7 +60,6 @@ export default function DashboardScreen() {
     setActivePoint: setActiveExpensePoint,
     activeExpensePoint,
   } = useDashboardExpenseComparison(expensesTrendData, currentMonthBudgets);
-  const trendStats = useDashboardTrendStats(trendPoints, totalInBase, activeTrendPoint);
   const expenseTrendStats = useDashboardExpenseTrendStats(
     expenseComparisonPoints,
     expensesTrendData,
@@ -108,7 +97,6 @@ export default function DashboardScreen() {
 
   const refetchCb = useCallback(() => {
     refetch();
-    refetchHistory();
     refetchExpensesTrend();
     sync(
       {},
@@ -123,7 +111,7 @@ export default function DashboardScreen() {
         },
       },
     );
-  }, [refetch, refetchHistory, refetchExpensesTrend, sync]);
+  }, [refetch, refetchExpensesTrend, sync]);
 
   // Stats are already converted to baseCurrency by useConvertedStats
   const netFlowValue = convertedStats.netFlow || 0;
@@ -169,72 +157,6 @@ export default function DashboardScreen() {
             {data?.totalAccounts ?? 0} active {data?.totalAccounts === 1 ? 'account' : 'accounts'}
           </Text>
         </Card> */}
-
-        <Card padding="md">
-          <View style={styles.trendHeader}>
-            <Text style={styles.trendTitle}>Net Worth Trend</Text>
-            {trendStats.showPct && (
-              <View
-                style={[
-                  styles.trendBadge,
-                  trendStats.isOverallPositive ? styles.trendBadgeUp : styles.trendBadgeDown,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.trendBadgeText,
-                    { color: trendStats.isOverallPositive ? colors.income : colors.expense },
-                  ]}
-                >
-                  {trendStats.isOverallPositive ? '↑' : '↓'}{' '}
-                  {Math.abs(trendStats.overallChangePct).toFixed(1)}%
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.trendValues}>
-            <PrivacyAmount
-              value={formatCurrency(trendStats.focusedVal, baseCurrency)}
-              style={styles.trendCurrentValue}
-            />
-            {trendStats.showPct && trendStats.focusedChangeAbs !== 0 && (
-              <Text
-                style={[
-                  styles.trendChange,
-                  { color: trendStats.isFocusedPositive ? colors.income : colors.expense },
-                ]}
-              >
-                {trendStats.isFocusedPositive ? '+' : ''}
-                {formatCurrency(trendStats.focusedChangeAbs, baseCurrency)}
-              </Text>
-            )}
-          </View>
-          <Text style={styles.trendHint}>Drag on the chart to inspect any point in time</Text>
-
-          {/* Chart */}
-          <LineChartWidget
-            points={trendPoints}
-            height={150}
-            lineColor={
-              trendStats.hasData && !trendStats.isOverallPositive ? colors.expense : colors.brand
-            }
-            onActivePointChange={setActiveTrendPoint}
-            onInteractionChange={setIsTrendDragging}
-          />
-
-          {trendStats.hasData && (
-            <View style={styles.trendFooter}>
-              <Text style={styles.trendMinMax}>
-                {formatCurrency(trendStats.firstVal, baseCurrency)}
-              </Text>
-              <Text style={styles.trendPeriodLabel}>{trendStats.activeLabel}</Text>
-              <Text style={styles.trendMinMax}>
-                {formatCurrency(trendStats.latestVal, baseCurrency)}
-              </Text>
-            </View>
-          )}
-        </Card>
 
         <Card padding="md">
           <View style={styles.expensesTrendHeader}>

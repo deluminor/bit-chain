@@ -99,64 +99,6 @@ const screenStyles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  trendHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  trendTitle: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  trendBadge: {
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  trendBadgeUp: { backgroundColor: colors.incomeSubtle },
-  trendBadgeDown: { backgroundColor: colors.errorSubtle },
-  trendBadgeText: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-  },
-  trendValues: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  trendCurrentValue: {
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  trendChange: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-  trendHint: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    marginBottom: spacing.xs,
-  },
-  trendFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  trendMinMax: {
-    color: colors.textDisabled,
-    fontSize: fontSize.xs,
-  },
-  trendPeriodLabel: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-  },
   expensesTrendHeader: {
     marginBottom: spacing.sm,
   },

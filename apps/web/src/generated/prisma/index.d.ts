@@ -9355,13 +9355,7 @@ export namespace Prisma {
       type: $Enums.TransactionType
       amount: number
       currency: string
-      /**
-       * * When set, this expense is a loan repayment — amount is added to loan.paidAmount
-       */
       loanId: string | null
-      /**
-       * * When transaction is in different currency (e.g. EUR), Monobank provides amount in account currency (UAH).
-       */
       amountInAccountCurrency: number | null
       description: string | null
       date: Date
@@ -13030,9 +13024,6 @@ export namespace Prisma {
       userId: string
       name: string
       type: $Enums.TransactionType
-      /**
-       * * When true, transaction form shows loan select for repayment attribution
-       */
       isLoanRepayment: boolean
       parentId: string | null
       color: string
@@ -14339,9 +14330,6 @@ export namespace Prisma {
     name: "Loan"
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
-      /**
-       * * Transactions marked as repayments for this loan
-       */
       repayments: Prisma.$TransactionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{

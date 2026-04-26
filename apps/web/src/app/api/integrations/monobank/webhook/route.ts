@@ -13,15 +13,29 @@ import { NextResponse } from 'next/server';
 
 const SIGNATURE_HEADER = 'X-Sign';
 
-type WebhookPayload =
-  | {
-      type: 'StatementItem';
-      data: {
-        account: string;
-        statementItem: MonobankStatementItem;
-      };
-    }
-  | { type: string; data: unknown };
+type WebhookPayload = {
+  type: string;
+  data?: unknown;
+};
+
+/**
+ * Monobank sends `data` with `account` (provider account id) and `statementItem` for StatementItem webhooks.
+ */
+function isMonobankStatementItemWebhookData(
+  data: unknown,
+): data is { account: string; statementItem: MonobankStatementItem } {
+  if (data === null || typeof data !== 'object') {
+    return false;
+  }
+  const record = data as Record<string, unknown>;
+  if (typeof record.account !== 'string') {
+    return false;
+  }
+  if (record.statementItem === null || typeof record.statementItem !== 'object') {
+    return false;
+  }
+  return true;
+}
 
 /** Always returns 200 to prevent Monobank retries, except for signature verification failures. */
 export async function POST(request: Request): Promise<Response> {
@@ -53,7 +67,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // Only handle StatementItem events; acknowledge others silently
-  if (payload.type !== 'StatementItem') {
+  if (payload.type !== 'StatementItem' || !isMonobankStatementItemWebhookData(payload.data)) {
     return NextResponse.json({ ok: true });
   }
 

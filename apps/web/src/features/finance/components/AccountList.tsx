@@ -130,7 +130,7 @@ export function AccountList() {
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = useCallback(async () => {
     if (!selectedAccount) {
       return;
     }
@@ -154,7 +154,7 @@ export function AccountList() {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [deleteAccount, refetch, selectedAccount, toast]);
 
   const handleFormSuccess = () => {
     void refetch();

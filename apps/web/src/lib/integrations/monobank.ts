@@ -181,10 +181,7 @@ export const verifyMonobankWebhookSignature = (
 
     const verifier = createVerify('Ed25519');
     verifier.update(rawBody);
-    return verifier.verify(
-      { key: publicKeyDer, format: 'der', type: 'spki' },
-      signature,
-    );
+    return verifier.verify({ key: publicKeyDer, format: 'der', type: 'spki' }, signature);
   } catch {
     return false;
   }

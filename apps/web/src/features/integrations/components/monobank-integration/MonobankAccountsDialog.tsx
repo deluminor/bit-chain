@@ -9,8 +9,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Building2 } from 'lucide-react';
 import type { MonobankIntegrationAccount } from '@/features/integrations/queries/monobank';
+import { Building2 } from 'lucide-react';
 import { buildAccountMeta } from './monobank-integration.utils';
 
 interface MonobankAccountsDialogProps {
@@ -34,6 +34,10 @@ export function MonobankAccountsDialog({
   hasChanges,
   isSaving,
 }: MonobankAccountsDialogProps) {
+  const handleClose = () => {
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
@@ -82,7 +86,7 @@ export function MonobankAccountsDialog({
           )}
         </div>
         <div className="flex flex-wrap justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button onClick={onSave} disabled={!hasChanges || isSaving}>

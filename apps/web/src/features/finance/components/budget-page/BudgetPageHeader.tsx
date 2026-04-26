@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { PieChart, Plus } from 'lucide-react';
 
 interface BudgetPageHeaderProps {
-  onCreateBudget: () => void;
+  onCreateBudget?: () => void;
   isCreateDisabled?: boolean;
 }
 
@@ -24,10 +24,12 @@ export function BudgetPageHeader({
         </div>
       </div>
 
-      <Button onClick={onCreateBudget} disabled={isCreateDisabled} className="w-full sm:w-auto">
-        <Plus className="h-4 w-4 mr-2" />
-        Create Budget
-      </Button>
+      {onCreateBudget != null ? (
+        <Button onClick={onCreateBudget} disabled={isCreateDisabled} className="w-full sm:w-auto">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Budget
+        </Button>
+      ) : null}
     </div>
   );
 }

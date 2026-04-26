@@ -12,7 +12,7 @@ import { GoalsTable } from '@/features/finance/components/goals-page/GoalsTable'
 import { FinancialGoal, useGoals, useUpdateGoal } from '@/features/finance/queries/goals';
 import { useToast } from '@/hooks/use-toast';
 import { formatDisplayAmount } from '@/lib/currency';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 function getDaysUntilDeadline(deadline: string | null): number | null {
   if (!deadline) return null;
@@ -31,9 +31,7 @@ export default function GoalsPage() {
   const updateGoal = useUpdateGoal();
 
   useEffect(() => {
-    if (!error) {
-      return;
-    }
+    if (!error) return;
 
     toast({
       title: 'Error',
@@ -76,10 +74,10 @@ export default function GoalsPage() {
     return Math.min(...days);
   }, [goals]);
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = useCallback(() => {
     void refetch();
     setEditingGoal(null);
-  };
+  }, [refetch]);
 
   const handleAddFunds = async (amount: number) => {
     if (!addFundsGoal) return;
@@ -102,19 +100,34 @@ export default function GoalsPage() {
         description: mutationError instanceof Error ? mutationError.message : 'Failed to add funds',
         variant: 'destructive',
       });
+
       throw mutationError;
     }
   };
 
-  const handleEditGoal = (goal: FinancialGoal) => {
+  const handleEditGoal = useCallback((goal: FinancialGoal) => {
     setEditingGoal(goal);
     setShowCreateForm(true);
-  };
+  }, []);
 
-  const closeForm = () => {
+  const closeForm = useCallback(() => {
     setShowCreateForm(false);
     setEditingGoal(null);
-  };
+  }, []);
+
+  const handleOpenCreate = useCallback(() => {
+    setShowCreateForm(true);
+  }, []);
+
+  const handleAddFundsGoal = useCallback((goal: FinancialGoal) => {
+    setAddFundsGoal(goal);
+  }, []);
+
+  const handleAddFundsDialogOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setAddFundsGoal(null);
+    }
+  }, []);
 
   if (isLoading) {
     return <GoalsPageLoading />;
@@ -123,7 +136,7 @@ export default function GoalsPage() {
   return (
     <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <GoalsPageHeader onCreateGoal={() => setShowCreateForm(true)} />
+        <GoalsPageHeader onCreateGoal={handleOpenCreate} />
       </div>
 
       <div className="px-4 lg:px-6">
@@ -133,9 +146,9 @@ export default function GoalsPage() {
       <div className="px-4 lg:px-6">
         <GoalsTable
           goals={goals}
-          onAddFunds={goal => setAddFundsGoal(goal)}
+          onAddFunds={handleAddFundsGoal}
           onEditGoal={handleEditGoal}
-          onCreateGoal={() => setShowCreateForm(true)}
+          onCreateGoal={handleOpenCreate}
         />
       </div>
 
@@ -159,7 +172,7 @@ export default function GoalsPage() {
       {addFundsGoal && (
         <AddFundsDialog
           open={!!addFundsGoal}
-          onOpenChange={open => !open && setAddFundsGoal(null)}
+          onOpenChange={handleAddFundsDialogOpenChange}
           goalName={addFundsGoal.name}
           currentAmount={addFundsGoal.currentAmount}
           targetAmount={addFundsGoal.targetAmount}

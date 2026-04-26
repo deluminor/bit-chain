@@ -94,8 +94,8 @@ export function useCreateTransaction() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
-      // Also invalidate accounts to update balances
       queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['finance', 'loans'] });
     },
   });
 }
@@ -111,6 +111,7 @@ export function useUpdateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
       queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['finance', 'loans'] });
     },
   });
 }
@@ -128,6 +129,7 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
       queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['finance', 'loans'] });
     },
   });
 }

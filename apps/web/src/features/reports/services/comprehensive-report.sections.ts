@@ -134,8 +134,6 @@ export function buildTransactionItems(
     accountName: transaction.account.name,
     accountType: transaction.account.type,
     tags: transaction.tags,
-    isRecurring: transaction.isRecurring,
-    recurringPattern: transaction.recurringPattern,
     transferTo: transaction.transferTo?.name ?? null,
     transferAmount: transaction.transferAmount,
     transferCurrency: transaction.transferCurrency,

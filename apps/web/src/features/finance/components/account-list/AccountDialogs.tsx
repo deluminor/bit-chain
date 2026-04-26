@@ -41,6 +41,10 @@ export function AccountDialogs({
   onCancelDelete,
   onConfirmDelete,
 }: AccountDialogsProps) {
+  const handleCreateCancel = () => {
+    onCreateDialogChange(false);
+  };
+
   return (
     <>
       <Dialog open={showCreateDialog} onOpenChange={onCreateDialogChange}>
@@ -51,7 +55,7 @@ export function AccountDialogs({
               Add a new financial account to track your balance and transactions.
             </DialogDescription>
           </DialogHeader>
-          <AccountForm onSuccess={onFormSuccess} onCancel={() => onCreateDialogChange(false)} />
+          <AccountForm onSuccess={onFormSuccess} onCancel={handleCreateCancel} />
         </DialogContent>
       </Dialog>
 

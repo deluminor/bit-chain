@@ -3,6 +3,7 @@
 import { AnimatedDiv } from '@/components/ui/animations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { SummaryStatTile, SummaryStatsRow } from '@/components/ui/summary-stat-tile';
 import { useGenerateComprehensiveReport } from '@/features/finance/queries/reports';
 import { useTransactions } from '@/features/finance/queries/transactions';
 import { useToast } from '@/hooks/use-toast';
@@ -18,18 +19,18 @@ import {
   TrendingUp,
   Wallet,
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 export default function ReportsPage() {
   const { toast } = useToast();
   const generateReport = useGenerateComprehensiveReport();
   const { selectedDateRange, globalDatePreset } = useStore();
 
-  // Derive dateFrom/dateTo from global filter (pattern from FinanceDashboard)
   const dateFrom = useMemo(() => {
     if (selectedDateRange?.from) {
       return startOfDay(selectedDateRange.from).toISOString();
     }
+
     return undefined;
   }, [selectedDateRange?.from]);
 
@@ -37,6 +38,7 @@ export default function ReportsPage() {
     if (selectedDateRange?.to) {
       return endOfDay(selectedDateRange.to).toISOString();
     }
+
     return new Date().toISOString();
   }, [selectedDateRange?.to]);
 
@@ -54,29 +56,41 @@ export default function ReportsPage() {
     if (globalDatePreset === 'custom' && selectedDateRange?.from && selectedDateRange?.to) {
       return `${format(selectedDateRange.from, 'dd.MM.yyyy')} — ${format(selectedDateRange.to, 'dd.MM.yyyy')}`;
     }
+
     return DATE_PRESET_LABELS[globalDatePreset] ?? 'This Month';
   }, [globalDatePreset, selectedDateRange]);
 
-  const handleGenerate = async (reportFormat: 'json' | 'markdown') => {
-    try {
-      const result = await generateReport.mutateAsync({
-        dateFrom: globalDatePreset === 'all_time' ? undefined : dateFrom,
-        dateTo: globalDatePreset === 'all_time' ? undefined : dateTo,
-        format: reportFormat,
-      });
+  const handleGenerate = useCallback(
+    async (reportFormat: 'json' | 'markdown') => {
+      try {
+        const result = await generateReport.mutateAsync({
+          dateFrom: globalDatePreset === 'all_time' ? undefined : dateFrom,
+          dateTo: globalDatePreset === 'all_time' ? undefined : dateTo,
+          format: reportFormat,
+        });
 
-      toast({
-        title: 'Report Downloaded',
-        description: `${result.fileName} saved successfully`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to generate report',
-        variant: 'destructive',
-      });
-    }
-  };
+        toast({
+          title: 'Report Downloaded',
+          description: `${result.fileName} saved successfully`,
+        });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'Failed to generate report',
+          variant: 'destructive',
+        });
+      }
+    },
+    [generateReport, globalDatePreset, dateFrom, dateTo, toast],
+  );
+
+  const handleGenerateJson = useCallback(() => {
+    handleGenerate('json');
+  }, [handleGenerate]);
+
+  const handleGenerateMarkdown = useCallback(() => {
+    handleGenerate('markdown');
+  }, [handleGenerate]);
 
   const isGenerating = generateReport.isPending;
 
@@ -94,7 +108,7 @@ export default function ReportsPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <SummaryStatsRow className="sm:grid-cols-3">
             {statsLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <Card key={i} className="p-4 sm:p-5">
@@ -106,53 +120,32 @@ export default function ReportsPage() {
               ))
             ) : (
               <>
-                <Card className="p-4 sm:p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">
-                      Income
-                    </span>
-                    <TrendingUp className="h-4 w-4 text-emerald-500" />
-                  </div>
-                  <div className="text-lg sm:text-xl font-semibold text-emerald-600 dark:text-emerald-400">
-                    {formatSummaryAmount(summary?.income ?? 0)}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {summary?.incomeCount ?? 0} transactions
-                  </div>
-                </Card>
+                <SummaryStatTile
+                  title="Income"
+                  value={formatSummaryAmount(summary?.income ?? 0)}
+                  hint={`${summary?.incomeCount ?? 0} transactions`}
+                  icon={TrendingUp}
+                  tone="income"
+                />
 
-                <Card className="p-4 sm:p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">
-                      Expenses
-                    </span>
-                    <TrendingDown className="h-4 w-4 text-red-500" />
-                  </div>
-                  <div className="text-lg sm:text-xl font-semibold text-red-600 dark:text-red-400">
-                    {formatSummaryAmount(summary?.expenses ?? 0)}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {summary?.expenseCount ?? 0} transactions
-                  </div>
-                </Card>
+                <SummaryStatTile
+                  title="Expenses"
+                  value={formatSummaryAmount(summary?.expenses ?? 0)}
+                  hint={`${summary?.expenseCount ?? 0} transactions`}
+                  icon={TrendingDown}
+                  tone="expense"
+                />
 
-                <Card className="p-4 sm:p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs sm:text-sm text-muted-foreground font-medium">
-                      Net Savings
-                    </span>
-                    <Wallet className="h-4 w-4 text-blue-500" />
-                  </div>
-                  <div className="text-lg sm:text-xl font-semibold">
-                    {formatSummaryAmount((summary?.income ?? 0) - (summary?.expenses ?? 0))}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {totalTransactions} total transactions
-                  </div>
-                </Card>
+                <SummaryStatTile
+                  title="Net Savings"
+                  value={formatSummaryAmount((summary?.income ?? 0) - (summary?.expenses ?? 0))}
+                  hint={`${totalTransactions} total transactions`}
+                  icon={Wallet}
+                  tone="blue"
+                />
               </>
             )}
-          </div>
+          </SummaryStatsRow>
 
           <Card>
             <CardContent className="p-4 md:p-6">
@@ -172,7 +165,7 @@ export default function ReportsPage() {
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <Button
-                    onClick={() => handleGenerate('json')}
+                    onClick={handleGenerateJson}
                     disabled={isGenerating}
                     className="flex-1 sm:flex-none"
                   >
@@ -186,7 +179,7 @@ export default function ReportsPage() {
 
                   <Button
                     variant="outline"
-                    onClick={() => handleGenerate('markdown')}
+                    onClick={handleGenerateMarkdown}
                     disabled={isGenerating}
                     className="flex-1 sm:flex-none"
                   >

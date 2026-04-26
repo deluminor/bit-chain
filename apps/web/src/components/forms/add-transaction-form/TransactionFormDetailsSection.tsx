@@ -4,10 +4,12 @@ import {
   TransactionFormData,
   TransactionFormInput,
 } from '@/components/forms/add-transaction-form.config';
+import { colorSwatchStyle } from '@/components/forms/add-transaction-form.styles';
+import { TransactionFormLoanSection } from '@/components/forms/add-transaction-form/TransactionFormLoanSection';
 import {
-  colorSwatchStyle,
-  selectedTransactionTypeStyle,
-} from '@/components/forms/add-transaction-form.styles';
+  TransactionFormTypeSection,
+  type TransactionTypeOption,
+} from '@/components/forms/add-transaction-form/TransactionFormTypeSection';
 import { TransactionTransferSection } from '@/components/forms/add-transaction-form/TransactionTransferSection';
 import { Badge } from '@/components/ui/badge';
 import { CurrencyInput } from '@/components/ui/currency-input';
@@ -20,20 +22,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { FinanceAccount } from '@/features/finance/queries/accounts';
+import type { Loan } from '@/features/finance/queries/loans';
 import type { TransactionCategory } from '@/features/finance/queries/transactions';
 import { formatCurrency } from '@/lib/currency';
-import type { LucideIcon } from 'lucide-react';
+import { useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 type TransactionTypeValue = 'INCOME' | 'EXPENSE' | 'TRANSFER';
-
-interface TransactionTypeOption {
-  value: TransactionTypeValue;
-  label: string;
-  icon: LucideIcon;
-  color: string;
-  description: string;
-}
 
 interface TransactionFormDetailsSectionProps {
   form: UseFormReturn<TransactionFormInput, unknown, TransactionFormData>;
@@ -46,6 +41,8 @@ interface TransactionFormDetailsSectionProps {
   transferAccounts: FinanceAccount[];
   categories: TransactionCategory[];
   transactionTypes: ReadonlyArray<TransactionTypeOption>;
+  loans: Loan[];
+  currentLoanId?: string | null;
 }
 
 export function TransactionFormDetailsSection({
@@ -59,55 +56,53 @@ export function TransactionFormDetailsSection({
   transferAccounts,
   categories,
   transactionTypes,
+  loans,
+  currentLoanId,
 }: TransactionFormDetailsSectionProps) {
-  return (
-    <>
-      <div className="space-y-3">
-        <Label>Transaction Type</Label>
-        <div className="grid grid-cols-3 gap-3">
-          {transactionTypes.map(type => (
-            <button
-              key={type.value}
-              type="button"
-              onClick={() => {
-                form.setValue('type', type.value);
-                form.setValue('categoryId', '');
-                if (type.value !== 'TRANSFER') {
-                  form.setValue('transferToId', '');
-                }
-              }}
-              className={`p-3 rounded-lg border-2 transition-all ${
-                watchedType === type.value
-                  ? 'border-current bg-current/10'
-                  : 'border-muted bg-muted/50 hover:bg-muted'
-              }`}
-              style={selectedTransactionTypeStyle(watchedType === type.value, type.color)}
-            >
-              <type.icon className="h-5 w-5 mx-auto mb-1" />
-              <div className="text-sm font-medium">{type.label}</div>
-              <div className="text-xs opacity-70">{type.description}</div>
-            </button>
-          ))}
-        </div>
-      </div>
+  const categoryId = form.watch('categoryId');
+  const selectedCategory = useMemo(
+    () => categories.find(c => c.id === categoryId),
+    [categories, categoryId],
+  );
+  const showLoanSelect = watchedType === 'EXPENSE' && selectedCategory?.isLoanRepayment === true;
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  const loanOptions = useMemo(() => {
+    if (!loans.length) return [];
+    return loans.filter(loan => {
+      const remaining = loan.totalAmount - loan.paidAmount;
+      if (remaining <= 0 && loan.id !== currentLoanId) return false;
+      return true;
+    });
+  }, [loans, currentLoanId]);
+
+  return (
+    <div className="space-y-6">
+      <TransactionFormTypeSection
+        form={form}
+        watchedType={watchedType}
+        transactionTypes={transactionTypes}
+      />
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
         <div className="space-y-2">
           <Label htmlFor="accountId">
-            {watchedType === 'TRANSFER' ? 'From Account *' : 'Account *'}
+            {watchedType === 'TRANSFER' ? 'From account *' : 'Account *'}
           </Label>
           <Select
             value={form.watch('accountId')}
             onValueChange={value => form.setValue('accountId', value)}
           >
-            <SelectTrigger className={form.formState.errors.accountId ? 'border-destructive' : ''}>
+            <SelectTrigger
+              id="accountId"
+              className={form.formState.errors.accountId ? 'border-destructive' : ''}
+            >
               <SelectValue placeholder="Select account" />
             </SelectTrigger>
             <SelectContent>
               {accounts.map(account => (
                 <SelectItem key={account.id} value={account.id}>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={colorSwatchStyle(account.color)} />
+                    <div className="h-3 w-3 rounded-full" style={colorSwatchStyle(account.color)} />
                     <span>{account.name}</span>
                     <Badge variant="outline" className="ml-auto">
                       {account.currency}
@@ -118,31 +113,29 @@ export function TransactionFormDetailsSection({
             </SelectContent>
           </Select>
           {form.formState.errors.accountId && (
-            <p className="text-sm text-destructive flex items-center gap-1">
-              <span className="text-xs">⚠</span>
-              {form.formState.errors.accountId.message}
-            </p>
+            <p className="text-sm text-destructive">{form.formState.errors.accountId.message}</p>
           )}
         </div>
 
-        {watchedType === 'TRANSFER' && (
+        {watchedType === 'TRANSFER' ? (
           <div className="space-y-2">
-            <Label htmlFor="transferToId">To Account *</Label>
+            <Label htmlFor="transferToId">To account *</Label>
             <Select
               value={form.watch('transferToId')}
               onValueChange={value => form.setValue('transferToId', value)}
             >
               <SelectTrigger
+                id="transferToId"
                 className={form.formState.errors.transferToId ? 'border-destructive' : ''}
               >
-                <SelectValue placeholder="Select destination account" />
+                <SelectValue placeholder="Select destination" />
               </SelectTrigger>
               <SelectContent>
                 {transferAccounts.map(account => (
                   <SelectItem key={account.id} value={account.id}>
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-3 h-3 rounded-full"
+                        className="h-3 w-3 rounded-full"
                         style={colorSwatchStyle(account.color)}
                       />
                       <span>{account.name}</span>
@@ -154,24 +147,33 @@ export function TransactionFormDetailsSection({
                 ))}
               </SelectContent>
             </Select>
-            {form.formState.errors.transferToId && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <span className="text-xs">⚠</span>
+            {form.formState.errors.transferToId ? (
+              <p className="text-sm text-destructive">
                 {form.formState.errors.transferToId.message}
               </p>
-            )}
+            ) : null}
           </div>
-        )}
+        ) : null}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
         <div className="space-y-2">
           <Label htmlFor="categoryId">Category *</Label>
           <Select
             value={form.watch('categoryId')}
-            onValueChange={value => form.setValue('categoryId', value)}
+            onValueChange={value => {
+              form.setValue('categoryId', value);
+              const next = categories.find(c => c.id === value);
+              if (!next?.isLoanRepayment) {
+                form.setValue('loanId', null);
+                form.clearErrors('loanId');
+              }
+            }}
           >
-            <SelectTrigger className={form.formState.errors.categoryId ? 'border-destructive' : ''}>
+            <SelectTrigger
+              id="categoryId"
+              className={form.formState.errors.categoryId ? 'border-destructive' : ''}
+            >
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
@@ -179,31 +181,28 @@ export function TransactionFormDetailsSection({
                 <SelectItem key={category.id} value={category.id}>
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="h-3 w-3 rounded-full"
                       style={colorSwatchStyle(category.color)}
                     />
                     <span>{category.name}</span>
-                    {category.parent && (
+                    {category.parent ? (
                       <Badge variant="outline" className="text-xs">
                         {category.parent.name}
                       </Badge>
-                    )}
+                    ) : null}
                   </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {form.formState.errors.categoryId && (
-            <p className="text-sm text-destructive flex items-center gap-1">
-              <span className="text-xs">⚠</span>
-              {form.formState.errors.categoryId.message}
-            </p>
+            <p className="text-sm text-destructive">{form.formState.errors.categoryId.message}</p>
           )}
-          {categories.length === 0 && (
+          {categories.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              No categories found for {watchedType.toLowerCase()} transactions
+              No categories for {watchedType.toLowerCase()} yet.
             </p>
-          )}
+          ) : null}
         </div>
 
         <div className="space-y-2">
@@ -222,20 +221,19 @@ export function TransactionFormDetailsSection({
             required
           />
           {form.formState.errors.amount && (
-            <p className="text-sm text-destructive flex items-center gap-1">
-              <span className="text-xs">⚠</span>
-              {form.formState.errors.amount.message}
-            </p>
+            <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
           )}
-          {watchedAmount > 0 && !form.formState.errors.amount && (
+          {watchedAmount > 0 && !form.formState.errors.amount ? (
             <p className="text-xs text-muted-foreground">
               Preview: {formatCurrency(watchedAmount || 0, watchedCurrency)}
             </p>
-          )}
+          ) : null}
         </div>
       </div>
 
-      {watchedType === 'TRANSFER' && (
+      {showLoanSelect ? <TransactionFormLoanSection form={form} loanOptions={loanOptions} /> : null}
+
+      {watchedType === 'TRANSFER' ? (
         <TransactionTransferSection
           form={form}
           watchedAmount={watchedAmount}
@@ -243,7 +241,7 @@ export function TransactionFormDetailsSection({
           watchedTransferAmount={watchedTransferAmount}
           watchedTransferCurrency={watchedTransferCurrency}
         />
-      )}
-    </>
+      ) : null}
+    </div>
   );
 }

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/features/auth/libs/auth';
 import { BackupService } from '@/lib/backup';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
         const filesWithInfo = await Promise.all(
           backups.map(b => BackupService.getBackupInfo(b.filename, currentUserId)),
         );
+
         return NextResponse.json({ files: filesWithInfo.filter(Boolean) });
       }
 
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
         if (!info) {
           return NextResponse.json({ error: 'Backup not found' }, { status: 404 });
         }
+
         return NextResponse.json({ info });
       }
 
@@ -92,9 +94,11 @@ export async function POST(request: NextRequest) {
 
       case 'delete': {
         const deleteFilename = body.filename;
+
         if (!deleteFilename) {
           return NextResponse.json({ error: 'Filename required' }, { status: 400 });
         }
+
         await BackupService.deleteBackup(deleteFilename, currentUserId);
         return NextResponse.json({
           success: true,
@@ -104,11 +108,14 @@ export async function POST(request: NextRequest) {
 
       case 'restore': {
         const { filename } = body;
+
         if (!filename) {
           return NextResponse.json({ error: 'Filename required' }, { status: 400 });
         }
+
         const backupData = await BackupService.loadBackupFromDb(filename, currentUserId);
         await BackupService.importData(backupData, { overwrite, userId: currentUserId });
+
         return NextResponse.json({
           success: true,
           message: 'Personal backup restored successfully',
@@ -120,6 +127,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Backup API error:', error);
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 },

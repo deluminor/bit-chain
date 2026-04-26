@@ -17,31 +17,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useBudgetFilters } from '@/features/finance/hooks/useBudgetFilters';
+import type { Budget } from '@/features/finance/queries/budget';
 import { formatEuroAmount } from '@/lib/currency';
 import { Calendar, Clock, Edit, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 
-// Define Budget type since it's not exported from queries yet (or import if available)
-// Assuming type structure from usage in BudgetPage
-interface Budget {
-  id: string;
-  name: string;
-  isActive: boolean;
-  period: string;
-  startDate: string | Date; // API might return string
-  endDate: string | Date;
-  totalActualBase?: number;
-  totalActual: number;
-  totalPlannedBase?: number;
-  totalPlanned: number;
-}
-
 interface BudgetListProps {
   budgets: Budget[];
-  onEdit: (budget: Budget) => void;
-  onDelete: (budget: Budget) => void;
-  onToggleStatus: (budget: Budget) => void;
   onCreate: () => void;
+  onEdit?: (budget: Budget) => void;
+  onDelete?: (budget: Budget) => void;
+  onToggleStatus?: (budget: Budget) => void;
 }
 
 export function BudgetList({
@@ -56,7 +42,6 @@ export function BudgetList({
 
   const budgets = useMemo(() => {
     return allBudgets.filter(budget => {
-      // Search filter
       if (
         filters.searchTerm &&
         !budget.name.toLowerCase().includes(filters.searchTerm.toLowerCase())
@@ -64,7 +49,6 @@ export function BudgetList({
         return false;
       }
 
-      // Status filter
       if (filters.statusFilter) {
         const isActive = filters.statusFilter === 'active';
         if (budget.isActive !== isActive) return false;
@@ -79,6 +63,8 @@ export function BudgetList({
   };
 
   const hasActiveFilters = Boolean(filters.searchTerm || filters.statusFilter);
+
+  const hasRowActions = Boolean(onEdit || onDelete || onToggleStatus);
 
   const filterFields: FilterField[] = [
     createSearchFilter('search', filters.searchTerm, handleSearchChange, 'Search budgets...'),
@@ -156,31 +142,51 @@ export function BudgetList({
                         % used
                       </div>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(budget)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onToggleStatus(budget)}>
-                          <Calendar className="h-4 w-4 mr-2" />
-                          {budget.isActive ? 'Deactivate' : 'Activate'}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => onDelete(budget)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {hasRowActions ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {onEdit ? (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                onEdit(budget);
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                          ) : null}
+                          {onToggleStatus ? (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                onToggleStatus(budget);
+                              }}
+                            >
+                              <Calendar className="h-4 w-4 mr-2" />
+                              {budget.isActive ? 'Deactivate' : 'Activate'}
+                            </DropdownMenuItem>
+                          ) : null}
+                          {onDelete && (onEdit || onToggleStatus) ? (
+                            <DropdownMenuSeparator />
+                          ) : null}
+                          {onDelete ? (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => {
+                                onDelete(budget);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          ) : null}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : null}
                   </div>
                 </div>
               ))}

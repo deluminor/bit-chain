@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-/**
- * Transaction creation payload shared by web and mobile routes.
- */
 export const createTransactionSchema = z.object({
   accountId: z.string().cuid('Invalid account ID'),
   categoryId: z.string().cuid('Invalid category ID').optional(),
@@ -20,26 +17,12 @@ export const createTransactionSchema = z.object({
   transferAmount: z.number().positive().optional(),
   transferCurrency: z.string().min(3).max(3).optional(),
   loanId: z.string().cuid().optional().nullable(),
-  isRecurring: z.boolean().default(false),
-  recurringPattern: z
-    .enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'])
-    .optional()
-    .nullable(),
 });
 
-/**
- * Transaction update payload shared by web and mobile routes.
- */
 export const updateTransactionSchema = createTransactionSchema.partial().extend({
   id: z.string().cuid(),
 });
 
-/**
- * Parsed and validated create transaction payload.
- */
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 
-/**
- * Parsed and validated update transaction payload.
- */
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;

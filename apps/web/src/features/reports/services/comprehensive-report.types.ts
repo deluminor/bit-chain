@@ -73,8 +73,6 @@ export interface TransactionItem {
   accountName: string;
   accountType: string;
   tags: string[];
-  isRecurring: boolean;
-  recurringPattern: string | null;
   transferTo: string | null;
   transferAmount: number | null;
   transferCurrency: string | null;

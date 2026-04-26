@@ -17,6 +17,8 @@ interface ChartWrapperProps {
   footer?: React.ReactNode;
   className?: string;
   contentClassName?: string;
+  headerClassName?: string;
+  footerClassName?: string;
   isLoading?: boolean;
   headerActions?: React.ReactNode;
 }
@@ -28,6 +30,8 @@ export function ChartWrapper({
   footer,
   className,
   contentClassName,
+  headerClassName,
+  footerClassName,
   isLoading,
   headerActions,
 }: ChartWrapperProps) {
@@ -35,7 +39,7 @@ export function ChartWrapper({
     <Card
       className={cn('min-w-0 shadow-md rounded-lg hover:shadow-lg transition-shadow', className)}
     >
-      <CardHeader className="pb-4">
+      <CardHeader className={cn('pb-4', headerClassName)}>
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-lg font-semibold text-foreground">{title}</CardTitle>
@@ -58,7 +62,7 @@ export function ChartWrapper({
         )}
       </CardContent>
       {footer && (
-        <CardFooter className="pt-4 border-t border-border/50">
+        <CardFooter className={cn('border-t border-border/50 pt-4', footerClassName)}>
           <div className="w-full">{footer}</div>
         </CardFooter>
       )}

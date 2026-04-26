@@ -8,13 +8,21 @@ import {
   type BudgetWithCategories,
   type BudgetsWithSummaryResult,
 } from './budget-domain.types';
+import {
+  intersectGlobalRangeWithBudget,
+  pickPrimaryBudgetForDateRange,
+  pickPrimaryBudgetWithoutDateFilter,
+} from './budget-period-selection';
 
 async function calculateBudgetCategoryActual(
   userId: string,
   budget: BudgetWithCategories,
   budgetCategory: BudgetWithCategories['categories'][number],
+  dateBounds?: { gte: Date; lte: Date },
 ): Promise<BudgetCategoryWithActual> {
-  const { startDate, endDate } = getBudgetRange(budget);
+  const { startDate, endDate } = dateBounds
+    ? { startDate: dateBounds.gte, endDate: dateBounds.lte }
+    : getBudgetRange(budget);
 
   const transactions = await prisma.transaction.findMany({
     where: {
@@ -58,9 +66,13 @@ async function calculateBudgetCategoryActual(
 async function hydrateBudgetWithActual(
   userId: string,
   budget: BudgetWithCategories,
+  options?: { transactionDateBounds?: { gte: Date; lte: Date } },
 ): Promise<BudgetWithActual> {
+  const bounds = options?.transactionDateBounds;
   const categories = await Promise.all(
-    budget.categories.map(category => calculateBudgetCategoryActual(userId, budget, category)),
+    budget.categories.map(category =>
+      calculateBudgetCategoryActual(userId, budget, category, bounds),
+    ),
   );
 
   const totalActualBaseRaw = categories.reduce((sum, category) => sum + category.actualBase, 0);
@@ -77,10 +89,15 @@ async function hydrateBudgetWithActual(
   };
 }
 
-/**
- * Returns all budgets with computed actuals and summary metrics.
- */
-export async function listBudgetsWithSummary(userId: string): Promise<BudgetsWithSummaryResult> {
+export interface ListBudgetsWithSummaryOptions {
+  globalFrom?: Date;
+  globalTo?: Date;
+}
+
+export async function listBudgetsWithSummary(
+  userId: string,
+  options?: ListBudgetsWithSummaryOptions,
+): Promise<BudgetsWithSummaryResult> {
   const budgets = await prisma.budget.findMany({
     where: { userId, isDemo: false },
     include: budgetWithCategoriesInclude,
@@ -91,24 +108,51 @@ export async function listBudgetsWithSummary(userId: string): Promise<BudgetsWit
     budgets.map(budget => hydrateBudgetWithActual(userId, budget)),
   );
 
-  const totalPlannedBase = budgetsWithActual.reduce(
-    (sum, budget) => sum + (budget.totalPlannedBase ?? 0),
-    0,
-  );
-  const totalActualBase = budgetsWithActual.reduce(
-    (sum, budget) => sum + (budget.totalActualBase ?? 0),
-    0,
-  );
+  let primaryRow: BudgetWithCategories | null = null;
+  let summaryPlanned: number;
+  let summaryActual: number;
+
+  if (options?.globalFrom && options?.globalTo) {
+    primaryRow = pickPrimaryBudgetForDateRange(budgets, options.globalFrom, options.globalTo);
+    if (primaryRow) {
+      const clip = intersectGlobalRangeWithBudget(primaryRow, options.globalFrom, options.globalTo);
+      if (clip) {
+        const clipped = await hydrateBudgetWithActual(userId, primaryRow, {
+          transactionDateBounds: clip,
+        });
+        summaryPlanned = clipped.totalPlannedBase ?? 0;
+        summaryActual = clipped.totalActualBase ?? 0;
+      } else {
+        const full = budgetsWithActual.find(b => b.id === primaryRow?.id);
+        summaryPlanned = full?.totalPlannedBase ?? 0;
+        summaryActual = 0;
+      }
+    } else {
+      summaryPlanned = 0;
+      summaryActual = 0;
+    }
+  } else {
+    primaryRow = pickPrimaryBudgetWithoutDateFilter(budgets);
+    if (primaryRow) {
+      const full = budgetsWithActual.find(b => b.id === primaryRow?.id);
+      summaryPlanned = full?.totalPlannedBase ?? 0;
+      summaryActual = full?.totalActualBase ?? 0;
+    } else {
+      summaryPlanned = 0;
+      summaryActual = 0;
+    }
+  }
 
   return {
     budgets: budgetsWithActual,
+    primarySummaryBudgetId: primaryRow?.id ?? null,
     summary: {
       total: budgetsWithActual.length,
       active: budgetsWithActual.filter(budget => budget.isActive).length,
-      totalPlanned: totalPlannedBase,
-      totalActual: totalActualBase,
-      totalPlannedBase,
-      totalActualBase,
+      totalPlanned: summaryPlanned,
+      totalActual: summaryActual,
+      totalPlannedBase: summaryPlanned,
+      totalActualBase: summaryActual,
     },
   };
 }

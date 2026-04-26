@@ -46,4 +46,5 @@ export interface BudgetsSummary {
 export interface BudgetsWithSummaryResult {
   budgets: BudgetWithActual[];
   summary: BudgetsSummary;
+  primarySummaryBudgetId: string | null;
 }

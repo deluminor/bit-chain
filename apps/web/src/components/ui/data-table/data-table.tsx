@@ -12,10 +12,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { TableLoadingBar } from '@/components/ui/table-loading-bar';
+import { cn } from '@/lib/utils';
 import { RefreshCw } from 'lucide-react';
 import { ReactNode } from 'react';
 import { DataTablePagination } from './pagination';
 import { FilterField, TableFilters } from './table-filters';
+
+const DATA_TABLE_CELL_PAD = 'px-4 py-2';
+const DATA_TABLE_ACTIONS_HEAD = 'w-16 min-w-16 text-right';
+const DATA_TABLE_ACTIONS_CELL = 'w-16 min-w-16 text-right';
 
 export interface DataTableColumn<T> {
   key: string;
@@ -25,15 +30,12 @@ export interface DataTableColumn<T> {
 }
 
 export interface DataTableProps<T = unknown> {
-  // Data
   data: T[];
   columns: DataTableColumn<T>[];
 
-  // Loading states
   isLoading?: boolean;
   isFetching?: boolean;
 
-  // Pagination
   currentPage: number;
   totalPages: number;
   pageSize: number;
@@ -42,28 +44,23 @@ export interface DataTableProps<T = unknown> {
   pageSizeOptions?: number[];
   showPagination?: boolean;
 
-  // Actions
   actions?: (item: T) => ReactNode;
   onRefresh?: () => void;
 
-  // Filters
   filterFields?: FilterField[];
   onClearFilters?: () => void;
   hasActiveFilters?: boolean;
 
-  // Card wrapper
   title?: string | ReactNode;
   description?: string | ReactNode;
   headerActions?: ReactNode;
 
-  // Customization
   emptyMessage?: string;
   emptyDescription?: string;
   emptyActions?: ReactNode;
   tableClassName?: string;
   maxHeight?: string;
 
-  // Row key
   getRowKey?: (item: T, index: number) => string | number;
 }
 
@@ -96,16 +93,18 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const renderSkeletonRows = () => {
     return Array.from({ length: 5 }).map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
+      <TableRow key={`skeleton-${index}`} className="group">
         {columns.map(column => (
-          <TableCell key={`skeleton-${index}-${column.key}`}>
+          <TableCell
+            key={`skeleton-${index}-${column.key}`}
+            className={cn(DATA_TABLE_CELL_PAD, column.className)}
+          >
             <Skeleton className="h-4 w-[100px]" />
           </TableCell>
         ))}
         {actions && (
-          <TableCell>
-            <div className="flex gap-2">
-              <Skeleton className="h-8 w-8" />
+          <TableCell className={cn(DATA_TABLE_CELL_PAD, DATA_TABLE_ACTIONS_CELL)}>
+            <div className="flex w-full justify-end">
               <Skeleton className="h-8 w-8" />
             </div>
           </TableCell>
@@ -116,13 +115,20 @@ export function DataTable<T>({
 
   const renderDataRows = () => {
     return data.map((item, index) => (
-      <TableRow key={getRowKey(item, index)}>
+      <TableRow key={getRowKey(item, index)} className="group">
         {columns.map(column => (
-          <TableCell key={`${getRowKey(item, index)}-${column.key}`} className={column.className}>
+          <TableCell
+            key={`${getRowKey(item, index)}-${column.key}`}
+            className={cn(DATA_TABLE_CELL_PAD, column.className)}
+          >
             {column.cell(item)}
           </TableCell>
         ))}
-        {actions && <TableCell className="w-[100px]">{actions(item)}</TableCell>}
+        {actions && (
+          <TableCell className={cn(DATA_TABLE_CELL_PAD, DATA_TABLE_ACTIONS_CELL)}>
+            {actions(item)}
+          </TableCell>
+        )}
       </TableRow>
     ));
   };
@@ -146,14 +152,21 @@ export function DataTable<T>({
         <div className="w-full px-0">
           <div className={`overflow-auto data-table ${tableClassName}`} style={{ maxHeight }}>
             <Table>
-              <TableHeader className="sticky top-0 z-10 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/60">
+              <TableHeader className="sticky top-0 z-10 bg-card backdrop-blur supports-backdrop-filter:bg-card/60">
                 <TableRow className="hover:bg-transparent">
                   {columns.map(column => (
-                    <TableHead key={column.key} className={column.className}>
+                    <TableHead
+                      key={column.key}
+                      className={cn(DATA_TABLE_CELL_PAD, column.className)}
+                    >
                       {column.header}
                     </TableHead>
                   ))}
-                  {actions && <TableHead className="w-[100px]">Actions</TableHead>}
+                  {actions && (
+                    <TableHead className={cn(DATA_TABLE_CELL_PAD, DATA_TABLE_ACTIONS_HEAD)}>
+                      Actions
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -225,7 +238,6 @@ export function DataTable<T>({
 
   const headerContent = renderHeader();
 
-  // Return wrapped in a styled container that matches the Trades look
   return (
     <div className="shadow rounded-lg border bg-card text-card-foreground">
       {headerContent && (

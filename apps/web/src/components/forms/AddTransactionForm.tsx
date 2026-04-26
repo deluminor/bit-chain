@@ -6,15 +6,14 @@ import {
   type TransactionFormData,
   type TransactionFormInput,
 } from '@/components/forms/add-transaction-form.config';
-import { transactionIconStyle } from '@/components/forms/add-transaction-form.styles';
 import { TransactionFormDetailsSection } from '@/components/forms/add-transaction-form/TransactionFormDetailsSection';
 import { TransactionFormMetaSection } from '@/components/forms/add-transaction-form/TransactionFormMetaSection';
 import { submitTransactionForm } from '@/components/forms/add-transaction-form/submit-transaction';
 import type { FinanceAccount } from '@/features/finance/queries/accounts';
 import { useAccounts } from '@/features/finance/queries/accounts';
+import { useLoans } from '@/features/finance/queries/loans';
 import {
   Transaction,
-  TransactionCategory,
   useCreateTransaction,
   useTransactionCategories,
   useUpdateTransaction,
@@ -59,7 +58,7 @@ export function AddTransactionForm({
     transaction?.date ? new Date(transaction.date) : new Date(),
   );
 
-  const isEditing = !!transaction;
+  const isEditing = Boolean(transaction);
 
   const form = useForm<TransactionFormInput, unknown, TransactionFormData>({
     resolver: zodResolver(transactionFormSchema),
@@ -75,15 +74,13 @@ export function AddTransactionForm({
       transferToId: transaction?.transferTo?.id || '',
       transferAmount: transaction?.transferAmount || null,
       transferCurrency: transaction?.transferCurrency || BASE_CURRENCY,
-      isRecurring: transaction?.isRecurring || false,
-      recurringPattern: transaction?.recurringPattern || null,
+      loanId: transaction?.loanId ?? null,
     },
     mode: 'all',
   });
 
   const watchedType = form.watch('type') ?? defaultType;
   const watchedTags = form.watch('tags') ?? [];
-  const watchedIsRecurring = form.watch('isRecurring') ?? false;
   const watchedAmount = form.watch('amount');
   const watchedCurrency = form.watch('currency') ?? BASE_CURRENCY;
   const watchedAccountId = form.watch('accountId');
@@ -91,25 +88,29 @@ export function AddTransactionForm({
   const watchedTransferAmount = form.watch('transferAmount');
   const watchedTransferCurrency = form.watch('transferCurrency');
 
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === 'date' && value.date && value.date !== selectedDate) {
-        setSelectedDate(value.date instanceof Date ? value.date : new Date(value.date));
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form, selectedDate]);
-
   const selectedTransactionType = transactionTypes.find(type => type.value === watchedType);
 
   const { data: accountsData } = useAccounts();
+  const { data: loansData } = useLoans(false);
   const { data: categoriesData } = useTransactionCategories(watchedType);
 
   const accounts = useMemo(
     () => (accountsData?.accounts || []) as FinanceAccount[],
     [accountsData?.accounts],
   );
-  const categories = (categoriesData?.categories ?? []) as TransactionCategory[];
+  const loans = loansData?.loans ?? [];
+  const categories = useMemo(() => categoriesData?.categories ?? [], [categoriesData?.categories]);
+
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name !== 'date' || !value.date) {
+        return;
+      }
+      const next = value.date instanceof Date ? value.date : new Date(value.date);
+      setSelectedDate(prev => (prev && next.getTime() === prev.getTime() ? prev : next));
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   useEffect(() => {
     if (watchedAccountId && accounts.length > 0) {
@@ -159,6 +160,7 @@ export function AddTransactionForm({
       form,
       isEditing,
       transaction,
+      categories,
       createTransaction: payload => createTransaction.mutateAsync(payload),
       updateTransaction: payload => updateTransaction.mutateAsync(payload),
       toast,
@@ -167,53 +169,36 @@ export function AddTransactionForm({
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          {selectedTransactionType && (
-            <selectedTransactionType.icon
-              className="h-5 w-5"
-              style={transactionIconStyle(selectedTransactionType.color)}
-            />
-          )}
-          {isEditing ? 'Edit Transaction' : 'Add New Transaction'}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {isEditing ? 'Update transaction details' : 'Record your income, expense, or transfer'}
-        </p>
-      </div>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <TransactionFormDetailsSection
+        form={form}
+        watchedType={watchedType}
+        watchedAmount={watchedAmount}
+        watchedCurrency={watchedCurrency}
+        watchedTransferAmount={watchedTransferAmount}
+        watchedTransferCurrency={watchedTransferCurrency}
+        accounts={accounts}
+        transferAccounts={transferAccounts}
+        categories={categories}
+        transactionTypes={transactionTypes}
+        loans={loans}
+        currentLoanId={transaction?.loanId}
+      />
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <TransactionFormDetailsSection
-          form={form}
-          watchedType={watchedType}
-          watchedAmount={watchedAmount}
-          watchedCurrency={watchedCurrency}
-          watchedTransferAmount={watchedTransferAmount}
-          watchedTransferCurrency={watchedTransferCurrency}
-          accounts={accounts}
-          transferAccounts={transferAccounts}
-          categories={categories}
-          transactionTypes={transactionTypes}
-        />
-
-        <TransactionFormMetaSection
-          form={form}
-          selectedDate={selectedDate}
-          onDateChange={handleDateChange}
-          newTag={newTag}
-          onNewTagChange={setNewTag}
-          onAddTag={addTag}
-          watchedTags={watchedTags}
-          onRemoveTag={removeTag}
-          watchedIsRecurring={watchedIsRecurring}
-          onToggleRecurring={() => form.setValue('isRecurring', !watchedIsRecurring)}
-          isPending={createTransaction.isPending || updateTransaction.isPending}
-          isEditing={isEditing}
-          submitColor={selectedTransactionType?.color}
-          onCancel={onCancel}
-        />
-      </form>
-    </div>
+      <TransactionFormMetaSection
+        form={form}
+        selectedDate={selectedDate}
+        onDateChange={handleDateChange}
+        newTag={newTag}
+        onNewTagChange={setNewTag}
+        onAddTag={addTag}
+        watchedTags={watchedTags}
+        onRemoveTag={removeTag}
+        isPending={createTransaction.isPending || updateTransaction.isPending}
+        isEditing={isEditing}
+        submitColor={selectedTransactionType?.color}
+        onCancel={onCancel}
+      />
+    </form>
   );
 }

@@ -12,7 +12,7 @@ import {
 import { Loan, useDeleteLoan, useLoans, useUpdateLoan } from '@/features/finance/queries/loans';
 import { useToast } from '@/hooks/use-toast';
 import { formatDisplayAmount } from '@/lib/currency';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function LoansPage() {
   const { toast } = useToast();
@@ -27,9 +27,7 @@ export default function LoansPage() {
   const [repayLoan, setRepayLoan] = useState<Loan | null>(null);
 
   useEffect(() => {
-    if (!error) {
-      return;
-    }
+    if (!error) return;
 
     toast({
       title: 'Error',
@@ -53,27 +51,50 @@ export default function LoansPage() {
   const sortedLoans = useMemo(() => sortLoansByDueDate(loans), [loans]);
   const nearestDueDate = useMemo(() => getNearestDueDate(loans), [loans]);
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = useCallback(() => {
     void refetch();
     setEditingLoan(null);
-  };
+  }, [refetch]);
 
-  const handleCloseForm = () => {
+  const handleCloseForm = useCallback(() => {
     setShowForm(false);
     setEditingLoan(null);
-  };
+  }, []);
 
-  const handleDelete = async () => {
+  const handleOpenCreateLoan = useCallback(() => {
+    setShowForm(true);
+  }, []);
+
+  const handleRepayLoanSelect = useCallback((loan: Loan) => {
+    setRepayLoan(loan);
+  }, []);
+
+  const handleEditLoan = useCallback((loan: Loan) => {
+    setEditingLoan(loan);
+    setShowForm(true);
+  }, []);
+
+  const handleDeleteLoanIntent = useCallback((loan: Loan) => {
+    setPendingDelete(loan);
+  }, []);
+
+  const handleClearPendingDelete = useCallback(() => {
+    setPendingDelete(null);
+  }, []);
+
+  const handleDelete = useCallback(async () => {
     if (!pendingDelete) {
       return;
     }
 
     try {
       await deleteLoan.mutateAsync(pendingDelete.id);
+
       toast({
         title: 'Success',
         description: 'Loan deleted successfully',
       });
+
       setPendingDelete(null);
       void refetch();
     } catch (deleteError: unknown) {
@@ -83,12 +104,20 @@ export default function LoansPage() {
         variant: 'destructive',
       });
     }
-  };
+  }, [pendingDelete, deleteLoan, toast, refetch]);
+
+  const handleConfirmDelete = useCallback(() => {
+    handleDelete();
+  }, [handleDelete]);
+
+  const handleRepayDialogChange = useCallback((open: boolean) => {
+    if (!open) {
+      setRepayLoan(null);
+    }
+  }, []);
 
   const handleRepay = async (amount: number) => {
-    if (!repayLoan) {
-      return;
-    }
+    if (!repayLoan) return;
 
     try {
       await updateLoan.mutateAsync({
@@ -101,13 +130,14 @@ export default function LoansPage() {
         description: `Repayed ${formatDisplayAmount(amount, repayLoan.currency, 'detailed')}`,
       });
 
-      void refetch();
+      refetch();
     } catch (repayError) {
       toast({
         title: 'Error',
         description: 'Failed to process repayment',
         variant: 'destructive',
       });
+
       throw repayError;
     }
   };
@@ -118,7 +148,7 @@ export default function LoansPage() {
         <LoansPageHeader
           showPaid={showPaid}
           onToggleShowPaid={setShowPaid}
-          onCreateLoan={() => setShowForm(true)}
+          onCreateLoan={handleOpenCreateLoan}
         />
       </div>
 
@@ -130,13 +160,10 @@ export default function LoansPage() {
         <LoansTable
           isLoading={isLoading}
           loans={sortedLoans}
-          onRepayLoan={loan => setRepayLoan(loan)}
-          onEditLoan={loan => {
-            setEditingLoan(loan);
-            setShowForm(true);
-          }}
-          onDeleteLoan={loan => setPendingDelete(loan)}
-          onCreateLoan={() => setShowForm(true)}
+          onRepayLoan={handleRepayLoanSelect}
+          onEditLoan={handleEditLoan}
+          onDeleteLoan={handleDeleteLoanIntent}
+          onCreateLoan={handleOpenCreateLoan}
         />
       </div>
 
@@ -149,15 +176,9 @@ export default function LoansPage() {
         onShowFormChange={setShowForm}
         onCloseForm={handleCloseForm}
         onFormSuccess={handleFormSuccess}
-        onClearPendingDelete={() => setPendingDelete(null)}
-        onConfirmDelete={() => {
-          void handleDelete();
-        }}
-        onRepayDialogChange={open => {
-          if (!open) {
-            setRepayLoan(null);
-          }
-        }}
+        onClearPendingDelete={handleClearPendingDelete}
+        onConfirmDelete={handleConfirmDelete}
+        onRepayDialogChange={handleRepayDialogChange}
         onRepayConfirm={handleRepay}
       />
     </AnimatedDiv>

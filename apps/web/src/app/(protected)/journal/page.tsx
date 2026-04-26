@@ -1,7 +1,7 @@
 'use client';
 
-import TablePositions from '@/features/positions/components/PositionsContainer';
 import { AnimatedDiv } from '@/components/ui/animations';
+import TablePositions from '@/features/positions/components/PositionsContainer';
 
 export default function JournalPage() {
   return (

@@ -12,26 +12,29 @@ import { BudgetSummaryCards } from '@/features/finance/components/budget-page/Bu
 import { BudgetTemplatesCard } from '@/features/finance/components/budget-page/BudgetTemplatesCard';
 import { BudgetList } from '@/features/finance/components/BudgetList';
 import {
-  Budget,
+  type Budget,
   useApplyBudgetTemplate,
   useBudgets,
   useBudgetTemplates,
+  useDeleteBudget,
+  useUpdateBudget,
 } from '@/features/finance/queries/budget';
 import { useToast } from '@/hooks/use-toast';
 import { Clock, PieChart } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function BudgetPage() {
   const { toast } = useToast();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const { data: budgetsData, isLoading, error, refetch } = useBudgets();
+  const primarySummaryBudgetId = budgetsData?.primarySummaryBudgetId;
   const { data: templates } = useBudgetTemplates();
   const applyTemplate = useApplyBudgetTemplate();
+  const updateBudget = useUpdateBudget();
+  const deleteBudget = useDeleteBudget();
 
   useEffect(() => {
-    if (!error) {
-      return;
-    }
+    if (!error) return;
 
     toast({
       title: 'Error',
@@ -52,26 +55,74 @@ export default function BudgetPage() {
       totalActualBase: 0,
     } as const);
 
-  const activeBudget = useMemo(
-    () => budgets.find(budget => budget.isActive) || budgets[0],
-    [budgets],
-  );
+  const activeBudget = useMemo(() => {
+    if (primarySummaryBudgetId) {
+      return (
+        budgets.find(b => b.id === primarySummaryBudgetId) ??
+        budgets.find(b => b.isActive) ??
+        budgets[0]
+      );
+    }
+    return budgets.find(b => b.isActive) || budgets[0];
+  }, [budgets, primarySummaryBudgetId]);
 
   const totalPlannedBase = summary.totalPlannedBase ?? summary.totalPlanned;
   const totalActualBase = summary.totalActualBase ?? summary.totalActual;
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = useCallback(() => {
     void refetch();
-  };
+  }, [refetch]);
+
+  const handleOpenCreate = useCallback(() => {
+    setShowCreateForm(true);
+  }, []);
+
+  const handleCloseCreate = useCallback(() => {
+    setShowCreateForm(false);
+  }, []);
+
+  const handleToggleStatus = useCallback(
+    (budget: Budget) => {
+      updateBudget
+        .mutateAsync({ id: budget.id, isActive: !budget.isActive })
+        .then(() => {
+          toast({ title: 'Updated', description: 'Budget status was updated.' });
+        })
+        .catch((err: Error) => {
+          toast({ title: 'Error', description: err.message, variant: 'destructive' });
+        });
+    },
+    [updateBudget, toast],
+  );
+
+  const handleDelete = useCallback(
+    (budget: Budget) => {
+      if (!window.confirm(`Delete budget "${budget.name}"? This cannot be undone.`)) {
+        return;
+      }
+
+      deleteBudget
+        .mutateAsync(budget.id)
+        .then(() => {
+          toast({ title: 'Deleted', description: 'Budget removed.' });
+        })
+        .catch((err: Error) => {
+          toast({ title: 'Error', description: err.message, variant: 'destructive' });
+        });
+    },
+    [deleteBudget, toast],
+  );
 
   const handleApplyTemplate = async (template: Budget) => {
     try {
       await applyTemplate.mutateAsync({ templateId: template.id });
+
       toast({
         title: 'Success',
         description: `Budget created from template "${template.templateName || template.name}"`,
       });
-      void refetch();
+
+      refetch();
     } catch (applyError) {
       toast({
         title: 'Error',
@@ -88,7 +139,7 @@ export default function BudgetPage() {
   return (
     <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <BudgetPageHeader onCreateBudget={() => setShowCreateForm(true)} />
+        <BudgetPageHeader onCreateBudget={handleOpenCreate} />
       </div>
 
       <div className="px-4 lg:px-6">
@@ -111,17 +162,16 @@ export default function BudgetPage() {
 
         <BudgetList
           budgets={budgets}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          onToggleStatus={() => {}}
-          onCreate={() => setShowCreateForm(true)}
+          onCreate={handleOpenCreate}
+          onDelete={handleDelete}
+          onToggleStatus={handleToggleStatus}
         />
 
         <BudgetTemplatesCard
           templates={templates}
           isApplyingTemplate={applyTemplate.isPending}
           onApplyTemplate={handleApplyTemplate}
-          onCreateTemplate={() => setShowCreateForm(true)}
+          onCreateTemplate={handleOpenCreate}
         />
 
         <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">
@@ -140,10 +190,7 @@ export default function BudgetPage() {
 
       <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <CreateBudgetForm
-            onClose={() => setShowCreateForm(false)}
-            onSuccess={handleFormSuccess}
-          />
+          <CreateBudgetForm onClose={handleCloseCreate} onSuccess={handleFormSuccess} />
         </DialogContent>
       </Dialog>
     </AnimatedDiv>

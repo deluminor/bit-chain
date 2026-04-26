@@ -203,7 +203,13 @@ export function AccountList() {
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
             <p className="text-lg font-medium mb-2">Failed to load accounts</p>
             <p className="text-muted-foreground mb-4">There was an error loading your accounts.</p>
-            <Button onClick={() => refetch()}>Try Again</Button>
+            <Button
+              onClick={() => {
+                void refetch();
+              }}
+            >
+              Try Again
+            </Button>
           </CardContent>
         </Card>
       </AnimatedDiv>
@@ -213,7 +219,7 @@ export function AccountList() {
   return (
     <AnimatedDiv variant="slideUp" className="space-y-6">
       <div className="flex flex-col gap-3 md:gap-6">
-        <AccountListHeader onCreateAccount={() => setShowCreateDialog(true)} />
+        <AccountListHeader onCreateAccount={handleCreateAccount} />
 
         <AccountSummaryCards
           isLoading={isLoading}

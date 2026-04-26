@@ -1,15 +1,15 @@
-import { LoginForm } from '@/features/auth/components/LoginForm';
 import { AnimatedDiv } from '@/components/ui/animations';
+import { LoginAmbientShell } from '@/features/auth/components/LoginAmbientShell';
+import { LoginForm } from '@/features/auth/components/LoginForm';
 
 export default function LoginPage() {
   return (
-    <AnimatedDiv
-      variant="slideUp"
-      className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10"
-    >
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <LoginForm />
-      </div>
+    <AnimatedDiv variant="slideUp" className="min-h-svh">
+      <LoginAmbientShell>
+        <div className="w-full max-w-md">
+          <LoginForm />
+        </div>
+      </LoginAmbientShell>
     </AnimatedDiv>
   );
 }

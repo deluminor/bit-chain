@@ -1,7 +1,7 @@
 import { BackupManager } from '@/components/backup/BackupManager';
 import { AnimatedDiv } from '@/components/ui/animations';
-import { Metadata } from 'next';
 import { Download } from 'lucide-react';
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Database Backup | BitChain',

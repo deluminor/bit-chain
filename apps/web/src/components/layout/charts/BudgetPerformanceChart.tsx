@@ -1,6 +1,5 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { useBudgetPerformance } from '@/features/finance/hooks/useBudgetPerformance';
 import { useIsClient } from '@/hooks/useIsClient';
@@ -38,7 +37,7 @@ export function BudgetPerformanceChart() {
   }
 
   return (
-    <Card className="col-span-4">
+    <div className="min-w-0 w-full">
       <div className="h-[350px] w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -168,6 +167,6 @@ export function BudgetPerformanceChart() {
           </ResponsiveContainer>
         </ChartContainer>
       </div>
-    </Card>
+    </div>
   );
 }

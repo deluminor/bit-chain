@@ -8,9 +8,11 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { SummaryStatTile, SummaryStatsRow } from '@/components/ui/summary-stat-tile';
 import { FINANCE_COLORS } from '@/constants/colors';
 import { THEME, useStore } from '@/store';
 import { format, startOfDay } from 'date-fns';
+import { Activity, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { useTransactions } from '../queries/transactions';
@@ -121,33 +123,33 @@ export function IncomeExpenseChart() {
     <ChartWrapper
       title="Income vs Expenses"
       description="Daily income and expense tracking over time"
-      className="@container/card"
+      className="@container/card gap-1.5"
+      headerClassName="pb-1.5 sm:pb-2"
     >
-      <div className="px-2 pt-4 sm:px-6 sm:pt-6">
-        {/* Summary Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-income">
-              {formatSummaryAmount(totals.income)}
-            </div>
-            <div className="text-sm text-muted-foreground">Total Income</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-expense">
-              {formatSummaryAmount(totals.expenses)}
-            </div>
-            <div className="text-sm text-muted-foreground">Total Expenses</div>
-          </div>
-          <div className="text-center">
-            <div
-              className={`text-2xl font-bold ${totals.net >= 0 ? 'text-income' : 'text-expense'}`}
-            >
-              {totals.net >= 0 ? '+' : ''}
-              {formatSummaryAmount(totals.net)}
-            </div>
-            <div className="text-sm text-muted-foreground">Net Amount</div>
-          </div>
-        </div>
+      <div className="px-0 pb-4 pt-0 sm:px-6 sm:pb-0 sm:pt-0">
+        <SummaryStatsRow className="mb-4 sm:mb-5 sm:grid-cols-3">
+          <SummaryStatTile
+            title="Total Income"
+            value={formatSummaryAmount(totals.income)}
+            hint="Selected period"
+            icon={TrendingUp}
+            tone="income"
+          />
+          <SummaryStatTile
+            title="Total Expenses"
+            value={formatSummaryAmount(totals.expenses)}
+            hint="Selected period"
+            icon={TrendingDown}
+            tone="expense"
+          />
+          <SummaryStatTile
+            title="Net Amount"
+            value={`${totals.net >= 0 ? '+' : ''}${formatSummaryAmount(totals.net)}`}
+            hint="Income minus expenses"
+            icon={Activity}
+            tone={totals.net >= 0 ? 'income' : 'expense'}
+          />
+        </SummaryStatsRow>
 
         <ChartContainer config={chartConfig} className="aspect-auto h-[400px] w-full">
           <AreaChart data={processedData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>

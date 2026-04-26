@@ -5,6 +5,7 @@ import {
 import {
   CreateTransactionData,
   Transaction,
+  TransactionCategory,
   UpdateTransactionData,
 } from '@/features/finance/queries/transactions';
 import type { UseFormReturn } from 'react-hook-form';
@@ -25,6 +26,7 @@ interface SubmitTransactionParams {
   form: UseFormReturn<TransactionFormInput, unknown, TransactionFormData>;
   isEditing: boolean;
   transaction?: Transaction;
+  categories: TransactionCategory[];
   createTransaction: (payload: CreateTransactionData) => Promise<unknown>;
   updateTransaction: (payload: UpdateTransactionData) => Promise<unknown>;
   toast: (payload: ToastPayload) => void;
@@ -36,6 +38,7 @@ export async function submitTransactionForm({
   form,
   isEditing,
   transaction,
+  categories,
   createTransaction,
   updateTransaction,
   toast,
@@ -44,6 +47,14 @@ export async function submitTransactionForm({
   if (!data.amount || data.amount <= 0) {
     form.setError('amount', { message: 'Amount is required and must be positive' });
     return;
+  }
+
+  const category = categories.find(c => c.id === data.categoryId);
+  if (data.type === 'EXPENSE' && category?.isLoanRepayment) {
+    if (!data.loanId) {
+      form.setError('loanId', { message: 'Select which loan or debt this repayment applies to' });
+      return;
+    }
   }
 
   if (data.type === 'TRANSFER') {
@@ -65,6 +76,7 @@ export async function submitTransactionForm({
     ...data,
     amount: parseFloat(data.amount.toFixed(2)),
     date: data.date instanceof Date ? data.date.toISOString() : new Date(data.date).toISOString(),
+    loanId: data.type === 'EXPENSE' && category?.isLoanRepayment ? data.loanId : null,
     ...(data.type !== 'TRANSFER' && {
       transferToId: undefined,
       transferAmount: undefined,

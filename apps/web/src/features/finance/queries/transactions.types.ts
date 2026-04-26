@@ -7,8 +7,6 @@ export interface Transaction {
   description?: string;
   date: string;
   tags: string[];
-  isRecurring: boolean;
-  recurringPattern?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
   createdAt: string;
   updatedAt: string;
   account: {
@@ -35,6 +33,7 @@ export interface Transaction {
   };
   transferAmount?: number;
   transferCurrency?: string;
+  loanId?: string | null;
 }
 
 export interface TransactionImportPreviewItem {
@@ -77,6 +76,7 @@ export interface TransactionCategory {
   icon: string;
   isDefault: boolean;
   isActive: boolean;
+  isLoanRepayment?: boolean;
   createdAt: string;
   parent?: {
     id: string;
@@ -102,8 +102,7 @@ export interface CreateTransactionData {
   transferToId?: string;
   transferAmount?: number;
   transferCurrency?: string;
-  isRecurring?: boolean;
-  recurringPattern?: Transaction['recurringPattern'];
+  loanId?: string | null;
 }
 
 export interface UpdateTransactionData extends Partial<CreateTransactionData> {

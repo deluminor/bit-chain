@@ -40,15 +40,29 @@ function mapBudgetError(error: unknown, action: string): NextResponse {
   return NextResponse.json({ error: `Failed to ${action} budget` }, { status: 500 });
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const userId = await getAuthenticatedFinanceUserId();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const result = await listBudgetsWithSummary(userId);
+    const fromS = request.nextUrl.searchParams.get('from');
+    const toS = request.nextUrl.searchParams.get('to');
 
+    if (fromS && toS) {
+      const globalFrom = new Date(fromS);
+      const globalTo = new Date(toS);
+
+      if (Number.isNaN(globalFrom.getTime()) || Number.isNaN(globalTo.getTime())) {
+        return NextResponse.json({ error: 'Invalid from/to date' }, { status: 400 });
+      }
+
+      const result = await listBudgetsWithSummary(userId, { globalFrom, globalTo });
+      return NextResponse.json(result);
+    }
+
+    const result = await listBudgetsWithSummary(userId);
     return NextResponse.json(result);
   } catch (error) {
     return mapBudgetError(error, 'fetch');

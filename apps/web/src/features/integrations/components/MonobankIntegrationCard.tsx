@@ -12,7 +12,7 @@ import {
 } from '@/features/integrations/queries/monobank';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle2, CreditCard, RefreshCw, Settings2, ShieldAlert, Wallet } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MonobankAccountsDialog } from './monobank-integration/MonobankAccountsDialog';
 import { MonobankConnectDialog } from './monobank-integration/MonobankConnectDialog';
 import { formatSyncTime } from './monobank-integration/monobank-integration.utils';
@@ -129,6 +129,14 @@ export function MonobankIntegrationCard() {
     }
   };
 
+  const handleOpenAccountsDialog = useCallback(() => {
+    setIsAccountsDialogOpen(true);
+  }, []);
+
+  const handleOpenConnectDialog = useCallback(() => {
+    setIsConnectDialogOpen(true);
+  }, []);
+
   if (error) {
     return (
       <Card>
@@ -185,7 +193,7 @@ export function MonobankIntegrationCard() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 {syncMutation.isPending ? 'Syncing...' : 'Sync now'}
               </Button>
-              <Button onClick={() => setIsAccountsDialogOpen(true)} variant="default">
+              <Button onClick={handleOpenAccountsDialog} variant="default">
                 <Settings2 className="mr-2 h-4 w-4" />
                 Manage accounts
               </Button>
@@ -198,7 +206,7 @@ export function MonobankIntegrationCard() {
               Connect Monobank to import balances and statements.
             </div>
             <Button
-              onClick={() => setIsConnectDialogOpen(true)}
+              onClick={handleOpenConnectDialog}
               disabled={connectMutation.isPending || isLoading}
             >
               Connect Monobank

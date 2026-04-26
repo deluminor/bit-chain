@@ -71,6 +71,29 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
+function renderTooltipFormatterResult(result: React.ReactNode): React.ReactNode {
+  if (!Array.isArray(result)) {
+    return result;
+  }
+
+  if (result.length === 0) {
+    return null;
+  }
+
+  if (result.length === 1) {
+    return result[0];
+  }
+
+  return (
+    <div className="flex w-full min-w-0 items-center justify-between gap-2">
+      <span className="shrink-0 text-foreground font-mono font-medium tabular-nums">
+        {result[0]}
+      </span>
+      <span className="min-w-0 text-right text-muted-foreground">{result[1]}</span>
+    </div>
+  );
+}
+
 function ChartTooltipContent({
   active,
   payload,
@@ -150,7 +173,9 @@ function ChartTooltipContent({
               )}
             >
               {formatter && item?.value !== undefined && item.name ? (
-                formatter(item.value, item.name, item, index, item.payload)
+                renderTooltipFormatterResult(
+                  formatter(item.value, item.name, item, index, item.payload),
+                )
               ) : (
                 <>
                   {itemConfig?.icon ? (
@@ -215,4 +240,5 @@ export {
   ChartTooltip,
   ChartTooltipContent,
 };
+
 export type { ChartConfig };

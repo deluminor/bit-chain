@@ -2,9 +2,11 @@ import { BASE_CURRENCY } from '@/lib/currency';
 import { ArrowRightLeft, Minus, Plus } from 'lucide-react';
 import { z } from 'zod';
 
-/**
- * Shared schema for add/edit transaction form.
- */
+const loanIdField = z
+  .union([z.string().cuid(), z.literal(''), z.null()])
+  .optional()
+  .transform(val => (val === '' || val === undefined ? null : val));
+
 export const transactionFormSchema = z
   .object({
     accountId: z.string().min(1, 'Account is required'),
@@ -18,11 +20,7 @@ export const transactionFormSchema = z
     transferToId: z.string().optional(),
     transferAmount: z.number().optional().nullable(),
     transferCurrency: z.string().min(3).max(3).optional(),
-    isRecurring: z.boolean().default(false),
-    recurringPattern: z
-      .enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'])
-      .optional()
-      .nullable(),
+    loanId: loanIdField,
   })
   .refine(
     data => {
@@ -49,30 +47,11 @@ export const transactionFormSchema = z
       message: 'Transfer amount must be positive',
       path: ['transferAmount'],
     },
-  )
-  .refine(
-    data => {
-      if (data.isRecurring) {
-        return data.recurringPattern != null;
-      }
-
-      return true;
-    },
-    {
-      message: 'Recurring pattern is required when recurring is enabled',
-      path: ['recurringPattern'],
-    },
   );
 
-/**
- * Form value type for add/edit transaction form.
- */
 export type TransactionFormInput = z.input<typeof transactionFormSchema>;
 export type TransactionFormData = z.output<typeof transactionFormSchema>;
 
-/**
- * Visual variants for transaction type selector.
- */
 export const transactionTypes = [
   {
     value: 'INCOME',
@@ -95,15 +74,4 @@ export const transactionTypes = [
     color: 'var(--transfer)',
     description: 'Move between accounts',
   },
-] as const;
-
-/**
- * Recurrence options for recurring transactions.
- */
-export const recurringPatterns = [
-  { value: 'DAILY', label: 'Daily' },
-  { value: 'WEEKLY', label: 'Weekly' },
-  { value: 'MONTHLY', label: 'Monthly' },
-  { value: 'QUARTERLY', label: 'Quarterly' },
-  { value: 'YEARLY', label: 'Yearly' },
 ] as const;

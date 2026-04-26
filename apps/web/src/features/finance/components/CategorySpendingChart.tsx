@@ -204,13 +204,19 @@ export function CategorySpendingChart({ type = 'EXPENSE', className }: CategoryS
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
-                        formatter={value => [
-                          formatCurrency(Number(value), BASE_CURRENCY, {
-                            useLargeNumberFormat: false,
-                          }),
-                          '',
-                        ]}
-                        labelFormatter={label => label}
+                        hideLabel
+                        formatter={(value, name) => (
+                          <div className="grid gap-1">
+                            <div className="font-medium text-foreground">
+                              {name != null && String(name).length > 0 ? String(name) : 'Category'}
+                            </div>
+                            <div className="text-foreground font-mono text-xs font-medium tabular-nums">
+                              {formatCurrency(Number(value), BASE_CURRENCY, {
+                                useLargeNumberFormat: false,
+                              })}
+                            </div>
+                          </div>
+                        )}
                         indicator="dot"
                       />
                     }

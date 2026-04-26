@@ -7,7 +7,7 @@ const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
 export function useMonobankAutoSync(reason: string) {
   const { data } = useMonobankIntegration();
-  const syncMutation = useMonobankSync();
+  const { mutate, isPending } = useMonobankSync();
   const lastSyncRef = useRef<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -23,7 +23,7 @@ export function useMonobankAutoSync(reason: string) {
     const triggerSync = () => {
       const now = Date.now();
 
-      if (syncMutation.isPending) {
+      if (isPending) {
         return;
       }
 
@@ -32,7 +32,7 @@ export function useMonobankAutoSync(reason: string) {
       }
 
       lastSyncRef.current = now;
-      syncMutation.mutate({ reason, chain: false });
+      mutate({ reason, chain: false });
     };
 
     triggerSync();
@@ -47,5 +47,5 @@ export function useMonobankAutoSync(reason: string) {
         intervalRef.current = null;
       }
     };
-  }, [data?.hasEnabledAccounts, reason, syncMutation, syncMutation.isPending]);
+  }, [data?.hasEnabledAccounts, isPending, mutate, reason]);
 }

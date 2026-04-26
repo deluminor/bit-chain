@@ -1,4 +1,7 @@
+'use client';
+
 import { TotalBalanceDisplay } from '@/components/layout/TotalBalanceDisplay';
+import { SummaryStatsRow, SummaryStatTile } from '@/components/ui/summary-stat-tile';
 import { formatSummaryAmount } from '@/lib/currency';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import type { NetWorthPerformance } from './net-worth.types';
@@ -8,50 +11,39 @@ interface NetWorthSummaryCardsProps {
 }
 
 export function NetWorthSummaryCards({ performance }: NetWorthSummaryCardsProps) {
+  const changePositive = performance.totalChange >= 0;
+  const pctPositive = performance.percentageChange >= 0;
+
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-      <div className="rounded-lg bg-muted/50 p-3 text-center">
-        <div className="text-2xl font-bold text-income">
-          <TotalBalanceDisplay size="lg" className="text-income" />
-        </div>
-        <div className="text-sm text-muted-foreground">Current Net Worth</div>
-      </div>
-
-      <div className="rounded-lg bg-muted/50 p-3 text-center">
-        <div
-          className={`flex items-center justify-center gap-1 text-2xl font-bold ${
-            performance.totalChange >= 0 ? 'text-income' : 'text-expense'
-          }`}
-        >
-          {performance.totalChange >= 0 ? (
-            <TrendingUp className="h-5 w-5" />
-          ) : (
-            <TrendingDown className="h-5 w-5" />
-          )}
-          {performance.totalChange >= 0 ? '+' : ''}
-          {formatSummaryAmount(performance.totalChange)}
-        </div>
-        <div className="text-sm text-muted-foreground">Total Change</div>
-      </div>
-
-      <div className="rounded-lg bg-muted/50 p-3 text-center">
-        <div
-          className={`text-2xl font-bold ${
-            performance.percentageChange >= 0 ? 'text-income' : 'text-expense'
-          }`}
-        >
-          {performance.percentageChange >= 0 ? '+' : ''}
-          {performance.percentageChange.toFixed(1)}%
-        </div>
-        <div className="text-sm text-muted-foreground">Growth Rate</div>
-      </div>
-
-      <div className="rounded-lg bg-muted/50 p-3 text-center">
-        <div className="text-2xl font-bold">
-          <TotalBalanceDisplay size="lg" />
-        </div>
-        <div className="text-sm text-muted-foreground">Peak Value</div>
-      </div>
-    </div>
+    <SummaryStatsRow className="sm:grid-cols-2 lg:grid-cols-4">
+      <SummaryStatTile
+        title="Current Net Worth"
+        value={<TotalBalanceDisplay size="sm" className="font-semibold text-income" showLoading />}
+        hint="Live total"
+        icon={TrendingUp}
+        tone="income"
+      />
+      <SummaryStatTile
+        title="Total Change"
+        value={`${changePositive ? '+' : ''}${formatSummaryAmount(performance.totalChange)}`}
+        hint="In range"
+        icon={changePositive ? TrendingUp : TrendingDown}
+        tone={changePositive ? 'income' : 'expense'}
+      />
+      <SummaryStatTile
+        title="Growth Rate"
+        value={`${pctPositive ? '+' : ''}${performance.percentageChange.toFixed(1)}%`}
+        hint="vs start of range"
+        icon={pctPositive ? TrendingUp : TrendingDown}
+        tone={pctPositive ? 'income' : 'expense'}
+      />
+      <SummaryStatTile
+        title="Peak Value"
+        value={formatSummaryAmount(performance.highestNetWorth)}
+        hint="High water mark in range"
+        icon={TrendingUp}
+        tone="default"
+      />
+    </SummaryStatsRow>
   );
 }

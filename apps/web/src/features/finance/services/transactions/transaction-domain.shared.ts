@@ -14,8 +14,6 @@ export const transactionDetailsSelect = {
   transferCurrency: true,
   loanId: true,
   loan: { select: { name: true } },
-  isRecurring: true,
-  recurringPattern: true,
   createdAt: true,
   updatedAt: true,
   account: {

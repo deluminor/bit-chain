@@ -75,8 +75,6 @@ export function TransactionContainer() {
         totalPages={pagination?.pages || 1}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
-        onEdit={() => {}}
-        onDelete={() => {}}
       />
     </div>
   );

@@ -64,9 +64,13 @@ export function NetWorthChart() {
     <ChartWrapper
       title="Net Worth Tracking (EUR)"
       description="Your total wealth over time (converted to EUR)"
+      className="gap-1.5"
+      headerClassName="pb-1.5 sm:pb-2"
     >
-      <div className="space-y-6">
-        <NetWorthSummaryCards performance={performance} />
+      <div className="pb-0">
+        <div className="mb-4 sm:mb-5">
+          <NetWorthSummaryCards performance={performance} />
+        </div>
 
         <ChartContainer config={chartConfig} className="aspect-auto h-[400px] w-full">
           <AreaChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 10 }}>
@@ -131,10 +135,11 @@ export function NetWorthChart() {
                       year: 'numeric',
                     });
                   }}
-                  formatter={(value, name) => [
-                    `${formatSummaryAmount(Number(value))} EUR`,
-                    name === 'netWorth' ? 'Net Worth' : (name as string),
-                  ]}
+                  formatter={(value, name) =>
+                    `${formatSummaryAmount(Number(value))} EUR — ${
+                      name === 'netWorth' ? 'Net Worth' : String(name)
+                    }`
+                  }
                   indicator="dot"
                 />
               }
@@ -162,7 +167,9 @@ export function NetWorthChart() {
           </AreaChart>
         </ChartContainer>
 
-        <NetWorthInsightsPanels performance={performance} daysCount={chartData.length} />
+        <div className="mt-5 sm:mt-6">
+          <NetWorthInsightsPanels performance={performance} daysCount={chartData.length} />
+        </div>
       </div>
     </ChartWrapper>
   );

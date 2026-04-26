@@ -27,8 +27,9 @@ interface TransactionTableProps {
   pageSize: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (value: string) => void;
-  onEdit: (transaction: Transaction) => void;
-  onDelete: (transaction: Transaction) => void;
+  /** Omitted on views where row edit/delete is not available (e.g. embedded list). */
+  onEdit?: (transaction: Transaction) => void;
+  onDelete?: (transaction: Transaction) => void;
   isLoading?: boolean;
   isFetching?: boolean;
 }
@@ -46,6 +47,7 @@ export function TransactionTable({
   isFetching = false,
 }: TransactionTableProps) {
   const columns = useTransactionColumns();
+  const hasRowActions = onEdit != null || onDelete != null;
 
   return (
     <div className="pb-4 flex flex-col gap-4 justify-between items-start md:items-center overflow-hidden">
@@ -61,7 +63,7 @@ export function TransactionTable({
                       {column.header}
                     </TableHead>
                   ))}
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  {hasRowActions ? <TableHead className="w-[100px]">Actions</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -73,12 +75,14 @@ export function TransactionTable({
                           <Skeleton className="h-4 w-[100px]" />
                         </TableCell>
                       ))}
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Skeleton className="h-8 w-8" />
-                          <Skeleton className="h-8 w-8" />
-                        </div>
-                      </TableCell>
+                      {hasRowActions ? (
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Skeleton className="h-8 w-8" />
+                            <Skeleton className="h-8 w-8" />
+                          </div>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   ))}
                 {!isLoading &&
@@ -90,34 +94,43 @@ export function TransactionTable({
                           {column.cell(transaction)}
                         </TableCell>
                       ))}
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onEdit(transaction)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => onDelete(transaction)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      {hasRowActions ? (
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {onEdit != null ? (
+                                <DropdownMenuItem onClick={() => onEdit(transaction)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                              ) : null}
+                              {onDelete != null ? (
+                                <DropdownMenuItem
+                                  onClick={() => onDelete(transaction)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              ) : null}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   ))}
                 {!isLoading && transactions.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={columns.length + 1} className="h-24 text-center">
+                    <TableCell
+                      colSpan={columns.length + (hasRowActions ? 1 : 0)}
+                      className="h-24 text-center"
+                    >
                       No transactions match your filters
                     </TableCell>
                   </TableRow>

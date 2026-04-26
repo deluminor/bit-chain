@@ -15,7 +15,7 @@ import {
 } from '@/features/finance/queries/categories';
 import { useDataTable } from '@/hooks/useDataTable';
 import { AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export default function CategoriesPage() {
   const { currentPage, pageSize, onPageChange, onPageSizeChange, totalPages } = useDataTable({
@@ -46,10 +46,11 @@ export default function CategoriesPage() {
     children: 0,
   };
 
-  const handleDeleteCategory = async () => {
+  const handleDeleteCategory = useCallback(async () => {
     if (!selectedCategory) return;
 
     setIsDeleting(true);
+
     try {
       await deleteCategory.mutateAsync(selectedCategory.id);
       setShowDeleteDialog(false);
@@ -59,24 +60,55 @@ export default function CategoriesPage() {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [selectedCategory, deleteCategory]);
 
-  const handleToggleActive = async (category: TransactionCategory) => {
-    try {
-      await updateCategory.mutateAsync({
-        id: category.id,
-        isActive: !category.isActive,
-      });
-    } catch {
-      // Mutation handles notification
-    }
-  };
+  const handleToggleActive = useCallback(
+    async (category: TransactionCategory) => {
+      try {
+        await updateCategory.mutateAsync({
+          id: category.id,
+          isActive: !category.isActive,
+        });
+      } catch {
+        // Mutation handles notification
+      }
+    },
+    [updateCategory],
+  );
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = useCallback(() => {
     setShowCreateDialog(false);
     setShowEditDialog(false);
     setSelectedCategory(null);
-  };
+  }, []);
+
+  const handleOpenCreate = useCallback(() => {
+    setShowCreateDialog(true);
+  }, []);
+
+  const handleEditCategory = useCallback((category: TransactionCategory) => {
+    setSelectedCategory(category);
+    setShowEditDialog(true);
+  }, []);
+
+  const handleDeleteIntent = useCallback((category: TransactionCategory) => {
+    setSelectedCategory(category);
+    setShowDeleteDialog(true);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setShowEditDialog(false);
+    setSelectedCategory(null);
+  }, []);
+
+  const handleCancelDelete = useCallback(() => {
+    setShowDeleteDialog(false);
+    setSelectedCategory(null);
+  }, []);
+
+  const handleRefetch = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   const clearFilters = () => {
     setFilters({
@@ -99,7 +131,7 @@ export default function CategoriesPage() {
             <p className="text-muted-foreground mb-4">
               There was an error loading your categories.
             </p>
-            <Button onClick={() => refetch()}>Try Again</Button>
+            <Button onClick={handleRefetch}>Try Again</Button>
           </div>
         </div>
       </AnimatedDiv>
@@ -110,7 +142,7 @@ export default function CategoriesPage() {
     <AnimatedDiv variant="slideUp" className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
         <div className="flex flex-col gap-3 md:gap-6">
-          <CategoriesPageHeader onCreateCategory={() => setShowCreateDialog(true)} />
+          <CategoriesPageHeader onCreateCategory={handleOpenCreate} />
 
           <CategoriesStatsCards counts={counts} />
 
@@ -127,19 +159,11 @@ export default function CategoriesPage() {
             onFiltersChange={setFilters}
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
-            onRefresh={() => {
-              void refetch();
-            }}
-            onCreateCategory={() => setShowCreateDialog(true)}
-            onEditCategory={category => {
-              setSelectedCategory(category);
-              setShowEditDialog(true);
-            }}
+            onRefresh={handleRefetch}
+            onCreateCategory={handleOpenCreate}
+            onEditCategory={handleEditCategory}
             onToggleActive={handleToggleActive}
-            onDeleteCategory={category => {
-              setSelectedCategory(category);
-              setShowDeleteDialog(true);
-            }}
+            onDeleteCategory={handleDeleteIntent}
           />
 
           <CategoriesDialogs
@@ -152,17 +176,9 @@ export default function CategoriesPage() {
             onEditDialogChange={setShowEditDialog}
             onDeleteDialogChange={setShowDeleteDialog}
             onFormSuccess={handleFormSuccess}
-            onCancelEdit={() => {
-              setShowEditDialog(false);
-              setSelectedCategory(null);
-            }}
-            onCancelDelete={() => {
-              setShowDeleteDialog(false);
-              setSelectedCategory(null);
-            }}
-            onConfirmDelete={() => {
-              void handleDeleteCategory();
-            }}
+            onCancelEdit={handleCancelEdit}
+            onCancelDelete={handleCancelDelete}
+            onConfirmDelete={handleDeleteCategory}
           />
         </div>
       </div>

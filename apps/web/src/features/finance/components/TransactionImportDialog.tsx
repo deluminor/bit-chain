@@ -19,7 +19,7 @@ import {
 } from '@/features/finance/queries/transactions';
 import { useToast } from '@/hooks/use-toast';
 import { Upload } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { TransactionImportConfigSection } from './transaction-import/TransactionImportConfigSection';
 import { TransactionImportPreviewSection } from './transaction-import/TransactionImportPreviewSection';
 import { type EditableImportRow } from './transaction-import/transaction-import.types';
@@ -56,19 +56,19 @@ export function TransactionImportDialog({
 
   const canPreview = Boolean(accountId && incomeCategoryId && expenseCategoryId && file);
 
-  const resetState = useCallback(() => {
+  const resetPreviewRef = useRef(previewMutation.reset);
+  resetPreviewRef.current = previewMutation.reset;
+
+  useEffect(() => {
+    if (open) {
+      return;
+    }
     setFile(null);
     setRows([]);
     setSourceLabel(null);
     setSkippedCount(0);
-    previewMutation.reset();
-  }, [previewMutation]);
-
-  useEffect(() => {
-    if (!open) {
-      resetState();
-    }
-  }, [open, resetState]);
+    resetPreviewRef.current();
+  }, [open]);
 
   const previewSummary = previewMutation.data?.summary;
   const includedRows = useMemo(() => rows.filter(row => row.include), [rows]);
@@ -151,6 +151,10 @@ export function TransactionImportDialog({
     setRows(prev => prev.filter(row => row.id !== id));
   };
 
+  const handleCloseDialog = () => {
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
@@ -199,7 +203,7 @@ export function TransactionImportDialog({
               {includedRows.length} of {rows.length} selected
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" onClick={handleCloseDialog}>
                 Cancel
               </Button>
               <Button

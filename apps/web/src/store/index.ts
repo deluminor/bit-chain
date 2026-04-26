@@ -102,7 +102,7 @@ interface State {
 export const useStore = create<State>()(
   persist(
     set => ({
-      theme: THEME.LIGHT,
+      theme: THEME.DARK,
       isNavigationOpen: true,
       globalDatePreset: DEFAULT_DATE_PRESET,
       selectedDateRange: getDateRangeFromPreset(DEFAULT_DATE_PRESET),

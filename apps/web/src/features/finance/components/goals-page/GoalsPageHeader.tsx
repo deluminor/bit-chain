@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Target } from 'lucide-react';
 
 interface GoalsPageHeaderProps {
-  onCreateGoal: () => void;
+  onCreateGoal?: () => void;
   createDisabled?: boolean;
 }
 
@@ -20,10 +20,12 @@ export function GoalsPageHeader({ onCreateGoal, createDisabled = false }: GoalsP
           <p className="text-muted-foreground">Track and achieve your financial objectives</p>
         </div>
       </div>
-      <Button onClick={onCreateGoal} disabled={createDisabled} className="w-full sm:w-auto">
-        <Plus className="h-4 w-4 mr-2" />
-        New Goal
-      </Button>
+      {onCreateGoal != null ? (
+        <Button onClick={onCreateGoal} disabled={createDisabled} className="w-full sm:w-auto">
+          <Plus className="h-4 w-4 mr-2" />
+          New Goal
+        </Button>
+      ) : null}
     </div>
   );
 }

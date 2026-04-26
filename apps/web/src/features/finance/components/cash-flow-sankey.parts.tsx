@@ -80,6 +80,10 @@ interface CashFlowSankeyBreakdownProps {
   targets: FlowItem[];
   sankeyBase: string;
   freeCashColor: string;
+  lightMonochrome?: {
+    flow: string;
+    freeCash: string;
+  };
 }
 
 export function CashFlowSankeyBreakdown({
@@ -87,15 +91,25 @@ export function CashFlowSankeyBreakdown({
   targets,
   sankeyBase,
   freeCashColor,
+  lightMonochrome,
 }: CashFlowSankeyBreakdownProps) {
+  const dotIncome = lightMonochrome ? lightMonochrome.flow : sankeyBase;
+  const dotExpense = (isFree: boolean | undefined) => {
+    if (lightMonochrome) {
+      return isFree ? lightMonochrome.freeCash : lightMonochrome.flow;
+    }
+
+    return isFree ? freeCashColor : sankeyBase;
+  };
+
   return (
-    <div className="grid grid-cols-1 gap-4 pt-4 text-sm md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 pt-6 text-sm md:grid-cols-2 md:gap-8">
       <div className="space-y-2">
         <div className="text-xs uppercase tracking-wide text-muted-foreground">From (Income)</div>
         {sources.map(source => (
           <div key={source.id} className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: sankeyBase }} />
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: dotIncome }} />
               <span className="text-foreground">{source.name}</span>
             </div>
             <span className="text-muted-foreground">{formatSummaryAmount(source.amount)}</span>
@@ -110,7 +124,7 @@ export function CashFlowSankeyBreakdown({
             <div className="flex items-center gap-2">
               <span
                 className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: target.isFreeCash ? freeCashColor : sankeyBase }}
+                style={{ backgroundColor: dotExpense(target.isFreeCash) }}
               />
               <span className="text-foreground">{target.name}</span>
             </div>

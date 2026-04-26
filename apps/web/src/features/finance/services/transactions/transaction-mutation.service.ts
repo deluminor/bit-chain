@@ -9,6 +9,7 @@ import {
 import {
   requireActiveAccount,
   resolveCategoryForType,
+  resolveLoanIdForExpense,
   validateLoanForRepayment,
   validateLoanForRepaymentWithLock,
   validateTransferDestination,
@@ -26,7 +27,10 @@ export async function createTransaction(
     await validateTransferDestination(userId, input.accountId, input.transferToId);
   }
 
-  const loanId = input.loanId ?? null;
+  const loanId =
+    input.type === 'EXPENSE'
+      ? await resolveLoanIdForExpense(userId, categoryId, input.loanId ?? null)
+      : null;
   if (input.type === 'EXPENSE' && loanId) {
     await validateLoanForRepayment(userId, loanId, input.amount);
   }
@@ -102,9 +106,14 @@ export async function updateTransaction(
     await validateTransferDestination(userId, nextAccountId, nextTransferToId ?? undefined);
   }
 
-  const nextLoanId =
+  const proposedLoanId =
     updateData.loanId !== undefined ? updateData.loanId : existingTransaction.loanId;
   const nextAmount = updateData.amount ?? existingTransaction.amount;
+
+  const nextLoanId =
+    nextType === 'EXPENSE'
+      ? await resolveLoanIdForExpense(userId, categoryId, proposedLoanId)
+      : null;
 
   const normalizedUpdateData = {
     ...updateData,

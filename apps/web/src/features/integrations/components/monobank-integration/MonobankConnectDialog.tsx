@@ -25,6 +25,10 @@ export function MonobankConnectDialog({
   onConnect,
   isConnecting,
 }: MonobankConnectDialogProps) {
+  const handleClose = () => {
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -57,7 +61,7 @@ export function MonobankConnectDialog({
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button onClick={onConnect} disabled={!token || isConnecting}>

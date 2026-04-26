@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { AccountBalanceTrendsChart } from '@/components/layout/charts/AccountBalanceTrendsChart';
 import { BudgetPerformanceChart } from '@/components/layout/charts/BudgetPerformanceChart';
 import { AnimatedDiv } from '@/components/ui/animations';
 import { ResponsiveGrid } from '@/components/ui/responsive-helpers';
@@ -31,11 +30,11 @@ interface QuickStatsProps {
 
 function QuickStatCard({ title, value, change, changeType, icon, href }: QuickStatsProps) {
   const content = (
-    <CardContent className="p-4 md:p-6">
+    <CardContent className="p-3.5 md:p-4">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-lg sm:text-xl lg:text-2xl font-bold">{value}</p>
+          <p className="text-base sm:text-lg lg:text-xl font-semibold">{value}</p>
           {change && (
             <p
               className={`text-xs flex items-center gap-1 mt-1 ${
@@ -59,13 +58,13 @@ function QuickStatCard({ title, value, change, changeType, icon, href }: QuickSt
 
   if (href) {
     return (
-      <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow cursor-pointer">
+      <Card className="shadow-sm rounded-lg hover:shadow-md transition-shadow cursor-pointer">
         <Link href={href}>{content}</Link>
       </Card>
     );
   }
 
-  return <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow">{content}</Card>;
+  return <Card className="shadow-sm rounded-lg hover:shadow-md transition-shadow">{content}</Card>;
 }
 
 export function FinanceDashboard() {
@@ -182,13 +181,8 @@ export function FinanceDashboard() {
             <CashFlowSankeyChart />
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
-            <div className="xl:col-span-2 animate-fade-in">
-              <IncomeExpenseChart />
-            </div>
-            <div className="xl:col-span-1 animate-fade-in">
-              <AccountBalanceTrendsChart />
-            </div>
+          <div className="w-full animate-fade-in">
+            <IncomeExpenseChart />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-stretch">

@@ -1,6 +1,7 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
+import { SummaryStatTile, SummaryStatsRow } from '@/components/ui/summary-stat-tile';
+import { Layers, ListTree, TrendingDown, TrendingUp } from 'lucide-react';
 
 interface CategoriesCounts {
   income: number;
@@ -15,34 +16,35 @@ interface CategoriesStatsCardsProps {
 
 export function CategoriesStatsCards({ counts }: CategoriesStatsCardsProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      <Card className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
-        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
-          {counts.income}
-        </div>
-        <p className="text-xs sm:text-sm text-muted-foreground">Income Categories</p>
-      </Card>
-
-      <Card className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
-        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">
-          {counts.expense}
-        </div>
-        <p className="text-xs sm:text-sm text-muted-foreground">Expense Categories</p>
-      </Card>
-
-      <Card className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
-        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">
-          {counts.parents}
-        </div>
-        <p className="text-xs sm:text-sm text-muted-foreground">Parent Categories</p>
-      </Card>
-
-      <Card className="p-4 sm:p-5 lg:p-6 rounded-lg border bg-card">
-        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">
-          {counts.children}
-        </div>
-        <p className="text-xs sm:text-sm text-muted-foreground">Subcategories</p>
-      </Card>
-    </div>
+    <SummaryStatsRow className="sm:grid-cols-2 lg:grid-cols-4">
+      <SummaryStatTile
+        title="Income Categories"
+        value={counts.income}
+        hint="Income type"
+        icon={TrendingUp}
+        tone="income"
+      />
+      <SummaryStatTile
+        title="Expense Categories"
+        value={counts.expense}
+        hint="Expense type"
+        icon={TrendingDown}
+        tone="expense"
+      />
+      <SummaryStatTile
+        title="Parent Categories"
+        value={counts.parents}
+        hint="Top-level"
+        icon={Layers}
+        tone="blue"
+      />
+      <SummaryStatTile
+        title="Subcategories"
+        value={counts.children}
+        hint="Nested"
+        icon={ListTree}
+        tone="purple"
+      />
+    </SummaryStatsRow>
   );
 }

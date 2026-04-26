@@ -1,4 +1,8 @@
+'use client';
+
+import { type DatePreset, useStore } from '@/store';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 export interface BudgetCategory {
   id: string;
@@ -76,19 +80,55 @@ export interface UpdateBudgetData extends Partial<CreateBudgetData> {
   isActive?: boolean;
 }
 
-// Fetch all budgets
+function buildGlobalRangeQuery(
+  globalDatePreset: DatePreset,
+  selectedDateRange: { from?: Date; to?: Date } | undefined,
+): { from: string; to: string } | null {
+  if (globalDatePreset === 'all_time') {
+    return null;
+  }
+
+  if (!selectedDateRange?.from || !selectedDateRange?.to) {
+    return null;
+  }
+
+  return {
+    from: selectedDateRange.from.toISOString(),
+    to: selectedDateRange.to.toISOString(),
+  };
+}
+
+/** Budget list + summary for the global header date range (primary overlapping budget, clipped actuals). */
 export const useBudgets = () => {
+  const globalDatePreset = useStore(s => s.globalDatePreset);
+  const selectedDateRange = useStore(s => s.selectedDateRange);
+  const rangeQuery = useMemo(
+    () => buildGlobalRangeQuery(globalDatePreset, selectedDateRange),
+    [globalDatePreset, selectedDateRange],
+  );
+
   return useQuery({
-    queryKey: ['budgets'],
+    queryKey: ['budgets', rangeQuery?.from ?? 'none', rangeQuery?.to ?? 'none', globalDatePreset],
     queryFn: async () => {
-      const response = await fetch('/api/finance/budget');
+      const params = new URLSearchParams();
+      if (rangeQuery) {
+        params.set('from', rangeQuery.from);
+        params.set('to', rangeQuery.to);
+      }
+      const query = params.toString();
+      const response = await fetch(`/api/finance/budget${query ? `?${query}` : ''}`);
       if (!response.ok) {
         throw new Error('Failed to fetch budgets');
       }
-      const data = await response.json();
+      const data = (await response.json()) as {
+        budgets: Budget[];
+        summary: BudgetSummary;
+        primarySummaryBudgetId?: string | null;
+      };
       return {
-        budgets: data.budgets as Budget[],
-        summary: data.summary as BudgetSummary,
+        budgets: data.budgets,
+        summary: data.summary,
+        primarySummaryBudgetId: data.primarySummaryBudgetId ?? null,
       };
     },
   });

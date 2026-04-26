@@ -67,8 +67,6 @@ export async function fetchComprehensiveReportData(
         description: true,
         date: true,
         tags: true,
-        isRecurring: true,
-        recurringPattern: true,
         transferAmount: true,
         transferCurrency: true,
         account: { select: { id: true, name: true, type: true, currency: true } },

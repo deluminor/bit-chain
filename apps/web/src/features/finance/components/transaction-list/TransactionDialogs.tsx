@@ -45,14 +45,24 @@ export function TransactionDialogs({
   onCancelDelete,
   onConfirmDelete,
 }: TransactionDialogsProps) {
+  const handleCreateCancel = () => {
+    onCreateDialogChange(false);
+  };
+
   return (
     <>
       <Dialog open={showCreateDialog} onOpenChange={onCreateDialogChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <AddTransactionForm
-            onSuccess={onFormSuccess}
-            onCancel={() => onCreateDialogChange(false)}
-          />
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto sm:max-w-2xl">
+          <DialogHeader className="space-y-1 text-left">
+            <DialogTitle>Add new transaction</DialogTitle>
+            <DialogDescription>Record your income, expense, or transfer.</DialogDescription>
+          </DialogHeader>
+          <div className="pt-1">
+            <AddTransactionForm
+              onSuccess={onFormSuccess}
+              onCancel={handleCreateCancel}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -63,16 +73,18 @@ export function TransactionDialogs({
       />
 
       <Dialog open={showEditDialog} onOpenChange={onEditDialogChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Transaction</DialogTitle>
-            <DialogDescription>Update transaction details.</DialogDescription>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto sm:max-w-2xl">
+          <DialogHeader className="space-y-1 text-left">
+            <DialogTitle>Edit transaction</DialogTitle>
+            <DialogDescription>Update the details below.</DialogDescription>
           </DialogHeader>
-          <AddTransactionForm
-            transaction={selectedTransaction || undefined}
-            onSuccess={onFormSuccess}
-            onCancel={onCancelEdit}
-          />
+          <div className="pt-1">
+            <AddTransactionForm
+              transaction={selectedTransaction || undefined}
+              onSuccess={onFormSuccess}
+              onCancel={onCancelEdit}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

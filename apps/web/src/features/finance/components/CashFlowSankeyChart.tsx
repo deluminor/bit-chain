@@ -2,11 +2,13 @@
 
 import { ChartSkeleton } from '@/components/layout/charts/ChartSkeleton';
 import { ChartWrapper } from '@/components/layout/charts/ChartWrapper';
+import { SANKEY_LIGHT_MONO } from '@/constants/cash-flow-sankey-colors';
 import { useCashFlowSankey } from '@/features/finance/hooks/useCashFlowSankey';
 import { formatSummaryAmount } from '@/lib/currency';
 import { THEME, useStore } from '@/store';
 import { useMemo, useState } from 'react';
 import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
+import { buildCashFlowSankeyModel } from './cash-flow-sankey.model';
 import {
   CashFlowSankeyBreakdown,
   CashFlowSankeyFooter,
@@ -63,52 +65,10 @@ export function CashFlowSankeyChart() {
     ];
   }, [data, freeCashColor]);
 
-  const sankeyData = useMemo(() => {
-    if (!data) return null;
-
-    const sources = data.sources;
-    const targets = targetsWithFreeCash;
-    const centerIndex = sources.length;
-
-    const nodes = [
-      ...sources.map(source => ({
-        name: source.name,
-        color: sankeyBase,
-      })),
-      {
-        name: 'Net Flow',
-        color: sankeyBase,
-      },
-      ...targets.map(target => ({
-        name: target.name,
-        color: target.isFreeCash ? freeCashColor : sankeyBase,
-        isFreeCash: target.isFreeCash,
-      })),
-    ];
-
-    const links = [
-      ...sources.map((source, index) => ({
-        source: index,
-        target: centerIndex,
-        value: Math.max(source.amount, 0),
-        color: sankeyBase,
-        id: `income-${source.id}`,
-        sourceName: source.name,
-        targetName: 'Net Flow',
-      })),
-      ...targets.map((target, index) => ({
-        source: centerIndex,
-        target: centerIndex + 1 + index,
-        value: Math.max(target.amount, 0),
-        color: target.isFreeCash ? freeCashColor : sankeyBase,
-        id: `expense-${target.id}`,
-        sourceName: 'Net Flow',
-        targetName: target.name,
-      })),
-    ];
-
-    return { nodes, links };
-  }, [data, freeCashColor, sankeyBase, targetsWithFreeCash]);
+  const { sankeyData, breakdownSources, breakdownTargets } = useMemo(
+    () => buildCashFlowSankeyModel(data, targetsWithFreeCash, isDark, sankeyBase, freeCashColor),
+    [data, freeCashColor, isDark, sankeyBase, targetsWithFreeCash],
+  );
 
   if (isLoading) {
     return <ChartSkeleton />;
@@ -116,8 +76,14 @@ export function CashFlowSankeyChart() {
 
   if (!data || (!data.sources.length && !data.targets.length)) {
     return (
-      <ChartWrapper title="Income Flow" description="Category flow for selected period (EUR)">
-        <div className="h-[280px] flex items-center justify-center text-sm text-muted-foreground">
+      <ChartWrapper
+        className="gap-0 py-5 sm:py-6"
+        headerClassName="!px-5 pb-3 pt-0 sm:!px-6 sm:pb-4 sm:pt-1"
+        contentClassName="!px-5 sm:!px-6"
+        title="Income Flow"
+        description="Category flow for selected period (EUR)"
+      >
+        <div className="flex h-[280px] items-center justify-center px-2 pb-6 text-sm text-muted-foreground">
           No income or expense data for the selected period.
         </div>
       </ChartWrapper>
@@ -134,7 +100,7 @@ export function CashFlowSankeyChart() {
     const value = payload.value ?? 0;
 
     const isActive = activeNode ? payload.name === activeNode : true;
-    const opacity = isActive ? 1 : 0.2;
+    const opacity = isActive ? 1 : isDark ? 0.2 : 0.3;
 
     return (
       <g onMouseEnter={() => setActiveNode(payload.name)} onMouseLeave={() => setActiveNode(null)}>
@@ -145,7 +111,7 @@ export function CashFlowSankeyChart() {
           height={height}
           rx={2}
           fill={payload.color}
-          opacity={isActive ? 0.7 : 0.2}
+          opacity={isActive ? (isDark ? 0.7 : 0.55) : isDark ? 0.2 : 0.32}
           style={{ transition: 'opacity 220ms ease' }}
         />
         <text
@@ -193,7 +159,11 @@ export function CashFlowSankeyChart() {
     const isRelatedToNode =
       activeNode && (payload.sourceName === activeNode || payload.targetName === activeNode);
     const isActive = activeLink ? payload.id === activeLink : isRelatedToNode;
-    const strokeOpacity = activeLink || activeNode ? (isActive ? 0.6 : 0.08) : 0.4;
+    const baseOpacity = isDark ? 0.4 : 0.6;
+    const activeMatchOpacity = isDark ? 0.6 : 0.78;
+    const dimOpacity = 0.08;
+    const strokeOpacity =
+      activeLink || activeNode ? (isActive ? activeMatchOpacity : dimOpacity) : baseOpacity;
     const stroke = payload.color || linkFallback;
 
     return (
@@ -212,21 +182,25 @@ export function CashFlowSankeyChart() {
 
   return (
     <ChartWrapper
+      className="gap-0 py-5 sm:py-6 pt-0 sm:pt-2"
+      // headerClassName="!px-5 pb-3 pt-0 sm:!px-6 sm:pb-0 sm:pt-1"
+      // contentClassName="!px-5 !pb-0 pt-0 sm:!px-6"
+      footerClassName="!px-5 !pb-0 pt-5 sm:!px-6 sm:!pb-0"
       title="Income Flow"
       description="Category flow for selected period (EUR)"
       footer={
         <CashFlowSankeyFooter income={totals.income} expenses={totals.expenses} net={totals.net} />
       }
     >
-      <div className="px-4 pb-4">
+      <div className="pb-4 pt-1 sm:pb-5">
         <div className="w-full overflow-x-auto">
-          <div className="min-w-[760px] h-[320px]">
+          <div className="h-[320px] min-w-[760px]">
             <ResponsiveContainer width="100%" height="100%">
               <Sankey
                 data={sankeyData ?? { nodes: [], links: [] }}
                 nodeWidth={10}
                 nodePadding={16}
-                margin={{ left: 96, right: 96, top: 8, bottom: 8 }}
+                margin={{ left: 100, right: 100, top: 18, bottom: 18 }}
                 node={renderNode}
                 link={renderLink}
               >
@@ -238,10 +212,15 @@ export function CashFlowSankeyChart() {
           </div>
         </div>
         <CashFlowSankeyBreakdown
-          sources={data.sources}
-          targets={targetsWithFreeCash}
+          sources={breakdownSources}
+          targets={breakdownTargets}
           sankeyBase={sankeyBase}
           freeCashColor={freeCashColor}
+          lightMonochrome={
+            isDark
+              ? undefined
+              : { flow: SANKEY_LIGHT_MONO.flow, freeCash: SANKEY_LIGHT_MONO.freeCash }
+          }
         />
       </div>
     </ChartWrapper>

@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDataTable } from '@/hooks/useDataTable';
 import { useStore } from '@/store';
 import { AlertTriangle } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 interface ApiErrorResponse {
   error?: string;
@@ -151,6 +151,24 @@ export function TransactionList() {
     onPageChange(1);
   };
 
+  const handleOpenImport = useCallback(() => {
+    setShowImportDialog(true);
+  }, []);
+
+  const handleOpenCreate = useCallback(() => {
+    setShowCreateDialog(true);
+  }, []);
+
+  const handleEditTransaction = useCallback((transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setShowEditDialog(true);
+  }, []);
+
+  const handleDeleteIntent = useCallback((transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setShowDeleteDialog(true);
+  }, []);
+
   if (error) {
     return (
       <AnimatedDiv variant="slideUp" className="container">
@@ -161,7 +179,13 @@ export function TransactionList() {
             <p className="text-muted-foreground mb-4">
               There was an error loading your transactions.
             </p>
-            <Button onClick={() => refetch()}>Try Again</Button>
+            <Button
+              onClick={() => {
+                void refetch();
+              }}
+            >
+              Try Again
+            </Button>
           </div>
         </Card>
       </AnimatedDiv>
@@ -169,11 +193,8 @@ export function TransactionList() {
   }
 
   return (
-    <AnimatedDiv variant="slideUp" className="flex flex-col gap-3 md:gap-6">
-      <TransactionListHeader
-        onOpenImport={() => setShowImportDialog(true)}
-        onOpenCreate={() => setShowCreateDialog(true)}
-      />
+    <AnimatedDiv variant="slideUp" className="flex flex-col gap-3 md:gap-4">
+      <TransactionListHeader onOpenImport={handleOpenImport} onOpenCreate={handleOpenCreate} />
 
       <TransactionSummaryCards summary={summary} />
 
@@ -196,18 +217,10 @@ export function TransactionList() {
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         onClearFilters={clearFilters}
-        onRefresh={() => {
-          void refetch();
-        }}
-        onCreateTransaction={() => setShowCreateDialog(true)}
-        onEditTransaction={transaction => {
-          setSelectedTransaction(transaction);
-          setShowEditDialog(true);
-        }}
-        onDeleteTransaction={transaction => {
-          setSelectedTransaction(transaction);
-          setShowDeleteDialog(true);
-        }}
+        onRefresh={refetch}
+        onCreateTransaction={handleOpenCreate}
+        onEditTransaction={handleEditTransaction}
+        onDeleteTransaction={handleDeleteIntent}
       />
 
       <TransactionDialogs

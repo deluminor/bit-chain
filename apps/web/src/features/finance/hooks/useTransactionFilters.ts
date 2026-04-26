@@ -11,6 +11,18 @@ export interface TransactionFilters {
   maxAmount?: number;
 }
 
+function isSameTransactionFilters(a: TransactionFilters, b: TransactionFilters): boolean {
+  return (
+    a.searchTerm === b.searchTerm &&
+    a.typeFilter === b.typeFilter &&
+    a.accountFilter === b.accountFilter &&
+    a.categoryFilter === b.categoryFilter &&
+    a.limitFilter === b.limitFilter &&
+    a.minAmount === b.minAmount &&
+    a.maxAmount === b.maxAmount
+  );
+}
+
 export function useTransactionFilters() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -71,14 +83,22 @@ export function useTransactionFilters() {
         params.set('maxAmount', newFilters.maxAmount.toString());
       }
 
-      router.push(`?${params.toString()}`);
+      const nextQuery = params.toString();
+      if (nextQuery === searchParams.toString()) {
+        return;
+      }
+
+      router.push(nextQuery ? `?${nextQuery}` : '?');
     },
-    [router],
+    [router, searchParams],
   );
 
   const updateFilters = useCallback(
     (newFilters: Partial<TransactionFilters>) => {
       const updatedFilters = { ...filters, ...newFilters };
+      if (isSameTransactionFilters(updatedFilters, filters)) {
+        return;
+      }
       setFilters(updatedFilters);
       updateUrlParams(updatedFilters);
     },

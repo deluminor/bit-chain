@@ -40,6 +40,10 @@ export function CategoriesDialogs({
   onCancelDelete,
   onConfirmDelete,
 }: CategoriesDialogsProps) {
+  const handleCreateCancel = () => {
+    onCreateDialogChange(false);
+  };
+
   return (
     <>
       <Dialog open={showCreateDialog} onOpenChange={onCreateDialogChange}>
@@ -47,7 +51,7 @@ export function CategoriesDialogs({
           <DialogHeader>
             <DialogTitle>Create Category</DialogTitle>
           </DialogHeader>
-          <CategoryForm onSuccess={onFormSuccess} onCancel={() => onCreateDialogChange(false)} />
+          <CategoryForm onSuccess={onFormSuccess} onCancel={handleCreateCancel} />
         </DialogContent>
       </Dialog>
 

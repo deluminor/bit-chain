@@ -159,6 +159,31 @@ export async function resolveCategoryForType(
   }
 }
 
+export async function resolveLoanIdForExpense(
+  userId: string,
+  categoryId: string,
+  loanIdInput: string | null | undefined,
+): Promise<string | null> {
+  const category = await prisma.transactionCategory.findFirst({
+    where: { id: categoryId, userId, isActive: true },
+    select: { isLoanRepayment: true },
+  });
+
+  if (!category) {
+    throw new TransactionDomainError('Category not found', 400);
+  }
+
+  if (category.isLoanRepayment) {
+    if (!loanIdInput) {
+      throw new TransactionDomainError('Select which loan this repayment applies to', 400);
+    }
+
+    return loanIdInput;
+  }
+
+  return null;
+}
+
 export async function validateLoanForRepayment(
   userId: string,
   loanId: string | undefined | null,
@@ -223,9 +248,6 @@ export async function validateLoanForRepaymentWithLock(
   }
 }
 
-/**
- * Validates transfer destination ownership and consistency.
- */
 export async function validateTransferDestination(
   userId: string,
   sourceAccountId: string,

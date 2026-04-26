@@ -140,14 +140,8 @@ model Transaction {
   type                    TransactionType
   amount                  Float
   currency                String              @default("UAH")
-  /**
-   * When set, this expense is a loan repayment — amount is added to loan.paidAmount
-   */
   loanId                  String?
   loan                    Loan?               @relation(fields: [loanId], references: [id], onDelete: SetNull)
-  /**
-   * When transaction is in different currency (e.g. EUR), Monobank provides amount in account currency (UAH).
-   */
   amountInAccountCurrency Float?
   description             String?
   date                    DateTime            @default(now())
@@ -227,9 +221,6 @@ model TransactionCategory {
   user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   name            String // "Groceries", "Salary", "Entertainment"
   type            TransactionType // INCOME or EXPENSE
-  /**
-   * When true, transaction form shows loan select for repayment attribution
-   */
   isLoanRepayment Boolean               @default(false)
   parentId        String? // For hierarchical categories
   parent          TransactionCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
@@ -254,9 +245,6 @@ model Loan {
   userId       String
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   name         String
-  /**
-   * Transactions marked as repayments for this loan
-   */
   repayments   Transaction[]
   type         LoanType
   totalAmount  Float         @default(0) // Original loan/debt amount

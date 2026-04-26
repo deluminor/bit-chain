@@ -58,10 +58,7 @@ export function TransactionDialogs({
             <DialogDescription>Record your income, expense, or transfer.</DialogDescription>
           </DialogHeader>
           <div className="pt-1">
-            <AddTransactionForm
-              onSuccess={onFormSuccess}
-              onCancel={handleCreateCancel}
-            />
+            <AddTransactionForm onSuccess={onFormSuccess} onCancel={handleCreateCancel} />
           </div>
         </DialogContent>
       </Dialog>

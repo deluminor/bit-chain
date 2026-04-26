@@ -3,7 +3,7 @@
 ## Personal finance and trading journal with web and mobile clients, bank integration, and backup.
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-15.5-black?logo=next.js)
 ![Expo](https://img.shields.io/badge/Expo-54-000020?logo=expo)
 ![Prisma](https://img.shields.io/badge/Prisma-6.6-2D3748?logo=prisma)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -33,7 +33,7 @@
 
 | Layer           | Technology                                 |
 | --------------- | ------------------------------------------ |
-| Web             | Next.js 15 (App Router, Turbopack)         |
+| Web             | Next.js 15.5 (App Router, Turbopack)       |
 | Web             | React 19, TailwindCSS 4                    |
 | Web             | Radix UI (Shadcn-style), CVA               |
 | Web             | TanStack Query 5, Zustand 5                |
@@ -100,24 +100,27 @@ bit-chain/
 ├── apps/
 │   ├── web/                          # Next.js web app
 │   │   ├── prisma/
-│   │   │   ├── schema.prisma         # Single schema, Prisma client in src/generated
+│   │   │   ├── schema.prisma         # output: src/generated/prisma
 │   │   │   ├── migrations/
 │   │   │   └── seed.ts
 │   │   ├── scripts/                  # monobank-sync-all, remove-demo-data
 │   │   └── src/
 │   │       ├── app/
-│   │       │   ├── (protected)/      # Auth-guarded layout, sidebar, dashboard, journal, accounts, etc.
-│   │       │   ├── (public)/         # Login, register, auth API
-│   │       │   └── api/              # Finance, backup, crypto, integrations, mobile, reports
-│   │       ├── components/           # ui (Shadcn), forms, layout, dashboard, backup
+│   │       │   ├── (protected)/      # Sidebar shell: home, dashboard, analytics, journal, accounts,
+│   │       │   │                      # transactions, categories, budget, goals, loans, reports, backup, settings
+│   │       │   ├── (public)/         # Login, register; NextAuth under (public)/api/auth
+│   │       │   └── api/              # finance/*, backup, crypto, integrations/monobank (incl. webhook), mobile/*, reports
+│   │       ├── components/           # ui (shadcn-style), forms, layout (charts, nav), dashboard, backup
 │   │       ├── features/
 │   │       │   ├── auth/             # LoginForm, RegisterForm, AuthProvider
-│   │       │   ├── crypto/            # CryptoCardSkeleton, news
-│   │       │   ├── finance/           # Accounts, transactions, budget, goals, categories
+│   │       │   ├── backup/            # Schemas, backup UI hooks up to API
+│   │       │   ├── crypto/            # Market cards, news
+│   │       │   ├── finance/           # Accounts, transactions, budget, goals, categories, net worth, report hooks
 │   │       │   ├── integrations/     # Monobank integration
-│   │       │   └── positions/         # Trades, categories, demo-mode
-│   │       ├── generated/prisma/     # Prisma client output
-│   │       ├── lib/                  # prisma, axios, backup, mobile-auth, rate-limit
+│   │       │   ├── positions/         # Trades, categories, P&L, demo mode
+│   │       │   └── reports/         # Comprehensive report (data + markdown sections)
+│   │       ├── generated/prisma/     # Prisma client (generated)
+│   │       ├── lib/                  # prisma, axios, backup, mobile-auth, monobank, rate-limit
 │   │       └── store/
 │   └── mobile/                       # Expo React Native app
 │       ├── app/
@@ -237,9 +240,10 @@ pnpm mobile:ios
 
 ## Key Features
 
-- **Finance module** — Accounts, transactions, categories, budgets, goals, loans
+- **Finance module** — Accounts, transactions, categories, budgets, goals, loans; analytics and net worth views on web
+- **Reports** — Comprehensive finance report (web) via `/api/reports/comprehensive`
 - **Trading module** — Trades, categories, screenshots, P&L, demo/live accounts
-- **Monobank integration** — Connect, sync transactions, opt-in account selection
+- **Monobank integration** — Connect, manual sync, optional webhook for statement items, per-account import toggle
 - **Web auth** — NextAuth JWT session, credentials provider
 - **Mobile auth** — Custom JWT access/refresh tokens, SecureStore, Bearer API
 - **Backup** — JSON export/import with merge/replace
